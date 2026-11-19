@@ -14,6 +14,7 @@ from arq.connections import RedisSettings
 
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
+from app.core.logs import configurar_logging
 from app.ia.embeddings import get_router
 from app.pipeline.procesador import procesar_documento as _procesar
 from app.pipeline.vectorizacion import get_vectorizador
@@ -21,7 +22,7 @@ from app.services import reindexacion
 from app.services.cola import TRABAJO_PROCESAR, TRABAJO_REINDEXAR
 from app.services.purga import barrer
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
+configurar_logging(get_settings().log_json or get_settings().entorno == "produccion")
 log = logging.getLogger("app.worker")
 
 
@@ -79,3 +80,5 @@ class WorkerSettings:
     # Un segundo intento solo cubre caídas del worker; los errores normales ya purgan.
     max_tries = 2
     keep_result = 3600
+    # Latido cada 30 s: `arq --check` lo usa como sonda de salud del contenedor.
+    health_check_interval = 30

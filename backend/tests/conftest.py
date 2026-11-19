@@ -7,6 +7,36 @@ import os
 from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
+# Entorno seguro FIJADO AL IMPORTAR este módulo, antes de que ningún test importe `app`: un test
+# que haga `from app.main import ...` construye la configuración en ese momento, y las variables
+# de entorno tienen prioridad sobre backend/.env. Así nunca se leen las keys reales ni Redis.
+os.environ.update(
+    {
+        "ENTORNO": "desarrollo",
+        "JWT_SECRET": "secreto-de-pruebas-con-longitud-suficiente-1234567890",
+        "ALLOW_TENANT_SIGNUP": "true",
+        "ANTIVIRUS_BACKEND": "noop",
+        "BARRIDO_HABILITADO": "false",
+        "COLA_BACKEND": "ninguna",
+        "REDIS_URL": "redis://127.0.0.1:1/0",  # inalcanzable a propósito
+        "GEMINI_API_KEY": "clave-falsa-de-pruebas",
+        "OPENAI_API_KEY": "clave-falsa-de-pruebas",
+        "EMBEDDING_MODEL_DEFAULT": "gemini-embedding-001",
+        "DB_NULL_POOL": "true",
+        # Límites en memoria y muy altos: las pruebas que los verifican los bajan a propósito.
+        "RATE_LIMIT_BACKEND": "memoria",
+        "METRICS_TOKEN": "token-de-metricas-de-pruebas",
+        "RL_GENERAL_IP_MIN": "100000",
+        "RL_LOGIN_IP_MIN": "100000",
+        "RL_REGISTRO_IP_HORA": "100000",
+        "RL_REFRESH_IP_MIN": "100000",
+        "RL_CONSULTA_USUARIO_MIN": "100000",
+        "RL_CONSULTA_USUARIO_DIA": "100000",
+        "RL_SUBIDA_USUARIO_HORA": "100000",
+        "RL_REINDEX_USUARIO_HORA": "100000",
+    }
+)
+
 import psycopg
 import pytest
 from fastapi import FastAPI
@@ -32,16 +62,18 @@ def ephemeral_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
 @pytest.fixture(scope="session", autouse=True)
 def _configurar_entorno(postgres_url: str, ephemeral_dir: Path) -> Iterator[None]:
     os.environ["DATABASE_URL"] = postgres_url.replace("postgresql://", "postgresql+asyncpg://")
-    os.environ["DB_NULL_POOL"] = "true"
-    os.environ["JWT_SECRET"] = "secreto-de-pruebas-con-longitud-suficiente-1234567890"
-    os.environ["ALLOW_TENANT_SIGNUP"] = "true"
     os.environ["EPHEMERAL_DIR"] = str(ephemeral_dir)
-    os.environ["ANTIVIRUS_BACKEND"] = "noop"
-    os.environ["BARRIDO_HABILITADO"] = "false"
-    # Nunca se usan las keys reales de backend/.env ni se llama a proveedores externos.
-    os.environ["GEMINI_API_KEY"] = "clave-falsa-de-pruebas"
-    os.environ["OPENAI_API_KEY"] = "clave-falsa-de-pruebas"
-    os.environ["EMBEDDING_MODEL_DEFAULT"] = "gemini-embedding-001"
+
+    # Si algún módulo ya construyó la configuración o el motor antes de conocer la base de
+    # datos de pruebas, se descartan.
+    from app.core import config, db, limites
+
+    config.get_settings.cache_clear()
+    db.get_engine.cache_clear()
+    db.get_sessionmaker.cache_clear()
+    limites.get_almacen.cache_clear()
+    assert config.get_settings().database_url == os.environ["DATABASE_URL"]
+    assert config.get_settings().gemini_api_key == "clave-falsa-de-pruebas"
 
     from alembic.config import Config
 
@@ -55,11 +87,15 @@ def _configurar_entorno(postgres_url: str, ephemeral_dir: Path) -> Iterator[None
 
 @pytest.fixture(autouse=True)
 def _limpiar(postgres_url: str, ephemeral_dir: Path) -> Iterator[None]:
+    from app.core import limites
+
+    almacen = limites.get_almacen()
+    almacen._datos.clear()  # type: ignore[attr-defined]  # AlmacenMemoria en pruebas
     yield
     with psycopg.connect(postgres_url) as conn:
         conn.execute(
-            "TRUNCATE actas_purga, fragmentos, documentos, expediente_permisos, expedientes, "
-            "usuarios, tenants RESTART IDENTITY CASCADE"
+            "TRUNCATE auditoria, actas_purga, consultas, fragmentos, documentos, "
+            "expediente_permisos, expedientes, usuarios, tenants RESTART IDENTITY CASCADE"
         )
     for f in ephemeral_dir.iterdir():
         f.unlink()

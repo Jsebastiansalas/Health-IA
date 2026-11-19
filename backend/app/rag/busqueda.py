@@ -24,6 +24,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ia.embeddings import a_columna
 
+_MODOS_ITERATIVOS = ("strict_order", "relaxed_order")
+
 _FILTRO_SEGURO = """
     f.tenant_id = :tenant_id
     AND f.expediente_id = :expediente_id
@@ -156,10 +158,20 @@ async def busqueda_hibrida(
     top_k: int = 20,
     rrf_k: int = 60,
     ef_search: int = 100,
+    iterative: str = "strict_order",
 ) -> list[FragmentoRecuperado]:
     # pgvector >= 0.8: con filtros, el escaneo iterativo evita devolver menos de top_k
     # resultados cuando el expediente es una fracción pequeña de la tabla.
-    await session.execute(text("SET LOCAL hnsw.iterative_scan = 'relaxed_order'"))
+    #
+    # strict_order (por defecto) garantiza el orden exacto por distancia. pgvector documenta que
+    # relaxed_order puede devolver los resultados ligeramente desordenados, y aquí el orden
+    # importa: el rango vectorial alimenta la fusión RRF. Es una decisión PREVENTIVA: en el
+    # benchmark (scripts/bench_busqueda.py) el planificador usa un orden exacto con filtros por
+    # expediente y no se observó diferencia entre ambos modos; solo importa si un expediente es lo
+    # bastante grande como para que se use el índice HNSW.
+    if iterative not in _MODOS_ITERATIVOS:  # se interpola en SQL: solo valores conocidos
+        raise ValueError(f"hnsw.iterative_scan no soportado: {iterative}")
+    await session.execute(text(f"SET LOCAL hnsw.iterative_scan = '{iterative}'"))
     await session.execute(text(f"SET LOCAL hnsw.ef_search = {int(ef_search)}"))
     filas = await session.execute(
         SQL_HIBRIDA,

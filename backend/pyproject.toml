@@ -24,6 +24,7 @@ dependencies = [
     "tiktoken>=0.8",
     "arq>=0.26",
     "httpx>=0.28",
+    "prometheus-client>=0.21",
 ]
 
 [dependency-groups]
@@ -37,12 +38,15 @@ dev = [
     "mypy>=1.13",
     "reportlab>=4.2",
     "respx>=0.21",
+    "pytest-timeout>=2.3",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+# Una prueba colgada (p. ej. un bloqueo de base de datos) falla con su traza en vez de congelar la suite.
+timeout = 240
 
 [tool.ruff]
 line-length = 100
@@ -54,4 +58,5 @@ ignore = ["B008"]  # Depends() en argumentos por defecto es el patrón de FastAP
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E501", "ASYNC240"]
+"scripts/*" = ["E501", "ASYNC240", "T201"]  # utilidades de línea de comandos
 "alembic/versions/*" = ["E501"]  # SQL literal

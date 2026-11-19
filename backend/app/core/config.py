@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://medtender:medtender@localhost:5434/medtender"
     # NullPool evita compartir conexiones entre event loops (útil en tests).
     db_null_pool: bool = False
+    # Máximo por proceso = pool_size + max_overflow (API y worker suman contra max_connections).
+    db_pool_size: int = 15
+    db_max_overflow: int = 15
+    db_pool_timeout_s: float = 10.0
 
     jwt_secret: str = Field(min_length=32)
     jwt_algorithm: str = "HS256"
@@ -95,8 +99,60 @@ class Settings(BaseSettings):
     rag_max_evidencias: int = 6  # fragmentos principales enviados al modelo
     rag_boost_adenda: float = 0.25  # +25 % al puntaje de fragmentos de adendas
     rag_hnsw_ef_search: int = 100
+    # strict_order: orden exacto por distancia (necesario para RRF). Ver app/rag/busqueda.py.
+    rag_hnsw_iterative: Literal["strict_order", "relaxed_order"] = "strict_order"
     # Por debajo de esta confianza OCR la cita exige mirar el PDF original.
     umbral_confianza_ocr: float = 0.85
+
+    # ---------- Operación y endurecimiento (Sprint 6) ----------
+    entorno: Literal["desarrollo", "produccion"] = "desarrollo"
+    log_json: bool = False  # en producción siempre JSON
+    # Detrás de Caddy, la IP real del cliente es la última entrada de X-Forwarded-For.
+    confiar_proxy: bool = False
+    # /metrics: con token requiere `Authorization: Bearer <token>`; sin token y en producción
+    # el endpoint no existe.
+    metrics_token: str = ""
+
+    rate_limit_habilitado: bool = True
+    rate_limit_backend: Literal["redis", "memoria"] = "redis"
+    rl_general_ip_min: int = 600  # todas las rutas, por IP
+    rl_login_ip_min: int = 20  # intentos de login por IP
+    rl_login_fallos_par: int = 5  # fallos por (IP, correo) antes de bloquear
+    rl_login_fallos_ventana_s: int = 900
+    rl_registro_ip_hora: int = 5
+    rl_refresh_ip_min: int = 60
+    rl_consulta_usuario_min: int = 20  # cada pregunta cuesta una llamada al LLM
+    rl_consulta_usuario_dia: int = 500
+    rl_subida_usuario_hora: int = 60
+    rl_reindex_usuario_hora: int = 6
+
+    def problemas_produccion(self) -> tuple[list[str], list[str]]:
+        """(fatales, advertencias) de una configuración destinada a producción."""
+        fatales: list[str] = []
+        avisos: list[str] = []
+        if "cambia-esto" in self.jwt_secret or len(set(self.jwt_secret)) < 10:
+            fatales.append("JWT_SECRET es el valor de ejemplo o demasiado simple")
+        if self.antivirus_backend == "noop":
+            fatales.append("ANTIVIRUS_BACKEND=noop: en producción todo PDF debe escanearse")
+        if "medtender:medtender@" in self.database_url:
+            fatales.append("DATABASE_URL usa la contraseña de desarrollo 'medtender'")
+        if self.cola_backend != "arq":
+            fatales.append("COLA_BACKEND debe ser 'arq' para que los documentos se procesen")
+        if self.rate_limit_habilitado and self.rate_limit_backend == "memoria":
+            avisos.append("RATE_LIMIT_BACKEND=memoria no se comparte entre procesos")
+        if not self.rate_limit_habilitado:
+            avisos.append("RATE_LIMIT_HABILITADO=false: sin protección contra fuerza bruta")
+        if self.allow_tenant_signup:
+            avisos.append("ALLOW_TENANT_SIGNUP=true: cualquiera puede crear una organización")
+        if any("localhost" in o or "127.0.0.1" in o for o in self.cors_origins):
+            avisos.append("CORS_ORIGINS incluye localhost")
+        if not self.confiar_proxy:
+            avisos.append("CONFIAR_PROXY=false: el límite por IP verá la IP del proxy")
+        if not self.gemini_api_key and not self.openai_api_key:
+            avisos.append("Sin API key de embeddings: no se podrán vectorizar documentos")
+        if not self.metrics_token:
+            avisos.append("METRICS_TOKEN vacío: /metrics queda deshabilitado")
+        return fatales, avisos
 
     @property
     def max_upload_bytes(self) -> int:

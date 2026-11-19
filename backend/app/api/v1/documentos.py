@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from sqlalchemy import select
 
+from app.core import limites
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
 from app.core.deps import CurrentUserDep, SessionDep
@@ -28,6 +29,7 @@ from app.models import ActaPurga, Documento
 from app.schemas import ActaPurgaOut, DocumentoDetalleOut, DocumentoMetadatos, DocumentoOut
 from app.services import almacen_efimero, validacion_pdf
 from app.services.antivirus import VirusScanner, get_scanner
+from app.services.auditoria import Accion, auditar
 from app.services.autorizacion import obtener_expediente_autorizado
 from app.services.cola import ColaProcesamiento, get_cola
 from app.services.estados import transicionar
@@ -116,6 +118,10 @@ async def subir_documento(
             status.HTTP_409_CONFLICT,
             "El expediente se está re-vectorizando con otro modelo; intente al terminar",
         )
+    # Antes de aceptar bytes: cada subida cuesta disco, antivirus y llamadas de embeddings.
+    await limites.exigir(
+        "subida_usuario", str(user.id), get_settings().rl_subida_usuario_hora, 3600
+    )
     # Libera la conexión mientras dura la transferencia, que puede tardar minutos.
     await session.commit()
 
@@ -173,6 +179,18 @@ async def subir_documento(
         await session.commit()
         insertado = True
         await session.refresh(documento)  # carga los DEFAULT del servidor
+        await auditar(
+            Accion.DOCUMENTO_SUBIDO,
+            usuario=user,
+            recurso_tipo="documento",
+            recurso_id=documento_id,
+            detalle={
+                "expediente": str(expediente_id),
+                "tipo": meta.tipo_documento,
+                "sha256": recibido.sha256,
+                "bytes": recibido.tamano,
+            },
+        )
         recibido.ruta.rename(almacen_efimero.ruta_pdf(documento_id))
 
         transicionar(documento, E.VALIDANDO)
@@ -277,7 +295,15 @@ async def eliminar_documento(
             detalle=f"Eliminado por {user.email}",
         )
     )
+    sha = documento.sha256_original
     await session.flush()
     await session.delete(documento)
     await session.commit()
+    await auditar(
+        Accion.DOCUMENTO_ELIMINADO,
+        usuario=user,
+        recurso_tipo="documento",
+        recurso_id=documento_id,
+        detalle={"expediente": str(expediente_id), "sha256": sha},
+    )
     return Response(status_code=status.HTTP_204_NO_CONTENT)

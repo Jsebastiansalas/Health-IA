@@ -26,3 +26,9 @@ medtender-ephemeral/
 
 # Artefactos de TypeScript
 *.tsbuildinfo
+
+# Secretos de despliegue (los .example sí se versionan)
+.env.*
+!.env.example
+!.env.prod.example
+infra/backups/

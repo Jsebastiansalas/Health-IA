@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import CurrentUser
 from app.core.enums import Permiso
 from app.models import Expediente, ExpedientePermiso
+from app.services.auditoria import Accion, auditar
 
 
 async def permiso_efectivo(
@@ -46,11 +47,40 @@ async def obtener_expediente_autorizado(
     )
     no_encontrado = HTTPException(status.HTTP_404_NOT_FOUND, "Expediente no encontrado")
     if expediente is None:
+        # Inexistente o de otro tenant: la respuesta es idéntica, pero queda registrado.
+        await auditar(
+            Accion.ACCESO_DENEGADO,
+            usuario=user,
+            resultado="DENEGADO",
+            recurso_tipo="expediente",
+            recurso_id=expediente_id,
+            detalle={"motivo": "inexistente_o_otro_tenant"},
+        )
         raise no_encontrado
 
     permiso = await permiso_efectivo(session, user, expediente_id)
     if permiso is None:
+        await auditar(
+            Accion.ACCESO_DENEGADO,
+            usuario=user,
+            resultado="DENEGADO",
+            recurso_tipo="expediente",
+            recurso_id=expediente_id,
+            detalle={"motivo": "sin_permiso"},
+        )
         raise no_encontrado
     if permiso.nivel < minimo.nivel:
+        await auditar(
+            Accion.ACCESO_DENEGADO,
+            usuario=user,
+            resultado="DENEGADO",
+            recurso_tipo="expediente",
+            recurso_id=expediente_id,
+            detalle={
+                "motivo": "permiso_insuficiente",
+                "requerido": minimo.value,
+                "tiene": permiso.value,
+            },
+        )
         raise HTTPException(status.HTTP_403_FORBIDDEN, f"Se requiere permiso {minimo.value}")
     return expediente, permiso

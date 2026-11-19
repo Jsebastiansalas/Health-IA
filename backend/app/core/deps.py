@@ -8,6 +8,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import contexto
 from app.core.db import get_session
 from app.core.enums import RolGlobal
 from app.core.security import TokenInvalido, decode_token
@@ -58,6 +59,9 @@ async def get_current_user(
     )
     if usuario is None or not usuario.activo:
         raise _no_autenticado("Usuario inactivo o inexistente")
+    # Desde aquí, cada log de la petición lleva el usuario y el tenant.
+    contexto.usuario_id.set(str(usuario.id))
+    contexto.tenant_id.set(str(usuario.tenant_id))
     return CurrentUser(
         id=usuario.id,
         tenant_id=usuario.tenant_id,
