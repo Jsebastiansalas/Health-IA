@@ -1,13 +1,24 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
 from app.core.enums import (
     EstadoExpediente,
+    EstadoIndexacion,
+    MotivoPurga,
     Permiso,
     PoliticaBorrado,
     RolGlobal,
+    TipoDocumento,
     TipoExpediente,
 )
 
@@ -118,6 +129,67 @@ class ExpedienteOut(ORMModel):
     created_by: uuid.UUID
     created_at: datetime
     mi_permiso: Permiso | None = None
+
+
+# ---------- Documentos ----------
+class DocumentoMetadatos(BaseModel):
+    """Campos de texto que acompañan al PDF en el multipart."""
+
+    tipo_documento: TipoDocumento
+    numero_adenda: int = Field(default=0, ge=0, le=999)
+
+    @model_validator(mode="after")
+    def _adenda_coherente(self) -> "DocumentoMetadatos":
+        if self.tipo_documento == TipoDocumento.ADENDA and self.numero_adenda < 1:
+            raise ValueError("Una ADENDA requiere numero_adenda >= 1")
+        if self.tipo_documento != TipoDocumento.ADENDA and self.numero_adenda != 0:
+            raise ValueError("numero_adenda solo aplica a documentos tipo ADENDA")
+        return self
+
+
+class ActaPurgaOut(ORMModel):
+    id: uuid.UUID
+    motivo: MotivoPurga
+    sha256_original: str | None
+    chunks_esperados: int | None
+    chunks_verificados: int | None
+    archivo_existia: bool
+    detalle: str | None
+    purged_at: datetime
+
+
+class DocumentoOut(ORMModel):
+    id: uuid.UUID
+    expediente_id: uuid.UUID
+    nombre_archivo_original: str
+    tipo_documento: TipoDocumento
+    numero_adenda: int | None
+    sha256_original: str
+    tamano_bytes: int
+    total_paginas: int | None
+    estado_indexacion: EstadoIndexacion
+    motivo_error: str | None
+    embedding_model: str
+    ocr_version: str
+    extractor_version: str
+    total_chunks_esperados: int | None
+    total_chunks_guardados: int | None
+    temp_file_purged: bool
+    uploaded_at: datetime
+    estado_actualizado_at: datetime
+    purga_programada_at: datetime | None
+    purged_at: datetime | None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def progreso(self) -> int:
+        from app.services.estados import PROGRESO
+
+        return PROGRESO[self.estado_indexacion]
+
+
+class DocumentoDetalleOut(DocumentoOut):
+    actas_purga: list[ActaPurgaOut] = []
 
 
 # ---------- Permisos ----------

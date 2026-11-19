@@ -10,7 +10,10 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 COPY . .
 
-RUN useradd --system --uid 1001 medtender && chown -R medtender /app
+RUN useradd --system --uid 1001 medtender \
+    && mkdir -p /var/medtender-ephemeral \
+    && chown -R medtender /app /var/medtender-ephemeral \
+    && chmod 700 /var/medtender-ephemeral
 USER medtender
 
 EXPOSE 8000

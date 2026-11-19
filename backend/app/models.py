@@ -117,6 +117,31 @@ class Documento(Base):
         DateTime(timezone=True), server_default=func.now()
     )
     purged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Sprint 2 (migración 0002)
+    motivo_error: Mapped[str | None] = mapped_column(Text)
+    purga_programada_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    estado_actualizado_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class ActaPurga(Base):
+    """Registro auditable de cada borrado de un PDF temporal."""
+
+    __tablename__ = "actas_purga"
+
+    id: Mapped[uuid.UUID] = _pk()
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("tenants.id"))
+    documento_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("documentos.id", ondelete="SET NULL")
+    )
+    sha256_original: Mapped[str | None] = mapped_column(String(64))
+    motivo: Mapped[str] = mapped_column(String(30))
+    chunks_esperados: Mapped[int | None] = mapped_column(Integer)
+    chunks_verificados: Mapped[int | None] = mapped_column(Integer)
+    archivo_existia: Mapped[bool] = mapped_column(Boolean)
+    detalle: Mapped[str | None] = mapped_column(Text)
+    purged_at: Mapped[datetime] = _created_at()
 
 
 class Fragmento(Base):

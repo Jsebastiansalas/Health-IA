@@ -9,8 +9,11 @@ from pathlib import Path
 
 import psycopg
 import pytest
+from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from testcontainers.community.postgres import PostgresContainer
+
+from tests.fakes import ColaFalsa, ScannerFalso
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
@@ -21,12 +24,20 @@ def postgres_url() -> Iterator[str]:
         yield pg.get_connection_url()  # postgresql://user:pass@host:port/db
 
 
+@pytest.fixture(scope="session")
+def ephemeral_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return tmp_path_factory.mktemp("medtender-ephemeral")
+
+
 @pytest.fixture(scope="session", autouse=True)
-def _configurar_entorno(postgres_url: str) -> Iterator[None]:
+def _configurar_entorno(postgres_url: str, ephemeral_dir: Path) -> Iterator[None]:
     os.environ["DATABASE_URL"] = postgres_url.replace("postgresql://", "postgresql+asyncpg://")
     os.environ["DB_NULL_POOL"] = "true"
     os.environ["JWT_SECRET"] = "secreto-de-pruebas-con-longitud-suficiente-1234567890"
     os.environ["ALLOW_TENANT_SIGNUP"] = "true"
+    os.environ["EPHEMERAL_DIR"] = str(ephemeral_dir)
+    os.environ["ANTIVIRUS_BACKEND"] = "noop"
+    os.environ["BARRIDO_HABILITADO"] = "false"
 
     from alembic.config import Config
 
@@ -39,22 +50,46 @@ def _configurar_entorno(postgres_url: str) -> Iterator[None]:
 
 
 @pytest.fixture(autouse=True)
-def _limpiar_bd(postgres_url: str) -> Iterator[None]:
+def _limpiar(postgres_url: str, ephemeral_dir: Path) -> Iterator[None]:
     yield
     with psycopg.connect(postgres_url) as conn:
         conn.execute(
-            "TRUNCATE fragmentos, documentos, expediente_permisos, expedientes, usuarios, tenants "
-            "RESTART IDENTITY CASCADE"
+            "TRUNCATE actas_purga, fragmentos, documentos, expediente_permisos, expedientes, "
+            "usuarios, tenants RESTART IDENTITY CASCADE"
         )
+    for f in ephemeral_dir.iterdir():
+        f.unlink()
 
 
 @pytest.fixture
-async def client() -> AsyncIterator[AsyncClient]:
+def app() -> FastAPI:
     from app.main import create_app
 
-    app = create_app()
+    return create_app()
+
+
+@pytest.fixture
+async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
+
+
+@pytest.fixture
+def scanner(app: FastAPI) -> ScannerFalso:
+    from app.services.antivirus import get_scanner
+
+    s = ScannerFalso()
+    app.dependency_overrides[get_scanner] = lambda: s
+    return s
+
+
+@pytest.fixture
+def cola(app: FastAPI) -> ColaFalsa:
+    from app.services.cola import get_cola
+
+    c = ColaFalsa()
+    app.dependency_overrides[get_cola] = lambda: c
+    return c
 
 
 class Org:
