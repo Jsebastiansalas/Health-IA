@@ -36,8 +36,7 @@ spring:
       enabled: true
   servlet:
     multipart:
-      max-file-size: ${MAX_UPLOAD_MB:300}MB
-      max-request-size: ${MAX_UPLOAD_MB:300}MB
+      resolve-lazily: true   # el controlador autoriza y aplica limites ANTES de aceptar los bytes
 
 server:
   port: ${PORT:8080}
@@ -72,6 +71,21 @@ medtender:
   allow-tenant-signup: ${ALLOW_TENANT_SIGNUP:true}
   cors-origins: ${CORS_ORIGINS:http://localhost:5173}
   metrics-token: ${METRICS_TOKEN:}
+  ingesta:
+    ephemeral-dir: ${EPHEMERAL_DIR:${java.io.tmpdir}/medtender-ephemeral}
+    max-upload-mb: ${MAX_UPLOAD_MB:300}
+    embedding-model-default: ${EMBEDDING_MODEL_DEFAULT:gemini-embedding-001}
+    ocr-version-actual: ${OCR_VERSION_ACTUAL:tesseract-5.5-v1}
+    antivirus:
+      backend: ${ANTIVIRUS_BACKEND:clamav}   # clamav | noop (solo desarrollo)
+      host: ${CLAMAV_HOST:localhost}
+      port: ${CLAMAV_PORT:3310}
+      timeout-s: ${CLAMAV_TIMEOUT_S:120}
+    agente:
+      url: ${AGENTE_URL:http://localhost:8010}
+      token: ${AGENTE_TOKEN:}
+      timeout-s: 10
+      reintentos: 3
   rate-limit:
     habilitado: ${RATE_LIMIT_HABILITADO:true}
     backend: ${RATE_LIMIT_BACKEND:redis}   # redis | memoria
