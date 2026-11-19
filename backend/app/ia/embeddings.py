@@ -56,7 +56,7 @@ def a_columna(vector: list[float]) -> list[float]:
 _REINTENTABLES = {408, 429, 500, 502, 503, 504}
 
 
-async def _post(
+async def post_con_reintentos(
     cliente: httpx.AsyncClient, url: str, json: dict, headers: dict, reintentos: int
 ) -> dict:
     espera = 1.0
@@ -65,7 +65,9 @@ async def _post(
             r = await cliente.post(url, json=json, headers=headers)
         except httpx.TransportError as exc:
             if intento == reintentos:
-                raise ErrorEmbeddings(f"Proveedor inaccesible: {exc}") from exc
+                raise ErrorEmbeddings(
+                    f"Proveedor inaccesible: {type(exc).__name__} {exc}".strip()
+                ) from exc
         else:
             if r.status_code == 200:
                 return r.json()
@@ -135,7 +137,7 @@ class GeminiEmbeddings(_Base):
                 for t in textos
             ]
         }
-        datos = await _post(
+        datos = await post_con_reintentos(
             cliente,
             f"{self.base_url}/models/{self.modelo}:batchEmbedContents",
             cuerpo,
@@ -155,7 +157,7 @@ class OpenAIEmbeddings(_Base):
     async def _lote(self, cliente, textos, tarea):
         if not self.api_key:
             raise ErrorEmbeddings("OPENAI_API_KEY no configurada")
-        datos = await _post(
+        datos = await post_con_reintentos(
             cliente,
             f"{self.base_url}/embeddings",
             {"model": self.modelo, "input": textos},
@@ -173,7 +175,7 @@ class OllamaEmbeddings(_Base):
     timeout_s: float = 300.0  # en CPU, un lote puede tardar
 
     async def _lote(self, cliente, textos, tarea):
-        datos = await _post(
+        datos = await post_con_reintentos(
             cliente,
             f"{self.base_url}/api/embed",
             {"model": self.modelo, "input": textos},

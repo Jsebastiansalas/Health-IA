@@ -166,6 +166,27 @@ class Reindexacion(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class Consulta(Base):
+    """Trazabilidad de cada pregunta al motor RAG (migración 0005)."""
+
+    __tablename__ = "consultas"
+
+    id: Mapped[uuid.UUID] = _pk()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"))
+    expediente_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("expedientes.id", ondelete="CASCADE")
+    )
+    usuario_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"))
+    pregunta: Mapped[str] = mapped_column(Text)
+    respuesta: Mapped[dict] = mapped_column(JSONB)
+    sin_evidencia: Mapped[bool] = mapped_column(Boolean)
+    modelo_embeddings: Mapped[str] = mapped_column(String(80))
+    modelo_llm: Mapped[str | None] = mapped_column(String(80))
+    fragmentos_recuperados: Mapped[int] = mapped_column(Integer, server_default="0")
+    latencia_ms: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = _created_at()
+
+
 class Fragmento(Base):
     __tablename__ = "fragmentos"
 
