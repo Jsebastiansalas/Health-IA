@@ -29,8 +29,16 @@ public class ManejadorErrores {
     }
 
     @ExceptionHandler(ApiException.class)
-    ResponseEntity<Map<String, String>> api(ApiException e) {
-        return de(e.getEstado(), e.getMessage());
+    ResponseEntity<Map<String, Object>> api(ApiException e) {
+        var cuerpo = new java.util.LinkedHashMap<String, Object>();
+        cuerpo.put("detail", e.getDetalle());
+        cuerpo.putAll(e.getExtra());
+        return ResponseEntity.status(e.getEstado()).body(cuerpo);
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    ResponseEntity<Map<String, String>> demasiadoGrande(org.springframework.web.multipart.MaxUploadSizeExceededException e) {
+        return de(HttpStatus.PAYLOAD_TOO_LARGE, "El archivo supera el tamaño máximo permitido");
     }
 
     @ExceptionHandler(LimiteExcedidoException.class)

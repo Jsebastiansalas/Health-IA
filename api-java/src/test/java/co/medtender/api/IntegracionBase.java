@@ -3,54 +3,39 @@ package co.medtender.api;
 import co.medtender.api.limites.AlmacenLimites;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.http.MediaType;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.postgresql.PostgreSQLContainer;
-import org.testcontainers.utility.DockerImageName;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
-/** Base de las pruebas de integracion: PostgreSQL+pgvector y Redis reales en contenedores. */
+/** Base de las pruebas con MockMvc: PostgreSQL+pgvector y Redis reales en contenedores. */
 @SpringBootTest
 @AutoConfigureMockMvc
-@org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability
+@AutoConfigureObservability
 public abstract class IntegracionBase {
 
-    public static final String JWT_SECRET = "secreto-de-pruebas-0123456789-abcdefghij-XYZ";
-    public static final String METRICS_TOKEN = "token-metricas-de-prueba";
-
-    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
-            DockerImageName.parse("pgvector/pgvector:pg16").asCompatibleSubstituteFor("postgres"));
-    static final GenericContainer<?> REDIS = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
-            .withExposedPorts(6379);
-
-    static {
-        POSTGRES.start();
-        REDIS.start();
-    }
+    public static final String JWT_SECRET = Infra.JWT_SECRET;
+    public static final String METRICS_TOKEN = Infra.METRICS_TOKEN;
 
     @DynamicPropertySource
     static void propiedades(DynamicPropertyRegistry r) {
-        r.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        r.add("spring.datasource.username", POSTGRES::getUsername);
-        r.add("spring.datasource.password", POSTGRES::getPassword);
-        r.add("spring.data.redis.url", () -> "redis://" + REDIS.getHost() + ":" + REDIS.getMappedPort(6379));
-        r.add("medtender.jwt.secret", () -> JWT_SECRET);
-        r.add("medtender.metrics-token", () -> METRICS_TOKEN);
-        r.add("medtender.rate-limit.login-fallos-par", () -> "3");
-        r.add("medtender.rate-limit.login-ip-min", () -> "1000");
-        r.add("medtender.rate-limit.general-ip-min", () -> "100000");
+        Infra.registrar(r);
     }
 
     @Autowired protected MockMvc mvc;
@@ -59,9 +44,14 @@ public abstract class IntegracionBase {
     @Autowired protected AlmacenLimites limites;
 
     @BeforeEach
-    void limpiar() {
-        jdbc.execute("TRUNCATE auditoria, usuarios, tenants CASCADE");
+    void limpiar() throws IOException {
+        jdbc.execute("TRUNCATE auditoria, actas_purga, documentos, expedientes, usuarios, tenants CASCADE");
         limites.reiniciar();
+        Infra.AGENTE.reiniciar();
+        Infra.CLAMD.disponible(true);
+        try (Stream<Path> archivos = Files.list(Infra.EFIMERO)) {
+            archivos.forEach(p -> p.toFile().delete());
+        }
     }
 
     protected JsonNode cuerpo(MvcResult r) throws Exception {
@@ -106,7 +96,20 @@ public abstract class IntegracionBase {
         return cuerpo(r).get("id").asText();
     }
 
-    protected org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder getAuth(String url, JsonNode tokens) {
+    protected MockHttpServletRequestBuilder getAuth(String url, JsonNode tokens) {
         return get(url).header("Authorization", bearer(tokens));
+    }
+
+    /** Crea un expediente como el usuario dado y devuelve su id. */
+    protected String crearExpediente(JsonNode tokens, String codigo) throws Exception {
+        MvcResult r = mvc.perform(post("/api/v1/expedientes").header("Authorization", bearer(tokens))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("codigo_expediente", codigo, "titulo", "Licitación " + codigo,
+                        "entidad_contratante", "Hospital Central", "tipo_expediente", "LICITACION_MEDICAMENTOS"))))
+                .andReturn();
+        if (r.getResponse().getStatus() != 201) {
+            throw new AssertionError("Expediente fallido: " + r.getResponse().getStatus() + " " + r.getResponse().getContentAsString());
+        }
+        return cuerpo(r).get("id").asText();
     }
 }
