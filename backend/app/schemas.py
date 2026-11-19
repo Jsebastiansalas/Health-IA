@@ -180,16 +180,53 @@ class DocumentoOut(ORMModel):
     purga_programada_at: datetime | None
     purged_at: datetime | None
 
+    paginas_ocr: int = 0
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def progreso(self) -> int:
         from app.services.estados import PROGRESO
 
-        return PROGRESO[self.estado_indexacion]
+        base = PROGRESO[self.estado_indexacion]
+        if self.estado_indexacion == EstadoIndexacion.VECTORIZANDO and self.total_chunks_esperados:
+            # 80 % -> 99 % según los fragmentos ya vectorizados.
+            base += int(19 * (self.total_chunks_guardados or 0) / self.total_chunks_esperados)
+        return base
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def aviso_ocr_desactualizado(self) -> bool:
+        """HU4.5: el OCR cambió de versión; conviene volver a cargar el PDF desde el PC."""
+        from app.core.config import get_settings
+
+        return self.paginas_ocr > 0 and self.ocr_version != get_settings().ocr_version_actual
 
 
 class DocumentoDetalleOut(DocumentoOut):
     actas_purga: list[ActaPurgaOut] = []
+
+
+# ---------- Reindexación ----------
+class ReindexacionIn(BaseModel):
+    embedding_model: str = Field(min_length=1, max_length=80)
+
+
+class ReindexacionOut(ORMModel):
+    id: uuid.UUID
+    expediente_id: uuid.UUID
+    modelo_origen: str
+    modelo_destino: str
+    estado: str
+    total_fragmentos: int
+    fragmentos_procesados: int
+    error: str | None
+    created_at: datetime
+    finished_at: datetime | None
+
+
+class ModeloEmbeddingOut(BaseModel):
+    modelo: str
+    dimension: int
 
 
 # ---------- Permisos ----------

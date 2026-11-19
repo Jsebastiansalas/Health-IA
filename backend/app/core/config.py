@@ -66,6 +66,20 @@ class Settings(BaseSettings):
     chunk_max_tokens: int = 1000
     chunk_overlap_ratio: float = 0.15
 
+    # Versión de OCR vigente; documentos con OCR de otra versión muestran aviso (HU4.5).
+    ocr_version_actual: str = "tesseract-5.5-v1"
+
+    # ---------- Embeddings (Sprint 4) ----------
+    # Modelo con el que nace cada expediente nuevo.
+    embedding_model_default: str = "gemini-embedding-001"
+    embedding_lote: int = 100  # textos por llamada al proveedor
+    embedding_reintentos: int = 6
+    gemini_api_key: str = ""
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
+    openai_api_key: str = ""
+    openai_base_url: str = "https://api.openai.com/v1"
+    ollama_url: str = "http://localhost:11434"
+
     @property
     def max_upload_bytes(self) -> int:
         return self.max_upload_mb * 1024 * 1024

@@ -93,7 +93,7 @@ async def test_pipeline_completo(client, org_a, expediente, ejecutor, ephemeral_
         assert f.embedding is None
         assert f.tenant_id == d.tenant_id and f.expediente_id == d.expediente_id
         assert f.token_count <= 1000
-        assert f.embedding_model == "text-embedding-3-small"
+        assert f.embedding_model == "gemini-embedding-001"
         assert f.contenido_vectorizado.startswith(
             f"[Expediente: LIC-001 | Doc: Pliego_Hospital.pdf | Tipo: PLIEGO | "
             f"Pág: {f.pagina_inicio}-{f.pagina_fin} | Sección: {f.seccion}] "

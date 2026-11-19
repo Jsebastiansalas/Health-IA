@@ -14,9 +14,11 @@ from arq.connections import RedisSettings
 
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
+from app.ia.embeddings import get_router
 from app.pipeline.procesador import procesar_documento as _procesar
 from app.pipeline.vectorizacion import get_vectorizador
-from app.services.cola import TRABAJO_PROCESAR
+from app.services import reindexacion
+from app.services.cola import TRABAJO_PROCESAR, TRABAJO_REINDEXAR
 from app.services.purga import barrer
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
@@ -33,7 +35,13 @@ async def procesar_documento(ctx: dict, documento_id: str) -> None:
     )
 
 
-assert procesar_documento.__qualname__ == TRABAJO_PROCESAR  # nombre que usa la cola
+async def reindexar_expediente(ctx: dict, reindexacion_id: str) -> None:
+    await reindexacion.ejecutar(get_sessionmaker(), uuid.UUID(reindexacion_id), get_router())
+
+
+# Nombres que usa la cola para encolar.
+assert procesar_documento.__qualname__ == TRABAJO_PROCESAR
+assert reindexar_expediente.__qualname__ == TRABAJO_REINDEXAR
 
 
 async def barrido_purga(ctx: dict) -> None:
@@ -61,7 +69,7 @@ _settings = get_settings()
 
 
 class WorkerSettings:
-    functions = [procesar_documento]
+    functions = [procesar_documento, reindexar_expediente]
     cron_jobs = [cron(barrido_purga, minute=set(range(0, 60, 5)), run_at_startup=True, unique=True)]
     on_startup = startup
     on_shutdown = shutdown

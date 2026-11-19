@@ -4,8 +4,10 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy import func, literal, select
 from sqlalchemy.exc import IntegrityError
 
+from app.core.config import get_settings
 from app.core.deps import CurrentUserDep, SessionDep
 from app.core.enums import ROLES_CREADORES, Permiso
+from app.ia.embeddings import get_router
 from app.models import Expediente, ExpedientePermiso, Usuario
 from app.schemas import (
     ExpedienteCreate,
@@ -57,7 +59,14 @@ async def crear_expediente(
 ) -> ExpedienteOut:
     if user.rol not in ROLES_CREADORES:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Tu rol no puede crear expedientes")
-    expediente = Expediente(tenant_id=user.tenant_id, created_by=user.id, **data.model_dump())
+    modelo = get_settings().embedding_model_default
+    expediente = Expediente(
+        tenant_id=user.tenant_id,
+        created_by=user.id,
+        embedding_model_activo=modelo,
+        embedding_dimension=get_router().proveedor(modelo).dimension,
+        **data.model_dump(),
+    )
     session.add(expediente)
     try:
         await session.flush()

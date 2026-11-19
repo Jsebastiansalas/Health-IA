@@ -53,6 +53,7 @@ services:
       CLAMAV_HOST: clamav
       EPHEMERAL_DIR: /var/medtender-ephemeral
       COLA_BACKEND: arq
+      OLLAMA_URL: http://ollama:11434
       # El barrido de purga lo ejecuta el worker (cron), no la API.
       BARRIDO_HABILITADO: "false"
     ports:

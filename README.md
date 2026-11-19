@@ -64,6 +64,26 @@ Estados: `RECIBIDO → VALIDANDO → EN_COLA → EXTRAYENDO_OCR → FRAGMENTANDO
 
 Librerías PDF con licencias permisivas (pypdfium2: Apache/BSD; pdfplumber: MIT). Se evitó PyMuPDF por su licencia AGPL.
 
+## Embeddings y EmbeddingRouter
+`app/ia/embeddings.py` traduce el nombre de modelo de cada expediente (`embedding_model_activo`) a su proveedor. Los documentos y las preguntas siempre se vectorizan con el **mismo** modelo del índice consultado.
+
+| Modelo | Proveedor | Dimensión |
+|---|---|---|
+| `gemini-embedding-001` (por defecto) | Google AI Studio, `outputDimensionality=1536`, normalizado | 1536 |
+| `text-embedding-3-small` | OpenAI | 1536 |
+| `bge-m3` | Ollama local (`docker compose --profile local up -d ollama` y luego `docker compose exec ollama ollama pull bge-m3`) | 1024 |
+
+Los vectores de menor dimensión se rellenan con ceros hasta 1536. La similitud coseno no cambia, así que todo usa la misma columna y el mismo índice HNSW.
+
+**Vectorización:** al terminar la fragmentación, el worker vectoriza `contenido_vectorizado` por lotes con reintentos (429/5xx con backoff), verifica `COUNT == total_chunks_esperados` y purga el PDF según la política del tenant.
+
+**Re-vectorización sin PDF:** `POST /api/v1/expedientes/{id}/reindexaciones {"embedding_model": "bge-m3"}` (permiso ADMIN).
+- Recalcula los vectores desde el texto guardado en PostgreSQL, en una tabla de preparación.
+- Los intercambia en **una sola transacción**: el expediente sigue consultable durante el proceso y, si algo falla, el índice original queda intacto.
+- Mientras dura, no se aceptan subidas al expediente.
+
+**Aviso de OCR:** `aviso_ocr_desactualizado` en cada documento indica que tuvo páginas OCR con una versión distinta a `OCR_VERSION_ACTUAL`. Conviene volver a cargar ese PDF desde el PC.
+
 ## Modelo de autorización
 - Cada usuario pertenece a un tenant; todas las consultas filtran por `tenant_id`.
 - `ADMIN_TENANT` administra usuarios, la política de borrado y todos los expedientes del tenant.

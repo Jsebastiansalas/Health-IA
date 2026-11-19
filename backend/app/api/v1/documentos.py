@@ -33,6 +33,7 @@ from app.services.cola import ColaProcesamiento, get_cola
 from app.services.estados import transicionar
 from app.services.ingesta import validar_y_encolar
 from app.services.purga import fallar_y_purgar, purgar
+from app.services.reindexacion import reindexacion_activa
 from app.services.subida import SubidaInvalida, recibir_pdf
 
 log = logging.getLogger(__name__)
@@ -110,6 +111,11 @@ async def subir_documento(
     )
     if expediente.estado != EstadoExpediente.ABIERTO:
         raise HTTPException(status.HTTP_409_CONFLICT, "El expediente no está abierto")
+    if await reindexacion_activa(session, expediente_id):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "El expediente se está re-vectorizando con otro modelo; intente al terminar",
+        )
     # Libera la conexión mientras dura la transferencia, que puede tardar minutos.
     await session.commit()
 

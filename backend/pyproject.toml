@@ -23,6 +23,7 @@ dependencies = [
     "pillow>=11",
     "tiktoken>=0.8",
     "arq>=0.26",
+    "httpx>=0.28",
 ]
 
 [dependency-groups]
@@ -35,6 +36,7 @@ dev = [
     "ruff>=0.8",
     "mypy>=1.13",
     "reportlab>=4.2",
+    "respx>=0.21",
 ]
 
 [tool.pytest.ini_options]

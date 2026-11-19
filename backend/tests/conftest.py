@@ -38,6 +38,10 @@ def _configurar_entorno(postgres_url: str, ephemeral_dir: Path) -> Iterator[None
     os.environ["EPHEMERAL_DIR"] = str(ephemeral_dir)
     os.environ["ANTIVIRUS_BACKEND"] = "noop"
     os.environ["BARRIDO_HABILITADO"] = "false"
+    # Nunca se usan las keys reales de backend/.env ni se llama a proveedores externos.
+    os.environ["GEMINI_API_KEY"] = "clave-falsa-de-pruebas"
+    os.environ["OPENAI_API_KEY"] = "clave-falsa-de-pruebas"
+    os.environ["EMBEDDING_MODEL_DEFAULT"] = "gemini-embedding-001"
 
     from alembic.config import Config
 

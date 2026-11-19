@@ -71,7 +71,7 @@ class Expediente(Base):
     tipo_expediente: Mapped[str] = mapped_column(String(50))
     estado: Mapped[str] = mapped_column(String(40), server_default="ABIERTO")
     embedding_model_activo: Mapped[str] = mapped_column(
-        String(80), server_default="text-embedding-3-small"
+        String(80), server_default="gemini-embedding-001"
     )
     embedding_dimension: Mapped[int] = mapped_column(Integer, server_default="1536")
     created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("usuarios.id"))
@@ -119,6 +119,7 @@ class Documento(Base):
     purged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Sprint 2 (migración 0002)
     motivo_error: Mapped[str | None] = mapped_column(Text)
+    paginas_ocr: Mapped[int] = mapped_column(Integer, server_default="0")  # migración 0004
     purga_programada_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     estado_actualizado_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -142,6 +143,27 @@ class ActaPurga(Base):
     archivo_existia: Mapped[bool] = mapped_column(Boolean)
     detalle: Mapped[str | None] = mapped_column(Text)
     purged_at: Mapped[datetime] = _created_at()
+
+
+class Reindexacion(Base):
+    """Migración del índice de un expediente a otro modelo de embeddings, sin el PDF."""
+
+    __tablename__ = "reindexaciones"
+
+    id: Mapped[uuid.UUID] = _pk()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"))
+    expediente_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("expedientes.id", ondelete="CASCADE")
+    )
+    modelo_origen: Mapped[str] = mapped_column(String(80))
+    modelo_destino: Mapped[str] = mapped_column(String(80))
+    estado: Mapped[str] = mapped_column(String(20), server_default="PENDIENTE")
+    total_fragmentos: Mapped[int] = mapped_column(Integer, server_default="0")
+    fragmentos_procesados: Mapped[int] = mapped_column(Integer, server_default="0")
+    error: Mapped[str | None] = mapped_column(Text)
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("usuarios.id"))
+    created_at: Mapped[datetime] = _created_at()
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Fragmento(Base):

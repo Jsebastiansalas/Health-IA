@@ -6,7 +6,7 @@ from tests.conftest import Org
 async def test_crear_y_listar_expediente(client: AsyncClient, org_a: Org):
     exp = await org_a.crear_expediente(org_a.admin)
     assert exp["mi_permiso"] == "ADMIN"
-    assert exp["embedding_model_activo"] == "text-embedding-3-small"
+    assert exp["embedding_model_activo"] == "gemini-embedding-001"
     assert exp["embedding_dimension"] == 1536
 
     lista = (await client.get("/api/v1/expedientes", headers=org_a.admin)).json()

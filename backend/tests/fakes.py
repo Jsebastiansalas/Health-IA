@@ -27,11 +27,40 @@ class ColaFalsa:
     def __init__(self, falla: bool = False):
         self.falla = falla
         self.encolados: list[uuid.UUID] = []
+        self.reindexaciones: list[uuid.UUID] = []
 
     async def encolar(self, documento_id: uuid.UUID) -> None:
         if self.falla:
             raise RuntimeError("redis caído")
         self.encolados.append(documento_id)
+
+    async def encolar_reindexacion(self, reindexacion_id: uuid.UUID) -> None:
+        self.reindexaciones.append(reindexacion_id)
+
+
+class EmbeddingsFalsos:
+    """Proveedor determinista: el mismo texto produce siempre el mismo vector normalizado."""
+
+    def __init__(self, modelo: str, dimension: int, falla_en_llamada: int | None = None):
+        self.modelo = modelo
+        self.dimension = dimension
+        self.falla_en_llamada = falla_en_llamada
+        self.llamadas: list[tuple[str, int]] = []  # (tarea, cantidad de textos)
+
+    async def embeber(self, textos: list[str], tarea: str) -> list[list[float]]:
+        import hashlib
+        import math
+
+        self.llamadas.append((tarea, len(textos)))
+        if self.falla_en_llamada is not None and len(self.llamadas) >= self.falla_en_llamada:
+            raise RuntimeError(f"{self.modelo} no responde")
+        vectores = []
+        for t in textos:
+            semilla = hashlib.sha256(t.encode()).digest()
+            v = [((semilla[i % 32] + i * 7) % 255) / 255 - 0.5 for i in range(self.dimension)]
+            n = math.sqrt(sum(x * x for x in v))
+            vectores.append([x / n for x in v])
+        return vectores
 
 
 async def subir(

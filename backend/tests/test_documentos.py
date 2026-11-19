@@ -37,7 +37,7 @@ async def test_subida_valida_queda_en_cola(client, org_a, expediente, scanner, c
     assert doc["estado_indexacion"] == "VALIDANDO"
     assert doc["sha256_original"] == hashlib.sha256(contenido).hexdigest()
     assert doc["tamano_bytes"] == len(contenido)
-    assert doc["embedding_model"] == "text-embedding-3-small"
+    assert doc["embedding_model"] == "gemini-embedding-001"
 
     final = await detalle(client, org_a, expediente, doc["id"])
     assert final["estado_indexacion"] == "EN_COLA"

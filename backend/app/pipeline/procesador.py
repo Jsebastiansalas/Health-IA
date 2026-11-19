@@ -147,6 +147,7 @@ async def procesar_documento(
                 time.perf_counter() - t0,
             )
             documento.total_paginas = len(resultado.paginas)
+            documento.paginas_ocr = ocr
             documento.extractor_version = EXTRACTOR_VERSION
             if resultado.ocr_version:
                 documento.ocr_version = resultado.ocr_version

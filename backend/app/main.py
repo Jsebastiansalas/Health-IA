@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from app.api.v1 import auth, documentos, expedientes, tenant_usuarios
+from app.api.v1 import auth, documentos, expedientes, reindexacion, tenant_usuarios
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
 from app.services.cola import cerrar_cola
@@ -53,7 +53,13 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    for router in (auth.router, tenant_usuarios.router, expedientes.router, documentos.router):
+    for router in (
+        auth.router,
+        tenant_usuarios.router,
+        expedientes.router,
+        documentos.router,
+        reindexacion.router,
+    ):
         app.include_router(router, prefix="/api/v1")
 
     @app.get("/health", tags=["sistema"])
