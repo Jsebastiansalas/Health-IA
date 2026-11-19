@@ -8,7 +8,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from app.api.v1 import auth, documentos, expedientes, reindexacion, tenant_usuarios
+from app.api.v1 import (
+    auth,
+    consultas,
+    documentos,
+    expedientes,
+    reindexacion,
+    tenant_usuarios,
+)
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
 from app.services.cola import cerrar_cola
@@ -59,6 +66,7 @@ def create_app() -> FastAPI:
         expedientes.router,
         documentos.router,
         reindexacion.router,
+        consultas.router,
     ):
         app.include_router(router, prefix="/api/v1")
 

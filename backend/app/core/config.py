@@ -80,6 +80,24 @@ class Settings(BaseSettings):
     openai_base_url: str = "https://api.openai.com/v1"
     ollama_url: str = "http://localhost:11434"
 
+    # ---------- Motor RAG (Sprint 5) ----------
+    # gemini-2.5-flash: estable y ~2 s por respuesta en las pruebas. gemini-3.8-flash respondió
+    # 503 por alta demanda o se colgó hasta el timeout, así que queda como respaldo.
+    llm_model: str = "gemini-2.5-flash"
+    # Se usan en orden si el principal responde 429/503 o no contesta a tiempo.
+    llm_modelos_respaldo: list[str] = ["gemini-3.8-flash"]
+    llm_temperatura: float = 0.1
+    # Un modelo que se cuelga no se reintenta: se pasa al respaldo tras este plazo.
+    llm_timeout_s: float = 30.0
+    llm_intentos_por_modelo: int = 1
+    rag_top_k: int = 20  # Top-K vectorial y Top-K léxico que entran a la fusión
+    rag_rrf_k: int = 60  # constante k de Reciprocal Rank Fusion
+    rag_max_evidencias: int = 6  # fragmentos principales enviados al modelo
+    rag_boost_adenda: float = 0.25  # +25 % al puntaje de fragmentos de adendas
+    rag_hnsw_ef_search: int = 100
+    # Por debajo de esta confianza OCR la cita exige mirar el PDF original.
+    umbral_confianza_ocr: float = 0.85
+
     @property
     def max_upload_bytes(self) -> int:
         return self.max_upload_mb * 1024 * 1024

@@ -84,6 +84,38 @@ Los vectores de menor dimensión se rellenan con ceros hasta 1536. La similitud 
 
 **Aviso de OCR:** `aviso_ocr_desactualizado` en cada documento indica que tuvo páginas OCR con una versión distinta a `OCR_VERSION_ACTUAL`. Conviene volver a cargar ese PDF desde el PC.
 
+## Motor RAG (consultas)
+`POST /api/v1/expedientes/{id}/consultas {"pregunta": "..."}` requiere permiso LECTOR. `GET` sobre la misma ruta devuelve el historial propio.
+
+1. **Paso 11:** la pregunta se vectoriza con el `embedding_model_activo` del expediente.
+2. **Paso 12:** una sola consulta SQL filtra **siempre** por tenant, expediente, modelo y documentos indexados. Combina el Top-20 vectorial (pgvector con `hnsw.iterative_scan`) y el Top-20 léxico (`ts_rank_cd`, español) mediante **Reciprocal Rank Fusion**. La rama léxica usa un OR de los lexemas de la pregunta: `websearch_to_tsquery` exige todas las palabras y no sirve para lenguaje natural. Los códigos CUM, UNSPSC e INVIMA coinciden exactos.
+3. **Paso 13:** boost de +25 % a las adendas (gana la de mayor número) y expansión con los vecinos `orden±1`.
+4. **Paso 14:** Gemini (`LLM_MODEL`, con `LLM_MODELOS_RESPALDO` si está saturado) responde en JSON estructurado. Las citas se arman desde PostgreSQL:
+   - el modelo solo elige ids de fragmento;
+   - los ids inexistentes se descartan;
+   - los extractos que no son literales se reemplazan por el texto real.
+   - Sin evidencia, la respuesta es una abstención explícita.
+   - Cada cita indica si requiere verificar el PDF original: sellos o firmas, tablas, imágenes u OCR de baja confianza.
+
+## Frontend web
+```powershell
+cd frontend
+npm install
+npm run dev      # http://localhost:5173  (proxy /api -> http://localhost:8010)
+npm test         # Vitest
+npm run build    # tipado estricto + build de producción en dist/
+```
+- **Expedientes:** archivo con búsqueda y creación.
+- **Folios:** carga con progreso real de bytes y línea de tiempo del pipeline, que termina en el sello *PDF eliminado* con la fecha de purga. Muestra también el motivo de rechazo y el aviso de OCR desactualizado.
+- **Consulta:** chat RAG con citas en tarjetas (documento, página, sección, extracto literal, método y confianza OCR), el sello *Verificar original* y alertas de adendas. Las sugerencias rellenan la pregunta.
+- **Visor local desacoplado:** con "Vincular carpeta local de PDFs" (`showDirectoryPicker`, solo lectura y recordada en IndexedDB):
+  1. busca el original por nombre y, si fue renombrado, por SHA-256;
+  2. calcula la huella con `crypto.subtle.digest` y la compara con `sha256Original`;
+  3. lo abre con PDF.js en la página donde está el extracto.
+
+  **El archivo nunca se sube.** En navegadores sin File System Access (Firefox, Safari) se puede elegir el PDF a mano, con la misma verificación.
+- **Fuentes:** empaquetadas localmente (`@fontsource`), sin CDN de terceros.
+
 ## Modelo de autorización
 - Cada usuario pertenece a un tenant; todas las consultas filtran por `tenant_id`.
 - `ADMIN_TENANT` administra usuarios, la política de borrado y todos los expedientes del tenant.
