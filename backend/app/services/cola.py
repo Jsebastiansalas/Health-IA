@@ -1,14 +1,22 @@
-"""Cola de procesamiento asíncrono.
-
-Sprint 2 solo deja el documento en EN_COLA; el worker real (extracción, OCR, chunking y
-vectorización) se conecta en el Sprint 3 implementando esta misma interfaz.
-"""
+"""Cola de procesamiento asíncrono (ARQ sobre Redis)."""
 
 import logging
 import uuid
 from typing import Protocol
 
+from arq import ArqRedis, create_pool
+from arq.connections import RedisSettings
+
+from app.core.config import get_settings
+
 log = logging.getLogger(__name__)
+
+TRABAJO_PROCESAR = "procesar_documento"
+
+
+def id_trabajo(documento_id: uuid.UUID) -> str:
+    # Id determinista: ARQ no encola dos veces el mismo documento mientras siga pendiente.
+    return f"documento:{documento_id}"
 
 
 class ColaProcesamiento(Protocol):
@@ -16,9 +24,48 @@ class ColaProcesamiento(Protocol):
 
 
 class ColaSinWorker:
+    """COLA_BACKEND=ninguna: el documento queda en EN_COLA."""
+
     async def encolar(self, documento_id: uuid.UUID) -> None:
-        log.info("Documento %s en cola (worker pendiente del Sprint 3)", documento_id)
+        log.warning("Sin cola configurada: documento %s queda en EN_COLA", documento_id)
+
+
+class ColaArq:
+    def __init__(self, redis_url: str):
+        self.redis_settings = RedisSettings.from_dsn(redis_url)
+        self._pool: ArqRedis | None = None
+
+    async def _conexion(self) -> ArqRedis:
+        if self._pool is None:
+            self._pool = await create_pool(self.redis_settings)
+        return self._pool
+
+    async def encolar(self, documento_id: uuid.UUID) -> None:
+        pool = await self._conexion()
+        await pool.enqueue_job(
+            TRABAJO_PROCESAR, str(documento_id), _job_id=id_trabajo(documento_id)
+        )
+        log.info("Documento %s encolado", documento_id)
+
+    async def cerrar(self) -> None:
+        if self._pool is not None:
+            await self._pool.aclose()
+            self._pool = None
+
+
+_cola_arq: ColaArq | None = None
 
 
 def get_cola() -> ColaProcesamiento:
-    return ColaSinWorker()
+    global _cola_arq
+    settings = get_settings()
+    if settings.cola_backend == "ninguna":
+        return ColaSinWorker()
+    if _cola_arq is None:
+        _cola_arq = ColaArq(settings.redis_url)
+    return _cola_arq
+
+
+async def cerrar_cola() -> None:
+    if _cola_arq is not None:
+        await _cola_arq.cerrar()

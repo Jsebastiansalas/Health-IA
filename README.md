@@ -51,6 +51,19 @@ Estados: `RECIBIDO → VALIDANDO → EN_COLA → EXTRAYENDO_OCR → FRAGMENTANDO
 
 **Purga garantizada.** Antes de dar por indexado un documento se verifica en PostgreSQL que `COUNT(fragmentos con embedding) == total_chunks_esperados > 0`. Cada borrado (éxito, error, timeout, huérfano o eliminación manual) deja una fila en `actas_purga` con el SHA-256. Un barrido periódico purga las diferidas vencidas (`DIFERIDO_1H`), los documentos atascados y los archivos huérfanos.
 
+## Procesamiento asíncrono (worker)
+`docker compose up -d worker` arranca `arq app.worker.WorkerSettings`. Consume la cola de Redis y ejecuta cada 5 minutos el barrido de purga.
+
+- **Extracción página a página** (`app/pipeline/extraccion.py`), en procesos separados porque pdfium no es seguro entre hilos:
+  - Texto nativo con pypdfium2.
+  - Tablas con bordes detectadas por pdfplumber y convertidas a Markdown, intercaladas en orden de lectura.
+  - OCR con Tesseract (`spa`, 300 DPI) **solo** en páginas con menos de 60 caracteres nativos y una imagen que cubre al menos el 30 % de la página.
+  - Las imágenes relevantes marcan `has_visual_elements`. Las de tamaño de sello o firma, o las páginas con vocabulario de firma, notaría o sello, marcan `has_signatures_or_stamps`.
+- **Fragmentación** (`app/pipeline/fragmentacion.py`): 500–1.000 tokens reales `cl100k_base` con un solape de ~15 %. Detecta encabezados (CAPÍTULO, CLÁUSULA, ADENDA, NUMERAL, SECCIÓN, FICHA TÉCNICA, ANTECEDENTES, ANEXO, ARTÍCULO). Las tablas grandes se parten repitiendo la fila de encabezado.
+- Los fragmentos se guardan con su **cabecera contextual** y `embedding = NULL`; el Sprint 4 los vectoriza.
+
+Librerías PDF con licencias permisivas (pypdfium2: Apache/BSD; pdfplumber: MIT). Se evitó PyMuPDF por su licencia AGPL.
+
 ## Modelo de autorización
 - Cada usuario pertenece a un tenant; todas las consultas filtran por `tenant_id`.
 - `ADMIN_TENANT` administra usuarios, la política de borrado y todos los expedientes del tenant.

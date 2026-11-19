@@ -11,6 +11,7 @@ from sqlalchemy import text
 from app.api.v1 import auth, documentos, expedientes, tenant_usuarios
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
+from app.services.cola import cerrar_cola
 from app.services.purga import barrer
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
@@ -38,6 +39,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         tarea.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await tarea
+    await cerrar_cola()
 
 
 def create_app() -> FastAPI:

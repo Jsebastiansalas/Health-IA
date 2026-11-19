@@ -107,7 +107,7 @@ class Documento(Base):
     estado_indexacion: Mapped[str] = mapped_column(String(40))
     ocr_version: Mapped[str] = mapped_column(String(30), server_default="tesseract-5.x-v1")
     extractor_version: Mapped[str] = mapped_column(
-        String(30), server_default="pymupdf-pdfplumber-v1"
+        String(30), server_default="pdfium-pdfplumber-v1"
     )
     embedding_model: Mapped[str] = mapped_column(String(80))
     total_chunks_esperados: Mapped[int | None] = mapped_column(Integer, server_default="0")
@@ -161,7 +161,7 @@ class Fragmento(Base):
     contenido_vectorizado: Mapped[str] = mapped_column(Text)
     token_count: Mapped[int] = mapped_column(Integer)
     embedding_model: Mapped[str] = mapped_column(String(80))
-    embedding: Mapped[list[float]] = mapped_column(Vector(EMBEDDING_DIM))
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIM))
     fts_vector: Mapped[Any] = mapped_column(
         TSVECTOR,
         Computed(
