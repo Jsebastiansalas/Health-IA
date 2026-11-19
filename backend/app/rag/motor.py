@@ -41,7 +41,10 @@ async def responder(
         "modelo": modelo,
     }
 
-    # Paso 11: mismo modelo que el índice del expediente.
+    # Paso 11: mismo modelo que el índice del expediente. La llamada a Gemini puede tardar
+    # segundos: antes se devuelve la conexión a la base de datos (la autenticación y el permiso
+    # ya abrieron una transacción). La sesión se reabre sola en la siguiente consulta.
+    await session.close()
     vector = await router.embeber_consulta(modelo, pregunta)
 
     # Pasos 12-13: híbrida + RRF + reranking de dominio + vecinos.
@@ -53,6 +56,7 @@ async def responder(
         top_k=s.rag_top_k,
         rrf_k=s.rag_rrf_k,
         ef_search=s.rag_hnsw_ef_search,
+        iterative=s.rag_hnsw_iterative,
     )
     evidencias = busqueda.reordenar(candidatos, s.rag_boost_adenda)[: s.rag_max_evidencias]
     await busqueda.expandir_vecinos(session, evidencias, **filtros)
@@ -70,7 +74,9 @@ async def responder(
         # Sin nada indexado o sin coincidencias: no se gasta una llamada al modelo.
         return _fin(generacion.ResultadoGeneracion(generacion.ABSTENCION, True), None)
 
-    # Paso 14: generación fundamentada.
+    # Paso 14: generación fundamentada. Las evidencias son dataclasses (no ORM) y la generación
+    # puede tardar hasta el timeout del modelo: no se retiene ninguna conexión mientras tanto.
+    await session.close()
     salida = await llm.generar_json(
         generacion.SISTEMA, generacion.construir_prompt(pregunta, evidencias), generacion.ESQUEMA
     )

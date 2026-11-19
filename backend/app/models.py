@@ -187,6 +187,25 @@ class Consulta(Base):
     created_at: Mapped[datetime] = _created_at()
 
 
+class Auditoria(Base):
+    """Registro de solo anexado de accesos y acciones (migración 0006). Sin FKs."""
+
+    __tablename__ = "auditoria"
+
+    id: Mapped[uuid.UUID] = _pk()
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    usuario_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    email: Mapped[str | None] = mapped_column(String(150))
+    accion: Mapped[str] = mapped_column(String(40))
+    resultado: Mapped[str] = mapped_column(String(12))
+    recurso_tipo: Mapped[str | None] = mapped_column(String(30))
+    recurso_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    ip: Mapped[str | None] = mapped_column(String(64))
+    request_id: Mapped[str | None] = mapped_column(String(64))
+    detalle: Mapped[dict] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))
+    created_at: Mapped[datetime] = _created_at()
+
+
 class Fragmento(Base):
     __tablename__ = "fragmentos"
 

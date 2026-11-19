@@ -1,4 +1,7 @@
+import asyncio
+import os
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
@@ -23,6 +26,25 @@ def verify_password(password: str, password_hash: str) -> bool:
         return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("ascii"))
     except ValueError:
         return False
+
+
+# bcrypt consume un núcleo entero durante ~250 ms. Ejecutarlo en el bucle de eventos congela a
+# todos los demás usuarios; en el pool por defecto de asyncio, 30 logins simultáneos lanzarían
+# 30 hilos disputándose la CPU. Un ejecutor propio con tantos hilos como núcleos acota el
+# trabajo y hace esperar en cola al resto (sin ocupar conexiones de base de datos).
+_EJECUTOR_HASH = ThreadPoolExecutor(
+    max_workers=max(2, os.cpu_count() or 2), thread_name_prefix="bcrypt"
+)
+
+
+async def hash_password_async(password: str) -> str:
+    return await asyncio.get_running_loop().run_in_executor(_EJECUTOR_HASH, hash_password, password)
+
+
+async def verify_password_async(password: str, password_hash: str) -> bool:
+    return await asyncio.get_running_loop().run_in_executor(
+        _EJECUTOR_HASH, verify_password, password, password_hash
+    )
 
 
 def create_token(

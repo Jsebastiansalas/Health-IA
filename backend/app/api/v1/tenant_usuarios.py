@@ -8,9 +8,10 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.deps import AdminTenantDep, SessionDep
 from app.core.enums import RolGlobal
-from app.core.security import hash_password
+from app.core.security import hash_password_async
 from app.models import Tenant, Usuario
 from app.schemas import TenantOut, TenantUpdate, UsuarioCreate, UsuarioOut, UsuarioUpdate
+from app.services.auditoria import Accion, auditar
 
 router = APIRouter(tags=["tenant"])
 
@@ -28,9 +29,17 @@ async def actualizar_tenant(
 ) -> Tenant:
     tenant = await session.get(Tenant, admin.tenant_id)
     assert tenant is not None
-    for campo, valor in data.model_dump(exclude_unset=True).items():
+    cambios = data.model_dump(exclude_unset=True)
+    for campo, valor in cambios.items():
         setattr(tenant, campo, valor)
     await session.commit()
+    await auditar(
+        Accion.TENANT_ACTUALIZADO,
+        usuario=admin,
+        recurso_tipo="tenant",
+        recurso_id=tenant.id,
+        detalle={"campos": sorted(cambios)},
+    )
     return tenant
 
 
@@ -53,10 +62,12 @@ async def listar_usuarios(
 
 @router.post("/usuarios", response_model=UsuarioOut, status_code=status.HTTP_201_CREATED)
 async def crear_usuario(data: UsuarioCreate, admin: AdminTenantDep, session: SessionDep) -> Usuario:
+    # La autenticación ya abrió una transacción: se suelta antes del hash (~250 ms de CPU).
+    await session.close()
     usuario = Usuario(
         tenant_id=admin.tenant_id,
         email=data.email.lower(),
-        password_hash=hash_password(data.password),
+        password_hash=await hash_password_async(data.password),
         nombre_completo=data.nombre_completo,
         rol_global=data.rol_global,
         activo=True,
@@ -68,6 +79,13 @@ async def crear_usuario(data: UsuarioCreate, admin: AdminTenantDep, session: Ses
         await session.rollback()
         raise HTTPException(status.HTTP_409_CONFLICT, "El email ya está registrado") from exc
     await session.refresh(usuario)
+    await auditar(
+        Accion.USUARIO_CREADO,
+        usuario=admin,
+        recurso_tipo="usuario",
+        recurso_id=usuario.id,
+        detalle={"rol": usuario.rol_global},
+    )
     return usuario
 
 
@@ -89,7 +107,19 @@ async def actualizar_usuario(
         raise HTTPException(
             status.HTTP_409_CONFLICT, "No puedes desactivarte ni quitarte el rol de administrador"
         )
+    anterior = {"rol": usuario.rol_global, "activo": usuario.activo}
     for campo, valor in cambios.items():
         setattr(usuario, campo, valor)
     await session.commit()
+    await auditar(
+        Accion.USUARIO_ACTUALIZADO,
+        usuario=admin,
+        recurso_tipo="usuario",
+        recurso_id=usuario.id,
+        detalle={
+            "antes": anterior,
+            "despues": {"rol": usuario.rol_global, "activo": usuario.activo},
+            "campos": sorted(cambios),
+        },
+    )
     return usuario

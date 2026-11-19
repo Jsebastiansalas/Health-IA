@@ -16,6 +16,7 @@ from app.schemas import (
     PermisoIn,
     PermisoOut,
 )
+from app.services.auditoria import Accion, auditar
 from app.services.autorizacion import obtener_expediente_autorizado
 
 router = APIRouter(prefix="/expedientes", tags=["expedientes"])
@@ -86,6 +87,13 @@ async def crear_expediente(
             status.HTTP_409_CONFLICT, "Ya existe un expediente con ese código"
         ) from exc
     await session.refresh(expediente)
+    await auditar(
+        Accion.EXPEDIENTE_CREADO,
+        usuario=user,
+        recurso_tipo="expediente",
+        recurso_id=expediente.id,
+        detalle={"codigo": expediente.codigo_expediente},
+    )
     return _out(expediente, Permiso.ADMIN)
 
 
@@ -104,9 +112,17 @@ async def actualizar_expediente(
     expediente, permiso = await obtener_expediente_autorizado(
         session, user, expediente_id, Permiso.EDITOR
     )
-    for campo, valor in data.model_dump(exclude_unset=True).items():
+    cambios = data.model_dump(exclude_unset=True)
+    for campo, valor in cambios.items():
         setattr(expediente, campo, valor)
     await session.commit()
+    await auditar(
+        Accion.EXPEDIENTE_ACTUALIZADO,
+        usuario=user,
+        recurso_tipo="expediente",
+        recurso_id=expediente.id,
+        detalle={"campos": sorted(cambios)},
+    )
     return _out(expediente, permiso)
 
 
@@ -115,8 +131,16 @@ async def eliminar_expediente(
     expediente_id: uuid.UUID, user: CurrentUserDep, session: SessionDep
 ) -> Response:
     expediente, _ = await obtener_expediente_autorizado(session, user, expediente_id, Permiso.ADMIN)
+    codigo = expediente.codigo_expediente
     await session.delete(expediente)
     await session.commit()
+    await auditar(
+        Accion.EXPEDIENTE_ELIMINADO,
+        usuario=user,
+        recurso_tipo="expediente",
+        recurso_id=expediente_id,
+        detalle={"codigo": codigo},
+    )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -179,6 +203,13 @@ async def asignar_permiso(
             await _asegurar_otro_admin(session, expediente_id, usuario_id)
         existente.permiso = data.permiso
     await session.commit()
+    await auditar(
+        Accion.PERMISO_ASIGNADO,
+        usuario=user,
+        recurso_tipo="expediente",
+        recurso_id=expediente_id,
+        detalle={"destinatario": str(destino.id), "permiso": data.permiso.value},
+    )
     return PermisoOut(
         usuario_id=destino.id,
         email=destino.email,
@@ -203,8 +234,16 @@ async def revocar_permiso(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Permiso no encontrado")
     if existente.permiso == Permiso.ADMIN:
         await _asegurar_otro_admin(session, expediente_id, usuario_id)
+    permiso_previo = existente.permiso
     await session.delete(existente)
     await session.commit()
+    await auditar(
+        Accion.PERMISO_REVOCADO,
+        usuario=user,
+        recurso_tipo="expediente",
+        recurso_id=expediente_id,
+        detalle={"destinatario": str(usuario_id), "permiso_previo": permiso_previo},
+    )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

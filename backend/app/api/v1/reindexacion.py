@@ -7,12 +7,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from app.core import limites
+from app.core.config import get_settings
 from app.core.deps import CurrentUserDep, SessionDep
 from app.core.enums import Permiso
 from app.ia.embeddings import EmbeddingRouter, ModeloNoSoportado, get_router
 from app.models import Reindexacion
 from app.schemas import ModeloEmbeddingOut, ReindexacionIn, ReindexacionOut
 from app.services import reindexacion
+from app.services.auditoria import Accion, auditar
 from app.services.autorizacion import obtener_expediente_autorizado
 from app.services.cola import ColaProcesamiento, get_cola
 
@@ -42,6 +45,9 @@ async def solicitar_reindexacion(
     """Recalcula todos los embeddings del expediente con otro modelo a partir del texto
     guardado en PostgreSQL. No necesita los PDF originales."""
     expediente, _ = await obtener_expediente_autorizado(session, user, expediente_id, Permiso.ADMIN)
+    await limites.exigir(
+        "reindex_usuario", str(user.id), get_settings().rl_reindex_usuario_hora, 3600
+    )
     try:
         r = await reindexacion.solicitar(session, emb, expediente, data.embedding_model, user.id)
     except ModeloNoSoportado as exc:
@@ -52,6 +58,13 @@ async def solicitar_reindexacion(
         await session.rollback()
         raise HTTPException(status.HTTP_409_CONFLICT, "Ya hay una reindexación en curso") from exc
     await cola.encolar_reindexacion(r.id)
+    await auditar(
+        Accion.REINDEXACION_SOLICITADA,
+        usuario=user,
+        recurso_tipo="expediente",
+        recurso_id=expediente_id,
+        detalle={"reindexacion": str(r.id), "origen": r.modelo_origen, "destino": r.modelo_destino},
+    )
     return r
 
 
