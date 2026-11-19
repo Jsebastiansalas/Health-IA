@@ -123,5 +123,6 @@ def get_llm() -> ProveedorLLM:
             base_url=s.gemini_base_url,
             temperatura=s.llm_temperatura,
             timeout_s=s.llm_timeout_s,
+            reintentos=s.llm_intentos_por_modelo,
         )
     return _llm

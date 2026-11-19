@@ -81,11 +81,15 @@ class Settings(BaseSettings):
     ollama_url: str = "http://localhost:11434"
 
     # ---------- Motor RAG (Sprint 5) ----------
-    llm_model: str = "gemini-3.8-flash"
+    # gemini-2.5-flash: estable y ~2 s por respuesta en las pruebas. gemini-3.8-flash respondió
+    # 503 por alta demanda o se colgó hasta el timeout, así que queda como respaldo.
+    llm_model: str = "gemini-2.5-flash"
     # Se usan en orden si el principal responde 429/503 o no contesta a tiempo.
-    llm_modelos_respaldo: list[str] = ["gemini-2.5-flash"]
+    llm_modelos_respaldo: list[str] = ["gemini-3.8-flash"]
     llm_temperatura: float = 0.1
-    llm_timeout_s: float = 60.0
+    # Un modelo que se cuelga no se reintenta: se pasa al respaldo tras este plazo.
+    llm_timeout_s: float = 30.0
+    llm_intentos_por_modelo: int = 1
     rag_top_k: int = 20  # Top-K vectorial y Top-K léxico que entran a la fusión
     rag_rrf_k: int = 60  # constante k de Reciprocal Rank Fusion
     rag_max_evidencias: int = 6  # fragmentos principales enviados al modelo
