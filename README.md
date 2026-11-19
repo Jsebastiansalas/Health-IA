@@ -97,6 +97,25 @@ Los vectores de menor dimensión se rellenan con ceros hasta 1536. La similitud 
    - Sin evidencia, la respuesta es una abstención explícita.
    - Cada cita indica si requiere verificar el PDF original: sellos o firmas, tablas, imágenes u OCR de baja confianza.
 
+## Frontend web
+```powershell
+cd frontend
+npm install
+npm run dev      # http://localhost:5173  (proxy /api -> http://localhost:8010)
+npm test         # Vitest
+npm run build    # tipado estricto + build de producción en dist/
+```
+- **Expedientes:** archivo con búsqueda y creación.
+- **Folios:** carga con progreso real de bytes y línea de tiempo del pipeline, que termina en el sello *PDF eliminado* con la fecha de purga. Muestra también el motivo de rechazo y el aviso de OCR desactualizado.
+- **Consulta:** chat RAG con citas en tarjetas (documento, página, sección, extracto literal, método y confianza OCR), el sello *Verificar original* y alertas de adendas. Las sugerencias rellenan la pregunta.
+- **Visor local desacoplado:** con "Vincular carpeta local de PDFs" (`showDirectoryPicker`, solo lectura y recordada en IndexedDB):
+  1. busca el original por nombre y, si fue renombrado, por SHA-256;
+  2. calcula la huella con `crypto.subtle.digest` y la compara con `sha256Original`;
+  3. lo abre con PDF.js en la página donde está el extracto.
+
+  **El archivo nunca se sube.** En navegadores sin File System Access (Firefox, Safari) se puede elegir el PDF a mano, con la misma verificación.
+- **Fuentes:** empaquetadas localmente (`@fontsource`), sin CDN de terceros.
+
 ## Modelo de autorización
 - Cada usuario pertenece a un tenant; todas las consultas filtran por `tenant_id`.
 - `ADMIN_TENANT` administra usuarios, la política de borrado y todos los expedientes del tenant.
