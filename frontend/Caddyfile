@@ -1,0 +1,62 @@
+# Caddy: HTTPS automático (Let's Encrypt), cabeceras de seguridad, SPA estática y proxy a la API.
+#
+# DOMINIO=expedientes.hospital.co  -> certificado público automático.
+# DOMINIO=localhost                -> certificado de una CA interna de Caddy (pruebas locales).
+# DOMINIO=http://localhost         -> solo HTTP, sin TLS (pruebas locales detrás de otro proxy).
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMINIO} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		# 'wasm-unsafe-eval': PDF.js usa WebAssembly para decodificar imágenes.
+		# worker-src blob:/self: el worker de PDF.js. style-src 'unsafe-inline': atributos style de React.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		-Server
+	}
+
+	# Nada operativo se publica: ni métricas ni documentación de la API.
+	@internos path /metrics /health /docs /docs/* /redoc /openapi.json
+	handle @internos {
+		respond 404
+	}
+
+	handle /api/* {
+		# Un pliego puede pesar cientos de MB (MAX_UPLOAD_MB en la API es el límite real).
+		request_body {
+			max_size 320MB
+		}
+		reverse_proxy api:8000 {
+			# Caddy pone en X-Forwarded-For la IP real del cliente (descarta la que envíe el cliente).
+			header_up X-Request-ID {http.request.uuid}
+			flush_interval -1
+			transport http {
+				read_timeout 5m
+				write_timeout 5m
+			}
+		}
+	}
+
+	handle {
+		root * /srv
+		@indice path /index.html /
+		header @indice Cache-Control "no-cache"
+		@estaticos path /assets/*
+		header @estaticos Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

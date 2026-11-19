@@ -5,10 +5,10 @@ from collections.abc import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from sqlalchemy import text
 
+from app.api import sistema
 from app.api.v1 import (
+    auditoria,
     auth,
     consultas,
     documentos,
@@ -18,10 +18,11 @@ from app.api.v1 import (
 )
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
+from app.core.logs import configurar_logging
+from app.core.middleware import MiddlewareSolicitud
 from app.services.cola import cerrar_cola
 from app.services.purga import barrer
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
 log = logging.getLogger(__name__)
 
 
@@ -35,12 +36,28 @@ async def _bucle_barrido(intervalo_s: int) -> None:
         await asyncio.sleep(intervalo_s)
 
 
+def validar_configuracion() -> None:
+    """En producción, una configuración insegura impide arrancar."""
+    s = get_settings()
+    fatales, avisos = s.problemas_produccion()
+    if s.entorno != "produccion":
+        return
+    for a in avisos:
+        log.warning("Configuración: %s", a)
+    if fatales:
+        for f in fatales:
+            log.critical("Configuración insegura: %s", f)
+        raise RuntimeError("Configuración insegura para producción: " + "; ".join(fatales))
+
+
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
+    validar_configuracion()
     tarea = None
     if settings.barrido_habilitado:
         tarea = asyncio.create_task(_bucle_barrido(settings.barrido_intervalo_s))
+    log.info("MedTender API lista (entorno=%s)", settings.entorno)
     yield
     if tarea:
         tarea.cancel()
@@ -51,15 +68,29 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title=settings.app_name, version="0.2.0", lifespan=lifespan)
+    produccion = settings.entorno == "produccion"
+    configurar_logging(settings.log_json or produccion)
+    app = FastAPI(
+        title=settings.app_name,
+        version="1.0.0",
+        lifespan=lifespan,
+        # La documentación interactiva expone el contrato completo: solo en desarrollo.
+        docs_url=None if produccion else "/docs",
+        redoc_url=None,
+        openapi_url=None if produccion else "/openapi.json",
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["X-Request-ID", "Retry-After"],
     )
+    # El último en añadirse es el más externo: contexto, límite general y métricas cubren todo.
+    app.add_middleware(MiddlewareSolicitud)
 
+    app.include_router(sistema.router)
     for router in (
         auth.router,
         tenant_usuarios.router,
@@ -67,17 +98,9 @@ def create_app() -> FastAPI:
         documentos.router,
         reindexacion.router,
         consultas.router,
+        auditoria.router,
     ):
         app.include_router(router, prefix="/api/v1")
-
-    @app.get("/health", tags=["sistema"])
-    async def health() -> JSONResponse:
-        try:
-            async with get_sessionmaker()() as session:
-                await session.execute(text("SELECT 1"))
-        except Exception:
-            return JSONResponse({"status": "degradado", "db": "error"}, status_code=503)
-        return JSONResponse({"status": "ok", "db": "ok"})
 
     return app
 
