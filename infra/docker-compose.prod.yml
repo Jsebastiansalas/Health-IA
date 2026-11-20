@@ -28,7 +28,7 @@ x-agente: &agente
   environment: &entorno_agente
     ENTORNO: produccion
     LOG_JSON: "true"
-    DATABASE_URL: postgresql+asyncpg://medtender:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}@postgres:5432/medtender
+    DATABASE_URL: postgresql+asyncpg://medtender_app:${APP_DB_PASSWORD:?defina APP_DB_PASSWORD}@postgres:5432/medtender
     REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
     INTERNAL_TOKEN: ${INTERNAL_TOKEN:?defina INTERNAL_TOKEN}
     METRICS_TOKEN: ${METRICS_TOKEN:-}
@@ -102,8 +102,12 @@ services:
       CONFIAR_PROXY: "true"
       ALLOW_TENANT_SIGNUP: "false"
       DATABASE_URL: jdbc:postgresql://postgres:5432/medtender
-      DATABASE_USER: medtender
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      # La API opera con el rol sin privilegios `medtender_app` (RLS en vigor); Flyway migra como propietario.
+      DATABASE_USER: medtender_app
+      DATABASE_PASSWORD: ${APP_DB_PASSWORD:?defina APP_DB_PASSWORD}
+      MIGRACION_USER: medtender
+      MIGRACION_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?defina APP_DB_PASSWORD}
       REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET}
       METRICS_TOKEN: ${METRICS_TOKEN:-}
@@ -148,6 +152,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      api:
+        condition: service_healthy   # Flyway ya creó el rol medtender_app
 
   worker:
     <<: *agente

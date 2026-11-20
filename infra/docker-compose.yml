@@ -53,8 +53,12 @@ services:
     image: medtender-api:dev
     environment:
       DATABASE_URL: jdbc:postgresql://postgres:5432/medtender
-      DATABASE_USER: medtender
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-medtender}
+      # La API opera con el rol sin privilegios `medtender_app` (RLS en vigor); Flyway migra como propietario.
+      DATABASE_USER: medtender_app
+      DATABASE_PASSWORD: ${APP_DB_PASSWORD:-medtender_app}
+      MIGRACION_USER: medtender
+      MIGRACION_PASSWORD: ${POSTGRES_PASSWORD:-medtender}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-medtender_app}
       REDIS_URL: redis://redis:6379/0
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET en infra/.env}
       AGENTE_URL: http://agente:8000
@@ -90,7 +94,7 @@ services:
     env_file:
       - ../agente/.env
     environment: &entorno_agente
-      DATABASE_URL: postgresql+asyncpg://medtender:${POSTGRES_PASSWORD:-medtender}@postgres:5432/medtender
+      DATABASE_URL: postgresql+asyncpg://medtender_app:${APP_DB_PASSWORD:-medtender_app}@postgres:5432/medtender
       REDIS_URL: redis://redis:6379/0
       EPHEMERAL_DIR: /var/medtender-ephemeral
       COLA_BACKEND: arq
@@ -107,6 +111,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      api:
+        condition: service_healthy  # Flyway ya creó el rol medtender_app
 
   # Extracción, OCR selectivo, fragmentación, vectorización y purga + barrido de huérfanos.
   worker:

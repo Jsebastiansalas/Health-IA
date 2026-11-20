@@ -40,7 +40,8 @@ public abstract class IntegracionBase {
 
     @Autowired protected MockMvc mvc;
     @Autowired protected ObjectMapper json;
-    @Autowired protected JdbcTemplate jdbc;
+    /** Propietario de la base: ve todos los tenants. La aplicacion, en cambio, se conecta con `medtender_app`. */
+    protected final JdbcTemplate jdbc = Infra.admin();
     @Autowired protected AlmacenLimites limites;
 
     @BeforeEach

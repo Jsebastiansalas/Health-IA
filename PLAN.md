@@ -11,7 +11,7 @@ Plataforma multi-tenant para licitaciones médicas y auditoría en salud. El usu
 | Expedientes y permisos LECTOR/EDITOR/ADMIN | **Java** | Spring Data JPA |
 | Recepción de PDFs, firma, antivirus, SHA-256, estados, purga de rechazos | **Java** | Tika, PDFBox, cliente ClamAV INSTREAM |
 | Límites de peticiones, auditoría de solo anexado, métricas | **Java** | Redis, Micrometer |
-| Esquema de la base de datos | **Java** | Flyway (`V1…V7`), fuente única |
+| Esquema de la base de datos | **Java** | Flyway (`V1…V8`), fuente única |
 | Extracción, OCR, tablas, fragmentos, embeddings, purga tras indexar | **Python** (`agente/`, worker) | pypdfium2, pdfplumber, Tesseract, tiktoken, ARQ |
 | Motor RAG: búsqueda híbrida RRF, citas verificables, abstención | **Python** | FastAPI, pgvector, Gemini |
 
@@ -58,7 +58,7 @@ React ──HTTPS──> Caddy ──> API Java (Spring Boot :8080)
 | 12b | Rediseño del frontend: paleta Geist/Inter y componentes redondeados | ✅ |
 | 12c | Medicamentos de Colombia (datos abiertos de INVIMA, `V7`) | ✅ pendiente de integrar a `develop` |
 | 13 | Orden del repositorio y documentación | ✅ |
-| 14 | Aislamiento de tenants en la base (RLS) | ⏳ |
+| 14 | Aislamiento de tenants en la base (RLS, `V8`) | ✅ |
 | 15 | Dimensión de vectores y verificación de modelos al arrancar | ⏳ |
 | 16 | Calidad de tablas, OCR y evidencia probatoria | ⏳ |
 | 17 | Endurecimiento de despliegue | ⏳ |

@@ -76,7 +76,7 @@ async def subir(
         paginas = len(PdfReader(io.BytesIO(contenido)).pages)
     except Exception:
         paginas = None
-    url = os.environ["DATABASE_URL"].replace("postgresql+asyncpg://", "postgresql://")
+    url = os.environ["TEST_DATABASE_ADMIN_URL"]  # propietario: prepara datos sin RLS
     with psycopg.connect(url) as conn:
         fila = conn.execute(
             "INSERT INTO documentos (id, tenant_id, expediente_id, nombre_archivo_original, "
