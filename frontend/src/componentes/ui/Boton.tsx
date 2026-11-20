@@ -15,10 +15,10 @@ export const boton = cva(
         peligro: "border border-peligro/50 bg-folio text-peligro hover:bg-peligro/10",
       },
       tamano: {
-        sm: "h-8 rounded-md px-4 text-[0.8rem]",
-        md: "h-10 rounded-md px-5 text-sm",
+        sm: "h-8 rounded-md px-4 text-[0.8rem] pointer-coarse:h-10",
+        md: "h-10 rounded-md px-5 text-sm pointer-coarse:h-11",
         lg: "h-12 rounded-md px-7 text-base",
-        icono: "size-10 rounded-md",
+        icono: "size-10 rounded-md pointer-coarse:size-11",
       },
     },
     defaultVariants: { variante: "secundario", tamano: "md" },
