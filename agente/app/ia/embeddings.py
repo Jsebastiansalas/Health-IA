@@ -188,6 +188,14 @@ class OllamaEmbeddings(_Base):
 # ---------- Router ----------
 class EmbeddingRouter:
     def __init__(self, proveedores: dict[str, ProveedorEmbeddings]):
+        # La columna vector(1536) no admite más dimensiones: fallar al construir, no al indexar.
+        for nombre, p in proveedores.items():
+            if p.dimension > EMBEDDING_DIM:
+                raise ErrorEmbeddings(
+                    f"El modelo {nombre} produce {p.dimension} dimensiones y la columna "
+                    f"fragmentos.embedding solo admite {EMBEDDING_DIM}; ver README, «Modelos "
+                    "de embeddings y dimensión»"
+                )
         self._proveedores = proveedores
 
     @property

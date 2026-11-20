@@ -59,7 +59,7 @@ React ──HTTPS──> Caddy ──> API Java (Spring Boot :8080)
 | 12c | Medicamentos de Colombia (datos abiertos de INVIMA, `V7`) | ✅ pendiente de integrar a `develop` |
 | 13 | Orden del repositorio y documentación | ✅ |
 | 14 | Aislamiento de tenants en la base (RLS, `V8`) | ✅ |
-| 15 | Dimensión de vectores y verificación de modelos al arrancar | ⏳ |
+| 15 | Dimensión de vectores y verificación de modelos al arrancar | ✅ |
 | 16 | Calidad de tablas, OCR y evidencia probatoria | ✅ |
 | 17 | Endurecimiento de despliegue | ✅ |
 

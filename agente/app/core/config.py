@@ -78,6 +78,8 @@ class Settings(BaseSettings):
     # ---------- Motor RAG (Sprint 5) ----------
     # gemini-2.5-flash: estable y ~2 s por respuesta en las pruebas. gemini-3.8-flash respondió
     # 503 por alta demanda o se colgó hasta el timeout, así que queda como respaldo.
+    # Comprueba al arrancar que los modelos configurados existen y responden (no impide arrancar).
+    verificar_modelos_al_arrancar: bool = True
     llm_model: str = "gemini-2.5-flash"
     # Se usan en orden si el principal responde 429/503 o no contesta a tiempo.
     llm_modelos_respaldo: list[str] = ["gemini-3.8-flash"]

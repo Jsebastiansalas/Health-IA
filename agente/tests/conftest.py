@@ -17,6 +17,7 @@ os.environ.update(
         "ENTORNO": "desarrollo",
         "INTERNAL_TOKEN": "token-interno-de-pruebas-con-longitud-suficiente-123456",
         "BARRIDO_HABILITADO": "false",
+        "VERIFICAR_MODELOS_AL_ARRANCAR": "false",  # sin red en las pruebas
         "COLA_BACKEND": "ninguna",
         "REDIS_URL": "redis://127.0.0.1:1/0",  # inalcanzable a propósito
         "GEMINI_API_KEY": "clave-falsa-de-pruebas",
