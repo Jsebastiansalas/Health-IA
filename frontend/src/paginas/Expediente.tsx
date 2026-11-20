@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import * as Tabs from "@radix-ui/react-tabs";
-import { AlertTriangle, ArrowLeft, ChevronRight, Cpu, FileStack, Layers, MessagesSquare, ShieldCheck, UserRound } from "lucide-react";
-import { lazy, Suspense, useState } from "react";
+import { AlertTriangle, ArrowLeft, ChevronRight, FileStack, MessagesSquare, UserRound } from "lucide-react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/cliente";
@@ -18,14 +18,11 @@ const VisorLocal = lazy(() => import("../componentes/VisorLocal").then((m) => ({
 
 const PERMISO: Record<string, string> = { ADMIN: "Administras", EDITOR: "Editas", LECTOR: "Consultas" };
 
-function Dato({ icono: Icono, etiqueta, valor }: { icono: typeof Cpu; etiqueta: string; valor: string | number }) {
+function Cifra({ valor, etiqueta }: { valor: string | number; etiqueta: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-tinta/10 bg-mesa px-4 py-3">
-      <Icono className="size-5 shrink-0 text-accion" strokeWidth={1.6} aria-hidden />
-      <div className="min-w-0 leading-tight">
-        <p className="num truncate text-[1.05rem] font-semibold">{valor}</p>
-        <p className="truncate text-[0.74rem] text-tinta-3">{etiqueta}</p>
-      </div>
+    <div className="flex items-baseline gap-1.5">
+      <dd className="num text-[1.05rem] font-semibold">{valor}</dd>
+      <dt className="text-[0.82rem] text-tinta-3">{etiqueta}</dt>
     </div>
   );
 }
@@ -42,6 +39,13 @@ export function PaginaExpediente() {
     queryKey: ["documentos", id],
     queryFn: () => api<Documento[]>(`/expedientes/${id}/documentos`),
   });
+  // En pantallas con pestañas, quien ya tiene documentos indexados viene a consultar: se abre en «Consulta».
+  const pestanaElegida = useRef(false);
+  useEffect(() => {
+    if (pestanaElegida.current || !documentos) return;
+    pestanaElegida.current = true;
+    if (documentos.some((d) => esConsultable(d.estado_indexacion))) setPestana("consulta");
+  }, [documentos]);
 
   if (error) {
     return (
@@ -63,7 +67,7 @@ export function PaginaExpediente() {
       <div aria-busy aria-label="Abriendo expediente">
         <Esqueleto className="mb-4 h-5 w-48" />
         <Esqueleto className="h-44 rounded-2xl" />
-        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(320px,440px)_1fr]">
+        <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
           <Esqueleto className="h-96 rounded-2xl" />
           <Esqueleto className="h-96 rounded-2xl" />
         </div>
@@ -86,31 +90,29 @@ export function PaginaExpediente() {
         <span className="font-mono text-tinta-2">{expediente.codigo_expediente}</span>
       </nav>
 
-      <header className="vidrio relative mb-8 overflow-hidden rounded-2xl p-6 sm:p-8">
-        <div className="relative flex flex-wrap items-center gap-2">
+      <header className="mb-7 border-b border-tinta/15 pb-6">
+        <div className="flex flex-wrap items-center gap-2">
           <Insignia tono={expediente.estado === "ABIERTO" ? "accion" : "neutro"}>{expediente.estado}</Insignia>
-          <Insignia tono="accion">
+          <Insignia>
             <UserRound className="size-3.5" aria-hidden />
             {expediente.mi_permiso ? PERMISO[expediente.mi_permiso] : "Sin permiso"}
           </Insignia>
         </div>
-        <h1 className="relative mt-4 max-w-4xl text-3xl font-semibold leading-[1.08] sm:text-[2.6rem]">
-          {expediente.titulo}
-        </h1>
-        <p className="relative mt-2 text-tinta-2">
-          <span className="font-mono text-accion">{expediente.codigo_expediente}</span> ·{" "}
+        <h1 className="mt-3 max-w-4xl text-3xl font-semibold leading-[1.1] sm:text-4xl">{expediente.titulo}</h1>
+        <p className="mt-2 text-tinta-2">
+          <span className="font-mono text-tinta">{expediente.codigo_expediente}</span> ·{" "}
           {expediente.entidad_contratante ?? "Entidad no registrada"} · {TIPOS_EXPEDIENTE[expediente.tipo_expediente]}
         </p>
-        <div className="relative mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Dato icono={FileStack} etiqueta="documentos cargados" valor={documentos?.length ?? "—"} />
-          <Dato icono={ShieldCheck} etiqueta="indexados, PDF eliminado" valor={documentos ? indexados.length : "—"} />
-          <Dato icono={Layers} etiqueta="fragmentos consultables" valor={documentos ? fragmentos.toLocaleString("es-CO") : "—"} />
-          <Dato icono={Cpu} etiqueta="modelo del índice" valor={expediente.embedding_model_activo} />
-        </div>
+        <dl className="mt-4 flex flex-wrap gap-x-7 gap-y-2" aria-label="Resumen del expediente">
+          <Cifra valor={documentos?.length ?? "—"} etiqueta="documentos" />
+          <Cifra valor={documentos ? indexados.length : "—"} etiqueta="indexados (PDF eliminado)" />
+          <Cifra valor={documentos ? fragmentos.toLocaleString("es-CO") : "—"} etiqueta="fragmentos consultables" />
+          <Cifra valor={expediente.embedding_model_activo} etiqueta="modelo del índice" />
+        </dl>
       </header>
 
       <Tabs.Root value={pestana} onValueChange={setPestana}>
-        <Tabs.List className="vidrio-solido mb-5 grid grid-cols-2 gap-1 rounded-2xl p-1 lg:hidden" aria-label="Secciones del expediente">
+        <Tabs.List className="vidrio-solido mb-5 grid grid-cols-2 gap-1 rounded-md p-1 xl:hidden" aria-label="Secciones del expediente">
           {[
             ["folios", "Documentos", FileStack],
             ["consulta", "Consulta", MessagesSquare],
@@ -129,11 +131,11 @@ export function PaginaExpediente() {
           })}
         </Tabs.List>
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(340px,460px)_minmax(0,1fr)]">
-          <Tabs.Content value="folios" forceMount className="data-[state=inactive]:hidden lg:!block">
+        <div className="grid gap-8 xl:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
+          <Tabs.Content value="folios" forceMount className="data-[state=inactive]:hidden xl:sticky xl:top-6 xl:!block xl:max-h-[calc(100vh-3rem)] xl:self-start xl:overflow-y-auto xl:pr-1">
             <PanelDocumentos expedienteId={id} puedeSubir={puedeSubir && expediente.estado === "ABIERTO"} />
           </Tabs.Content>
-          <Tabs.Content value="consulta" forceMount className="data-[state=inactive]:hidden lg:!block">
+          <Tabs.Content value="consulta" forceMount className="data-[state=inactive]:hidden xl:!block">
             <ConsolaRag expedienteId={id} hayIndice={hayIndice} alAbrirCita={setCitaAbierta} />
           </Tabs.Content>
         </div>

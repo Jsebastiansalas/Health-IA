@@ -1,14 +1,13 @@
 import type { EstadoIndexacion, TipoDocumento, TipoExpediente } from "../api/tipos";
 
 /** Pasos visibles del pipeline (el orden importa para la línea de tiempo). */
-export const PASOS: { estado: EstadoIndexacion; etiqueta: string }[] = [
-  // Etiquetas cortas: caben en seis columnas dentro del panel estrecho de folios.
-  { estado: "VALIDANDO", etiqueta: "Antivirus" },
-  { estado: "EN_COLA", etiqueta: "En cola" },
-  { estado: "EXTRAYENDO_OCR", etiqueta: "Texto y OCR" },
-  { estado: "FRAGMENTANDO", etiqueta: "Fragmentos" },
-  { estado: "VECTORIZANDO", etiqueta: "Vectores" },
-  { estado: "INDEXADO_Y_PURGADO", etiqueta: "PDF borrado" },
+export const PASOS: { estado: EstadoIndexacion; etiqueta: string; descripcion: string }[] = [
+  { estado: "VALIDANDO", etiqueta: "Antivirus", descripcion: "Revisando el PDF (antivirus y estructura)" },
+  { estado: "EN_COLA", etiqueta: "En cola", descripcion: "En cola de procesamiento" },
+  { estado: "EXTRAYENDO_OCR", etiqueta: "Texto y OCR", descripcion: "Extrayendo el texto (OCR en páginas escaneadas)" },
+  { estado: "FRAGMENTANDO", etiqueta: "Fragmentos", descripcion: "Dividiendo el texto en fragmentos" },
+  { estado: "VECTORIZANDO", etiqueta: "Vectores", descripcion: "Generando los vectores de búsqueda" },
+  { estado: "INDEXADO_Y_PURGADO", etiqueta: "PDF borrado", descripcion: "Índice verificado y PDF eliminado del servidor" },
 ];
 
 const ORDEN: Record<EstadoIndexacion, number> = {
