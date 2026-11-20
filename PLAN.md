@@ -11,7 +11,7 @@ Plataforma multi-tenant para licitaciones médicas y auditoría en salud. El usu
 | Expedientes y permisos LECTOR/EDITOR/ADMIN | **Java** | Spring Data JPA |
 | Recepción de PDFs, firma, antivirus, SHA-256, estados, purga de rechazos | **Java** | Tika, PDFBox, cliente ClamAV INSTREAM |
 | Límites de peticiones, auditoría de solo anexado, métricas | **Java** | Redis, Micrometer |
-| Esquema de la base de datos | **Java** | Flyway (`V1…V6`), fuente única |
+| Esquema de la base de datos | **Java** | Flyway (`V1…V7`), fuente única |
 | Extracción, OCR, tablas, fragmentos, embeddings, purga tras indexar | **Python** (`agente/`, worker) | pypdfium2, pdfplumber, Tesseract, tiktoken, ARQ |
 | Motor RAG: búsqueda híbrida RRF, citas verificables, abstención | **Python** | FastAPI, pgvector, Gemini |
 
@@ -53,6 +53,15 @@ React ──HTTPS──> Caddy ──> API Java (Spring Boot :8080)
 | 8 | **Java:** expedientes, permisos e ingesta (Tika, PDFBox, ClamAV) | ✅ |
 | 9 | **Python como agente interno** + proxy de consultas y reindexación en Java | ✅ |
 | 10 | Integración: compose dev/prod, imágenes, E2E, medición y documentación | ✅ |
+| 11 | Rediseño del frontend: microscopio e histología, tema claro | ✅ |
+| 12 | Rediseño del frontend: negatoscopio, tema oscuro | ✅ |
+| 12b | Rediseño del frontend: paleta Geist/Inter y componentes redondeados | ✅ |
+| 12c | Medicamentos de Colombia (datos abiertos de INVIMA, `V7`) | ✅ pendiente de integrar a `develop` |
+| 13 | Orden del repositorio y documentación | ✅ |
+| 14 | Aislamiento de tenants en la base (RLS) | ⏳ |
+| 15 | Dimensión de vectores y verificación de modelos al arrancar | ⏳ |
+| 16 | Calidad de tablas, OCR y evidencia probatoria | ⏳ |
+| 17 | Endurecimiento de despliegue | ⏳ |
 
 Historias principales: aislamiento de tenants y permisos (1, 7, 8), PDF efímero con purga verificada (2, 8, 9), OCR y fragmentación 500–1000 tokens con 15 % de solape (3), embeddings por modelo del expediente (4), búsqueda híbrida RRF + citas con extractos literales + visor local con SHA-256 (5), observabilidad y auditoría (6, 7).
 
@@ -61,3 +70,14 @@ Historias principales: aislamiento de tenants y permisos (1, 7, 8), PDF efímero
 - **Python:** `pytest` en `agente/` contra el esquema de Flyway.
 - **Extremo a extremo:** stack Docker completo + Chrome (login → subir → pipeline → consulta con citas → visor local con SHA-256).
 - Seguridad: ningún PDF queda en el volumen efímero tras indexar o rechazar; ninguna fila de otro tenant aparece en consultas.
+
+## Desviaciones respecto a Requerimientos.md
+El documento de requisitos original (`Requerimientos.md`, «Arquitectura RAG — Java, Spring Boot y pgvector») se cumple en su flujo de indexación y de consulta. Estas son las diferencias deliberadas:
+
+| Requerimiento | Lo construido | Motivo |
+|---|---|---|
+| Todo en Java con Spring Boot | Java (identidad, expedientes, ingesta) + agente Python (OCR, embeddings, RAG) | Cada lenguaje donde mejor encaja; ver «Decisión de arquitectura» |
+| OpenAI Embeddings en el MVP | Gemini (`gemini-embedding-001`); OpenAI y Ollama disponibles por configuración | Decisión del proyecto; el modelo se registra por expediente |
+| `Pgvector.EntityFrameworkCore` | Spring Data JPA y SQL nativo con pgvector | Esa librería es de .NET y no aplica a Spring Boot |
+| (no figura) | Módulo de medicamentos con datos abiertos de INVIMA | Alcance añadido; sin vectores, con citas a datos.gov.co |
+| Tablas, firmas y sellos pueden exigir el original | Aviso por confianza de OCR; visor local con SHA-256 | Se profundiza en el sprint 16 |
