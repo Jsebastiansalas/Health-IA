@@ -52,6 +52,28 @@ Frontend con recarga en caliente: `cd frontend && npm install && npm run dev` (h
 
 Sin Docker para la API Java: `cd infra; docker compose up -d postgres redis clamav` y luego `cd api-java; mvn spring-boot:run` (variables en `application.yml`: `JWT_SECRET`, `AGENTE_URL`, `AGENTE_TOKEN`, `DATABASE_URL`...).
 
+## Rotación de secretos (producción)
+Genere cada valor nuevo con `python -c "import secrets; print(secrets.token_hex(32))"`, edite `infra/.env.prod` y reinicie solo lo indicado.
+
+| Secreto | Efecto | Procedimiento |
+|---|---|---|
+| `JWT_SECRET` | Cierra todas las sesiones (los tokens vigentes dejan de ser válidos) | Cambiarlo y `docker compose -f docker-compose.prod.yml up -d api` |
+| `INTERNAL_TOKEN` | Debe coincidir en la API y el agente; si difieren, las consultas y la ingesta fallan | Cambiarlo y reiniciar **a la vez** `api agente worker` |
+| `METRICS_TOKEN` | Prometheus debe usar el nuevo | Cambiarlo, reiniciar `api agente worker` y actualizar Prometheus |
+| `APP_DB_PASSWORD` | Contraseña del rol `medtender_app` | La migración `V8` solo la fija al crear el rol: antes ejecute `ALTER ROLE medtender_app PASSWORD '<nueva>'` en PostgreSQL, luego cambie el valor y reinicie `api agente worker` |
+| `POSTGRES_PASSWORD` | Propietario del esquema (migraciones y respaldos) | `ALTER ROLE medtender PASSWORD '<nueva>'`, cambiar el valor y reiniciar `api backup` |
+
+Verifique después con `GET /health` de la API y una consulta de prueba. Las claves de IA (`GEMINI_API_KEY`) se rotan en el proveedor y en `agente/.env`.
+
+**Despliegue seguro por diseño:** en producción solo Caddy publica puertos (80 y 443); el agente (8000) y PostgreSQL nunca. `sembrar_demo.py` se niega a ejecutarse contra cualquier URL que no sea local.
+
+## Verificación completa
+```powershell
+powershell -File infra/scripts/verificar.ps1          # todo (Docker en ejecución; ~8 min)
+powershell -File infra/scripts/verificar.ps1 -Rapido  # sin las pruebas de integración de Java
+```
+Revisa que en producción solo Caddy publique puertos, `ruff`, `pytest`, `tsc`, `vitest` y `mvn test`, y se detiene en el primer fallo.
+
 ## Pruebas
 Requieren Docker en ejecución (Testcontainers levanta PostgreSQL + pgvector y Redis desechables):
 ```powershell
