@@ -65,7 +65,8 @@ React ──HTTPS──> Caddy ──> API Java (Spring Boot :8080)
 | 18 | Frontend: identidad «Expediente / folio», dos temas, tokens semánticos y logotipo | ✅ |
 | 19 | Frontend: espacio de trabajo del expediente | ✅ |
 | 20 | Frontend: la cita como pieza central y visor acoplado | ✅ |
-| 21-23 | Frontend: listado y Medicamentos, landing e ingreso, pulido | ⏳ |
+| 21 | Frontend: índice de expedientes y tablas de Medicamentos | ✅ |
+| 22-23 | Frontend: landing e ingreso, pulido | ⏳ |
 
 Historias principales: aislamiento de tenants y permisos (1, 7, 8), PDF efímero con purga verificada (2, 8, 9), OCR y fragmentación 500–1000 tokens con 15 % de solape (3), embeddings por modelo del expediente (4), búsqueda híbrida RRF + citas con extractos literales + visor local con SHA-256 (5), observabilidad y auditoría (6, 7).
 
