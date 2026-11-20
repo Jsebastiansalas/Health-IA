@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertOctagon, Check, Copy, CornerDownLeft, Lightbulb, SendHorizontal, SearchX, TriangleAlert } from "lucide-react";
+import { AlertOctagon, ArrowUpRight, Check, Copy, CornerDownLeft, SendHorizontal, SearchX, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
@@ -73,31 +73,32 @@ export function ConsolaRag({
 
       <div className="flex-1 space-y-8 pb-6" role="log" aria-live="polite" aria-label="Conversación">
         {vacio && (
-          <div className="vidrio relative overflow-hidden rounded-2xl p-8">
-            <Lightbulb className="relative size-7 text-accion" strokeWidth={1.5} aria-hidden />
-            <p className="relative mt-4 max-w-md text-2xl font-semibold leading-tight">
+          <div className="animate-aparecer">
+            <p className="max-w-xl font-display text-2xl font-semibold leading-tight">
               {hayIndice ? "Pregunta lo que necesites del expediente." : "Aún no hay documentos indexados."}
             </p>
-            <p className="relative mt-3 max-w-lg text-tinta-2">
+            <p className="mt-2 max-w-lg text-tinta-2">
               {hayIndice
                 ? "Cada respuesta cita documento, página y sección. Si la evidencia no alcanza, el sistema lo dice."
                 : "Sube un PDF y espera a que termine el proceso: cuando el original se elimine del servidor, podrás consultarlo aquí."}
             </p>
             {hayIndice && (
-              <div className="relative mt-6 flex flex-wrap gap-2">
-                {SUGERENCIAS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => {
-                      setPregunta(s);
-                      campo.current?.focus();
-                    }}
-                    className="rounded-md border border-tinta/25 px-3.5 py-2 text-left text-[0.84rem] text-tinta-2 transition-colors hover:border-accion/50 hover:bg-accion/10 hover:text-tinta"
-                  >
-                    {s}
-                  </button>
+              <ul className="mt-5 max-w-xl divide-y divide-tinta/12 border-y border-tinta/12">
+                {SUGERENCIAS.map((q) => (
+                  <li key={q}>
+                    <button
+                      onClick={() => {
+                        setPregunta(q);
+                        campo.current?.focus();
+                      }}
+                      className="group flex w-full items-center justify-between gap-4 py-3 text-left text-[0.95rem] text-tinta-2 transition-colors hover:text-tinta"
+                    >
+                      {q}
+                      <ArrowUpRight className="size-4 shrink-0 text-tinta-3 transition-colors group-hover:text-accion" aria-hidden />
+                    </button>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
         )}
@@ -111,7 +112,7 @@ export function ConsolaRag({
             <Burbuja texto={pendiente} />
             <div className="flex gap-3.5" aria-busy aria-label="Analizando el expediente">
               <AvatarIA />
-              <div className="vidrio flex-1 rounded-2xl rounded-tl-lg p-5">
+              <div className="vidrio flex-1  p-5">
                 <p className="mb-4 text-sm font-medium text-accion">Analizando el expediente…</p>
                 <div className="space-y-2.5">
                   <Esqueleto className="h-3.5 w-[92%]" />
@@ -186,7 +187,7 @@ function AvatarIA() {
 function Burbuja({ texto }: { texto: string }) {
   return (
     <div className="flex justify-end">
-      <p className="max-w-[85%] rounded-2xl rounded-tr-md bg-folio-2 px-5 py-3 text-[0.97rem] leading-relaxed text-tinta">
+      <p className="max-w-[85%]  bg-folio-2 px-5 py-3 text-[0.97rem] leading-relaxed text-tinta">
         {texto}
       </p>
     </div>
@@ -226,7 +227,7 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
       <div className="flex gap-3.5">
         <AvatarIA />
         <div className="min-w-0 flex-1">
-          <div className={cn("vidrio rounded-2xl rounded-tl-lg p-5 sm:p-6", r.sinEvidencia && "border-aviso/30")}>
+          <div className={cn("vidrio  p-5 sm:p-6", r.sinEvidencia && "border-aviso/30")}>
             {r.sinEvidencia && (
               <Insignia tono="aviso" className="mb-3.5">
                 <SearchX className="size-3.5" aria-hidden />

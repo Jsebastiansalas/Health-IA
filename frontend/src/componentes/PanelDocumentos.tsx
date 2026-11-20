@@ -2,18 +2,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertOctagon,
   CheckCheck,
-  CheckCircle2,
   Clock,
   FileText,
   Loader2,
-  Network,
-  ScanText,
-  Scissors,
-  ShieldCheck,
   Trash2,
   TriangleAlert,
   UploadCloud,
-  type LucideIcon,
 } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -24,15 +18,6 @@ import { esFinal, estadoPaso, etiquetaDocumento, fecha, PASOS, tamano, TIPOS_DOC
 import { Boton } from "./ui/Boton";
 import { Esqueleto } from "./ui/Esqueleto";
 import { Insignia } from "./ui/Insignia";
-
-const ICONO_PASO: Record<string, LucideIcon> = {
-  VALIDANDO: ShieldCheck,
-  EN_COLA: Clock,
-  EXTRAYENDO_OCR: ScanText,
-  FRAGMENTANDO: Scissors,
-  VECTORIZANDO: Network,
-  INDEXADO_Y_PURGADO: Trash2,
-};
 
 export function PanelDocumentos({ expedienteId, puedeSubir }: { expedienteId: string; puedeSubir: boolean }) {
   const { data: documentos, isLoading } = useQuery({
@@ -45,13 +30,13 @@ export function PanelDocumentos({ expedienteId, puedeSubir }: { expedienteId: st
   return (
     <section aria-labelledby="titulo-folios">
       <div className="mb-4 flex items-baseline justify-between">
-        <h2 id="titulo-folios" className="text-2xl font-semibold">
+        <h2 id="titulo-folios" className="text-xl font-semibold">
           Documentos
         </h2>
         <span className="num text-sm text-tinta-3">{documentos?.length ?? 0} cargados</span>
       </div>
       {puedeSubir && <FormularioSubida expedienteId={expedienteId} />}
-      <ul className="mt-5 space-y-4">
+      <ul className="mt-4 space-y-3">
         {isLoading && (
           <li aria-busy>
             <Esqueleto className="h-32 rounded-3xl" />
@@ -226,7 +211,7 @@ function FilaDocumento({ doc }: { doc: Documento }) {
   const pendientePurga = doc.estado_indexacion === "INDEXADO_PENDIENTE_PURGA";
   const listo = doc.estado_indexacion === "INDEXADO_Y_PURGADO";
   return (
-    <li className="vidrio animate-aparecer rounded-3xl p-5">
+    <li className="folio animate-aparecer p-4">
       <div className="flex items-start gap-3.5">
         <span
           className={cn(
@@ -251,7 +236,7 @@ function FilaDocumento({ doc }: { doc: Documento }) {
           </p>
         </div>
         {listo && (
-          <span className="animate-sello inline-flex shrink-0 items-center gap-1.5 rounded-xl border-2 border-accion/70 px-2.5 py-1 font-display text-[0.7rem] font-bold uppercase tracking-wider text-accion">
+          <span className="inline-flex shrink-0 -rotate-2 items-center gap-1.5 rounded-[3px] border-2 border-accion/70 px-2 py-0.5 font-display text-[0.68rem] font-bold uppercase tracking-wider text-accion">
             <Trash2 className="size-3.5" aria-hidden />
             PDF eliminado
           </span>
@@ -299,53 +284,50 @@ function FilaDocumento({ doc }: { doc: Documento }) {
   );
 }
 
-/** Pipeline en pasos con icono: hecho (relleno), actual (pulsa y muestra el avance) y pendiente. */
+/**
+ * Pipeline: una barra de seis tramos y UNA línea con la etapa actual en lenguaje completo. Antes eran
+ * seis columnas con etiquetas truncadas («Texto y …») en un panel estrecho. La lista completa de
+ * etapas sigue disponible para lectores de pantalla.
+ */
 function Pipeline({ estado, progreso }: { estado: EstadoIndexacion; progreso: number }) {
+  const estados = PASOS.map((_, i) => estadoPaso(estado, i));
+  const indiceActual = estados.indexOf("actual");
+  const completo = estados.every((e) => e === "hecho");
+  const mostrado = completo ? PASOS[PASOS.length - 1]! : PASOS[Math.max(indiceActual, 0)]!;
+  const vectorizando = mostrado.estado === "VECTORIZANDO" && !completo;
   return (
-    <ol className="relative mt-5 grid grid-cols-6 gap-1" aria-label={`Estado del proceso: ${estado}`}>
-      {PASOS.map((paso, i) => {
-        const e = estadoPaso(estado, i);
-        const Icono = ICONO_PASO[paso.estado]!;
-        const siguienteHecho = i < PASOS.length - 1 && estadoPaso(estado, i + 1) !== "pendiente";
-        return (
-          <li key={paso.estado} className="relative flex min-w-0 flex-col items-center text-center">
-            {i < PASOS.length - 1 && (
-              <span
-                className={cn(
-                  "absolute left-1/2 top-[1.15rem] -z-0 h-0.5 w-full",
-                  siguienteHecho ? "bg-accion/70" : e === "hecho" ? "bg-accion/40" : "bg-tinta/10",
-                )}
-                aria-hidden
-              />
+    <div className="mt-4" role="group" aria-label={`Estado del proceso: ${mostrado.descripcion}`}>
+      <div className="flex gap-1" aria-hidden>
+        {estados.map((e, i) => (
+          <span
+            key={PASOS[i]!.estado}
+            className={cn(
+              "h-1.5 flex-1 rounded-[2px] transition-colors duration-500",
+              e === "hecho" && "bg-accion",
+              e === "actual" && "animate-pulse bg-accion/60",
+              e === "pendiente" && "bg-tinta/12",
             )}
-            <span
-              className={cn(
-                "relative z-10 grid size-9 place-items-center rounded-full border transition-colors duration-500",
-                e === "hecho" && "border-accion bg-accion text-accion-tx",
-                e === "actual" && "border-accion bg-mesa text-accion ",
-                e === "pendiente" && "border-tinta/14 bg-mesa text-tinta-3",
-              )}
-            >
-              {e === "hecho" ? (
-                <CheckCircle2 className="size-[1.15rem]" aria-hidden />
-              ) : e === "actual" ? (
-                <Loader2 className="size-[1.1rem] animate-spin" aria-hidden />
-              ) : (
-                <Icono className="size-4" aria-hidden />
-              )}
-            </span>
-            <span
-              className={cn(
-                "mt-2 w-full truncate px-0.5 text-[0.72rem] leading-tight",
-                e === "pendiente" ? "text-tinta-3" : "font-semibold text-tinta",
-              )}
-            >
-              {paso.etiqueta}
-              {paso.estado === "VECTORIZANDO" && e === "actual" && <span className="num block text-accion">{progreso}%</span>}
-            </span>
+          />
+        ))}
+      </div>
+      <p className="mt-2 flex items-center gap-2 text-[0.82rem] leading-snug text-tinta-2">
+        {completo ? (
+          <CheckCheck className="size-4 shrink-0 text-ok" aria-hidden />
+        ) : (
+          <Loader2 className="size-4 shrink-0 animate-spin text-accion" aria-hidden />
+        )}
+        <span className={cn(!completo && "text-tinta")}>
+          {completo ? mostrado.descripcion : `Etapa ${indiceActual + 1} de ${PASOS.length} · ${mostrado.descripcion}`}
+          {vectorizando && <span className="num ml-1.5 font-semibold text-accion">{progreso}%</span>}
+        </span>
+      </p>
+      <ol className="sr-only">
+        {PASOS.map((p, i) => (
+          <li key={p.estado}>
+            {p.descripcion}: {estados[i] === "hecho" ? "hecho" : estados[i] === "actual" ? "en curso" : "pendiente"}
           </li>
-        );
-      })}
-    </ol>
+        ))}
+      </ol>
+    </div>
   );
 }
