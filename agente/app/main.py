@@ -10,6 +10,8 @@ from app.core.config import get_settings
 from app.core.db import get_sessionmaker
 from app.core.logs import configurar_logging
 from app.core.middleware import MiddlewareSolicitud
+from app.ia.embeddings import get_router
+from app.ia.verificacion import verificar_modelos
 from app.services.cola import cerrar_cola
 from app.services.purga import barrer
 
@@ -24,6 +26,13 @@ async def _bucle_barrido(intervalo_s: int) -> None:
         except Exception:
             log.exception("Fallo en el barrido de purga")
         await asyncio.sleep(intervalo_s)
+
+
+async def _verificar_en_segundo_plano() -> None:
+    try:
+        await verificar_modelos(get_settings(), get_router())
+    except Exception:
+        log.exception("No se pudo completar la verificación de modelos")
 
 
 def validar_configuracion() -> None:
@@ -44,11 +53,17 @@ def validar_configuracion() -> None:
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     validar_configuracion()
+    verificacion = None
+    if settings.verificar_modelos_al_arrancar:
+        # En segundo plano: un proveedor lento no debe retrasar el arranque.
+        verificacion = asyncio.create_task(_verificar_en_segundo_plano())
     tarea = None
     if settings.barrido_habilitado:
         tarea = asyncio.create_task(_bucle_barrido(settings.barrido_intervalo_s))
     log.info("Agente MedTender listo (entorno=%s)", settings.entorno)
     yield
+    if verificacion:
+        verificacion.cancel()
     if tarea:
         tarea.cancel()
         with contextlib.suppress(asyncio.CancelledError):

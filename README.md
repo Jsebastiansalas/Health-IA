@@ -52,6 +52,13 @@ Frontend con recarga en caliente: `cd frontend && npm install && npm run dev` (h
 
 Sin Docker para la API Java: `cd infra; docker compose up -d postgres redis clamav` y luego `cd api-java; mvn spring-boot:run` (variables en `application.yml`: `JWT_SECRET`, `AGENTE_URL`, `AGENTE_TOKEN`, `DATABASE_URL`...).
 
+## Modelos de embeddings y dimensión
+Todos los vectores se guardan en `fragmentos.embedding vector(1536)`. Un modelo de **menos** dimensiones (p. ej. `bge-m3`, 1024) se rellena con ceros: la similitud coseno no cambia, a costa de algo de almacenamiento. Un modelo de **más** de 1536 no cabe: `EmbeddingRouter` lo rechaza al construirse (el agente no arranca) en lugar de fallar al indexar un documento.
+
+Si algún día se necesita un modelo mayor hay que cambiar la columna y el índice HNSW (`halfvec` o una tabla por dimensión) y reindexar; no se hizo porque ningún modelo previsto lo exige.
+
+**Verificación al arrancar.** El agente comprueba en segundo plano que el modelo de embeddings por defecto responde con la dimensión declarada (una llamada real, un vector) y que el LLM principal y los de respaldo existen en el proveedor (consulta de su ficha, sin gastar tokens). Un modelo retirado o sin API key queda en el log como error y en la métrica `medtender_modelo_disponible{tipo,modelo}` (1/0) para alertar. **No impide arrancar.** Se desactiva con `VERIFICAR_MODELOS_AL_ARRANCAR=false`.
+
 ## Evidencia probatoria y calidad de OCR
 Cada cita indica **por qué** conviene mirar el PDF original (`tiposEvidencia`): `FIRMA_O_SELLO`, `TABLA`, `IMAGEN`, `OCR_BAJA_CONFIANZA` u `OCR`. La interfaz los muestra como etiquetas junto al motivo.
 

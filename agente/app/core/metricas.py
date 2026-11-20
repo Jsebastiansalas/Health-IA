@@ -49,6 +49,12 @@ LLM_RESPUESTAS = Counter(
     registry=REGISTRO,
 )
 
+MODELO_DISPONIBLE = Gauge(
+    "medtender_modelo_disponible",
+    "1 si el modelo de IA respondió a la verificación de arranque, 0 si no",
+    ["tipo", "modelo"],  # tipo: embeddings | llm
+    registry=REGISTRO,
+)
 DOCUMENTOS = Gauge("medtender_documentos", "Documentos por estado", ["estado"], registry=REGISTRO)
 DOCUMENTOS_ATASCADOS = Gauge(
     "medtender_documentos_en_proceso_mas_de_1h",
