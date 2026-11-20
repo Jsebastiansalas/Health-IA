@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
@@ -44,9 +43,10 @@ class IngestaIT {
     }
 
     @LocalServerPort int puerto;
-    @Autowired JdbcTemplate jdbc;
     @Autowired ObjectMapper json;
     @Autowired AlmacenLimites limites;
+    /** Propietario de la base: ve todos los tenants (la aplicacion usa `medtender_app` con RLS). */
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc = Infra.admin();
 
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
     private String token;

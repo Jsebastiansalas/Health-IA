@@ -3,6 +3,7 @@ package co.medtender.api.ingesta;
 import co.medtender.api.domain.DocumentoRepository;
 import co.medtender.api.domain.EstadoIndexacion;
 import co.medtender.api.domain.MotivoPurga;
+import co.medtender.api.security.ContextoTenant;
 import java.nio.file.Path;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -48,6 +49,11 @@ public class ValidadorAsincrono {
 
     @Async(AsyncConfig.EJECUTOR_VALIDACION)
     public void validarYEncolar(UUID documentoId) {
+        // Tarea en segundo plano: no hay peticion ni tenant en esta hebra.
+        ContextoTenant.comoSistema(() -> validarYEncolarComoSistema(documentoId));
+    }
+
+    private void validarYEncolarComoSistema(UUID documentoId) {
         try {
             var previo = documentos.findById(documentoId).orElse(null);
             if (previo == null || previo.getEstadoIndexacion() != EstadoIndexacion.VALIDANDO) {

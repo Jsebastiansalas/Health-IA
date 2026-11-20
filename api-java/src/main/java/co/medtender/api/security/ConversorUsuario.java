@@ -42,6 +42,9 @@ public class ConversorUsuario implements Converter<Jwt, AbstractAuthenticationTo
         } catch (IllegalArgumentException | NullPointerException e) {
             throw new InvalidBearerTokenException("Token inválido o expirado");
         }
+        // El claim esta firmado: es fuente confiable del tenant. Se fija ANTES de consultar para que
+        // la base (RLS) solo entregue filas de esa organizacion durante el resto de la peticion.
+        ContextoTenant.fijarTenant(tenantId);
         Usuario u = usuarios.findByIdAndTenantId(id, tenantId)
                 .filter(Usuario::isActivo)
                 .orElseThrow(() -> new InvalidBearerTokenException(USUARIO_INACTIVO));

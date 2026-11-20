@@ -18,7 +18,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.core.db import get_session
+from app.core.db import fijar_sistema, fijar_tenant, get_session
 from app.core.enums import EstadoIndexacion as E
 from app.core.metricas import CONSULTA_DURACION, CONSULTAS, LLM_RESPUESTAS
 from app.ia.embeddings import EmbeddingRouter, ErrorEmbeddings, ModeloNoSoportado, get_router
@@ -54,6 +54,7 @@ async def _expediente(
     session: AsyncSession, tenant_id: uuid.UUID, expediente_id: uuid.UUID
 ) -> Expediente:
     """Siempre acotado al tenant: un expediente de otro tenant es 'no encontrado'."""
+    fijar_tenant(session, tenant_id)  # la base solo entregará filas de este tenant
     expediente = await session.scalar(
         select(Expediente).where(Expediente.id == expediente_id, Expediente.tenant_id == tenant_id)
     )
@@ -71,6 +72,7 @@ async def procesar_documento(
 ) -> dict:
     """Java ya validó el PDF (firma, antivirus, estructura) y lo dejó en el directorio efímero.
     Aquí se encola su extracción, fragmentación, vectorización y purga."""
+    fijar_sistema(session)  # Java no envía el tenant aquí: el documento se busca por id
     documento = await session.get(Documento, documento_id)
     if documento is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Documento no encontrado")
@@ -152,6 +154,7 @@ async def historial(
     limit: int = Query(20, ge=1, le=100),
 ) -> list[dict]:
     """Consultas del usuario indicado en el expediente, la más reciente primero."""
+    fijar_tenant(session, tenant_id)
     filas = await session.scalars(
         select(Consulta)
         .where(
@@ -258,6 +261,7 @@ async def solicitar_reindexacion(
 async def listar_reindexaciones(
     session: SessionDep, tenant_id: uuid.UUID, expediente_id: uuid.UUID
 ) -> list[Reindexacion]:
+    fijar_tenant(session, tenant_id)
     return list(
         await session.scalars(
             select(Reindexacion)

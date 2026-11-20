@@ -61,7 +61,16 @@ cd agente;   uv run ruff check .
 cd frontend; npm test          # Vitest
 ```
 - **Java:** clamd y el agente se simulan con servidores reales en proceso (protocolo INSTREAM y HTTP); el multipart se prueba sobre HTTP real, no con MockMvc.
-- **Python:** el esquema se crea con los mismos `V1…V7.sql` de Flyway (`api-java/src/main/resources/db/migration`), así que ambas mitades se prueban contra la misma base.
+- **Python:** el esquema se crea con los mismos `V1…V8.sql` de Flyway (`api-java/src/main/resources/db/migration`), así que ambas mitades se prueban contra la misma base.
+
+## Aislamiento por tenant en la base (RLS)
+Además de filtrar por `tenant_id` en cada consulta, **PostgreSQL impide por sí mismo** ver o escribir filas de otra organización (migración `V8`, Row-Level Security con `FORCE`).
+
+- **Roles:** las migraciones corren como el propietario (`medtender`); la API y el agente se conectan como `medtender_app`, sin superusuario ni `BYPASSRLS` (un superusuario ignora RLS). Su contraseña es `APP_DB_PASSWORD` (en desarrollo, `medtender_app`).
+- **Contexto:** cada transacción declara `app.tenant_id` (peticiones) o `app.sistema` (procesos que cruzan tenants: login, tarea asíncrona de validación, worker, barrido de purga y métricas). **Sin contexto no se ve ninguna fila**: olvidar el filtro falla cerrado.
+- **Java:** `ContextoTenant` + `ContextoDataSource` fijan el contexto en cada conexión que sale del pool; el tenant sale del claim firmado del JWT. **Agente:** `fijar_tenant(session, tenant_id)`; las sesiones de `get_sessionmaker()` son de sistema.
+- **Tablas nuevas:** si llevan `tenant_id` necesitan su política; la prueba `test_toda_tabla_con_tenant_id_tiene_rls_forzado` falla si falta.
+- **Pruebas** (`AislamientoRlsIT`, `test_rls.py`): consultas sin filtro con el rol de la aplicación solo devuelven las filas del tenant declarado.
 
 ## Ingesta efímera de PDFs (API Java)
 `POST /api/v1/expedientes/{id}/documentos` (multipart: `archivo`, `tipo_documento`, `numero_adenda`), requiere permiso `EDITOR`.

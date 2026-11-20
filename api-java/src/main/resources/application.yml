@@ -3,6 +3,8 @@ spring:
     name: medtender-api
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5434/medtender}
+    # En despliegue la API se conecta con el rol `medtender_app` (sin superusuario ni BYPASSRLS): asi las
+    # politicas de aislamiento por tenant (V8) se aplican de verdad. Las migraciones usan el propietario.
     username: ${DATABASE_USER:medtender}
     password: ${DATABASE_PASSWORD:medtender}
     hikari:
@@ -16,6 +18,11 @@ spring:
       hibernate.jdbc.time_zone: UTC
   flyway:
     enabled: true
+    url: ${MIGRACION_URL:${DATABASE_URL:jdbc:postgresql://localhost:5434/medtender}}
+    user: ${MIGRACION_USER:${DATABASE_USER:medtender}}
+    password: ${MIGRACION_PASSWORD:${DATABASE_PASSWORD:medtender}}
+    placeholders:
+      app_password: ${APP_DB_PASSWORD:medtender_app}
     # Bases ya creadas por Alembic (esquema equivalente a V1-V6): se toman como punto de partida.
     baseline-on-migrate: true
     baseline-version: 6

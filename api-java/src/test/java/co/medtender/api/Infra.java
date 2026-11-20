@@ -23,6 +23,8 @@ import org.testcontainers.utility.DockerImageName;
 /** Infraestructura compartida por todas las pruebas de integracion (una sola vez por JVM). */
 public final class Infra {
 
+    public static final String APP_USUARIO = "medtender_app";
+    public static final String APP_PASSWORD = "contrasena-app-de-pruebas";
     public static final String JWT_SECRET = "secreto-de-pruebas-0123456789-abcdefghij-XYZ";
     public static final String METRICS_TOKEN = "token-metricas-de-prueba";
     public static final String AGENTE_TOKEN = "token-interno-de-prueba";
@@ -51,10 +53,22 @@ public final class Infra {
 
     private Infra() {}
 
+    /** Conexion del propietario (superusuario del contenedor): ignora RLS. Solo para preparar y verificar datos. */
+    public static org.springframework.jdbc.core.JdbcTemplate admin() {
+        var ds = new org.springframework.jdbc.datasource.DriverManagerDataSource(
+                POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+        return new org.springframework.jdbc.core.JdbcTemplate(ds);
+    }
+
     public static void registrar(DynamicPropertyRegistry r) {
         r.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        r.add("spring.datasource.username", POSTGRES::getUsername);
-        r.add("spring.datasource.password", POSTGRES::getPassword);
+        // La aplicacion usa el rol sin privilegios que crea V8 (RLS en vigor); Flyway, el propietario.
+        r.add("spring.datasource.username", () -> APP_USUARIO);
+        r.add("spring.datasource.password", () -> APP_PASSWORD);
+        r.add("spring.flyway.url", POSTGRES::getJdbcUrl);
+        r.add("spring.flyway.user", POSTGRES::getUsername);
+        r.add("spring.flyway.password", POSTGRES::getPassword);
+        r.add("spring.flyway.placeholders.app_password", () -> APP_PASSWORD);
         r.add("spring.data.redis.url", () -> "redis://" + REDIS.getHost() + ":" + REDIS.getMappedPort(6379));
         r.add("medtender.jwt.secret", () -> JWT_SECRET);
         r.add("medtender.metrics-token", () -> METRICS_TOKEN);

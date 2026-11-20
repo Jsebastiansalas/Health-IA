@@ -11,6 +11,7 @@ import co.medtender.api.config.MedtenderProperties;
 import co.medtender.api.domain.Usuario;
 import co.medtender.api.domain.UsuarioRepository;
 import co.medtender.api.limites.Limitador;
+import co.medtender.api.security.ContextoTenant;
 import co.medtender.api.security.JwtService;
 import co.medtender.api.security.PasswordService;
 import co.medtender.api.security.UsuarioActual;
@@ -69,6 +70,11 @@ public class AuthController {
     @PostMapping("/registro-tenant")
     @ResponseStatus(HttpStatus.CREATED)
     public TokensOut registrarTenant(@Valid @RequestBody RegistroTenantIn in) {
+        // Aun no hay tenant ni usuario: el alta cruza tenants por naturaleza.
+        return ContextoTenant.comoSistema(() -> registrarTenantInterno(in));
+    }
+
+    private TokensOut registrarTenantInterno(RegistroTenantIn in) {
         var rl = props.rateLimit();
         if (!props.allowTenantSignup()) {
             throw new ApiException(HttpStatus.FORBIDDEN, "El registro de tenants está deshabilitado");
@@ -88,6 +94,11 @@ public class AuthController {
 
     @PostMapping("/login")
     public TokensOut login(@Valid @RequestBody LoginIn in) {
+        // Se busca al usuario por correo, antes de saber a que tenant pertenece.
+        return ContextoTenant.comoSistema(() -> loginInterno(in));
+    }
+
+    private TokensOut loginInterno(LoginIn in) {
         var rl = props.rateLimit();
         String ip = ip();
         String email = in.email().toLowerCase(Locale.ROOT);
@@ -119,6 +130,10 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public TokensOut refresh(@Valid @RequestBody RefreshIn in) {
+        return ContextoTenant.comoSistema(() -> refreshInterno(in));
+    }
+
+    private TokensOut refreshInterno(RefreshIn in) {
         limitador.exigir("refresh", ip(), props.rateLimit().refreshIpMin(), 60);
         UUID id;
         try {

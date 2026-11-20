@@ -36,6 +36,7 @@ from testcontainers.community.postgres import PostgresContainer
 from tests.fakes import ColaFalsa
 
 TOKEN_INTERNO = os.environ["INTERNAL_TOKEN"]
+APP_PASSWORD = "contrasena-app-de-pruebas"
 RAIZ = Path(__file__).resolve().parents[2]
 MIGRACIONES = RAIZ / "api-java" / "src" / "main" / "resources" / "db" / "migration"
 
@@ -53,7 +54,13 @@ def ephemeral_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
 @pytest.fixture(scope="session", autouse=True)
 def _configurar_entorno(postgres_url: str, ephemeral_dir: Path) -> Iterator[None]:
-    os.environ["DATABASE_URL"] = postgres_url.replace("postgresql://", "postgresql+asyncpg://")
+    # El agente se conecta con el rol de aplicación que crea V8 (sin superusuario): así las
+    # políticas de aislamiento por tenant (RLS) están en vigor durante las pruebas.
+    # `postgres_url` (propietario) solo prepara y limpia datos.
+    app_url = postgres_url.replace("postgresql://", "postgresql+asyncpg://")
+    app_url = app_url.replace(app_url.split("//")[1].split("@")[0], f"medtender_app:{APP_PASSWORD}")
+    os.environ["DATABASE_URL"] = app_url
+    os.environ["TEST_DATABASE_ADMIN_URL"] = postgres_url  # propietario: ignora RLS
     os.environ["EPHEMERAL_DIR"] = str(ephemeral_dir)
 
     # Si algún módulo ya construyó la configuración o el motor antes de conocer la base de
@@ -68,10 +75,10 @@ def _configurar_entorno(postgres_url: str, ephemeral_dir: Path) -> Iterator[None
 
     # Esquema: los mismos V1..V6 que aplica Flyway (orden numérico, no alfabético).
     scripts = sorted(MIGRACIONES.glob("V*__*.sql"), key=lambda p: int(p.name[1:].split("__")[0]))
-    assert len(scripts) >= 7, f"No se encontraron las migraciones de Flyway en {MIGRACIONES}"
+    assert len(scripts) >= 8, f"No se encontraron las migraciones de Flyway en {MIGRACIONES}"
     with psycopg.connect(postgres_url, autocommit=True) as conn:
         for script in scripts:
-            conn.execute(script.read_text(encoding="utf-8"))
+            conn.execute(script.read_text(encoding="utf-8").replace("${app_password}", APP_PASSWORD))
     yield
 
 
