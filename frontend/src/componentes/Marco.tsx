@@ -1,5 +1,5 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ChevronsUpDown, FolderOpen, LogOut, ShieldCheck } from "lucide-react";
+import { ChevronsUpDown, FolderOpen, LogOut, Pill, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -103,6 +103,10 @@ export function Marco({ children }: { children: ReactNode }) {
             <FolderOpen className="size-[1.15rem]" aria-hidden />
             Expedientes
           </NavLink>
+          <NavLink to="/medicamentos" className={enlaceNav}>
+            <Pill className="size-[1.15rem]" aria-hidden />
+            Medicamentos
+          </NavLink>
         </nav>
         <div className="mb-3 rounded-xl bg-obsidiana p-3.5 text-[0.8rem] leading-relaxed text-tx-2">
           <ShieldCheck className="mb-1.5 size-5 text-tx-2" aria-hidden />
@@ -115,6 +119,10 @@ export function Marco({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-ink/10 bg-sala px-4 py-2.5 lg:hidden">
         <NavLink to="/" aria-label="MedTender, inicio">
           <Marca />
+        </NavLink>
+        <NavLink to="/medicamentos" className="ml-auto mr-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-tx-2 hover:bg-ink/10 hover:text-tx">
+          <Pill className="size-4" aria-hidden />
+          Medicamentos
         </NavLink>
         <MenuUsuario compacto />
       </header>

@@ -12,6 +12,7 @@ import { ProveedorSesion, useSesion } from "./sesion";
 const PaginaBienvenida = lazy(() => import("./paginas/Bienvenida").then((m) => ({ default: m.PaginaBienvenida })));
 const PaginaIngreso = lazy(() => import("./paginas/Ingreso").then((m) => ({ default: m.PaginaIngreso })));
 const PaginaExpedientes = lazy(() => import("./paginas/Expedientes").then((m) => ({ default: m.PaginaExpedientes })));
+const PaginaMedicamentos = lazy(() => import("./paginas/Medicamentos").then((m) => ({ default: m.PaginaMedicamentos })));
 const PaginaExpediente = lazy(() => import("./paginas/Expediente").then((m) => ({ default: m.PaginaExpediente })));
 
 const consultas = new QueryClient({
@@ -39,6 +40,7 @@ function Rutas() {
       <Routes>
         <Route path="/" element={<PaginaExpedientes />} />
         <Route path="/ingreso" element={<Navigate to="/" replace />} />
+        <Route path="/medicamentos" element={<PaginaMedicamentos />} />
         <Route path="/expedientes/:id" element={<PaginaExpediente />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
