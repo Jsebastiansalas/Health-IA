@@ -165,6 +165,17 @@ h2, h3 { line-height: 1.18; }
     border-radius: 2px;
     box-decoration-break: clone;
   }
+  /* El resaltador recorre la línea de izquierda a derecha, una vez. Con movimiento reducido llega directo al final. */
+  .resaltado-barrido {
+    background: linear-gradient(var(--marca), var(--marca)) no-repeat left center / 0% 88%;
+    padding: 0 0.15em;
+    border-radius: 2px;
+    box-decoration-break: clone;
+    animation: barrer 900ms var(--ease-salida) 700ms forwards;
+  }
+  @keyframes barrer {
+    to { background-size: 100% 88%; color: var(--marca-tx); }
+  }
   .esqueleto {
     background: linear-gradient(100deg, color-mix(in oklab, var(--tinta) 5%, transparent) 30%, color-mix(in oklab, var(--tinta) 12%, transparent) 50%, color-mix(in oklab, var(--tinta) 5%, transparent) 70%);
     background-size: 200% 100%;
@@ -177,7 +188,9 @@ h2, h3 { line-height: 1.18; }
   html { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: 1ms !important;
+    animation-delay: 0s !important; /* sin esto, un sello o un resaltado con retardo tardaría segundos en aparecer */
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
+    transition-delay: 0s !important;
   }
 }
