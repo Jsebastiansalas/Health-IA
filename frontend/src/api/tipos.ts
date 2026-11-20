@@ -1,4 +1,4 @@
-// Contratos de la API MedTender (backend/app/schemas.py y app/rag/motor.py).
+// Contratos de la API MedTender (API Java en api-java/ y agente/app/rag/motor.py).
 
 export type RolGlobal = "ADMIN_TENANT" | "JURIDICO" | "AUDITOR_MEDICO" | "BIOMEDICO" | "LECTOR";
 export type Permiso = "LECTOR" | "EDITOR" | "ADMIN";

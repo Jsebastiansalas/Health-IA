@@ -1,17 +1,17 @@
-# Producción en un VPS: solo Caddy publica puertos (80/443). Base de datos, Redis y respaldos
-# viven en una red interna sin salida a internet.
+# Producción en un VPS: solo Caddy publica puertos (80/443). Base de datos, Redis, ClamAV, la API
+# Java y el agente de IA viven en una red interna sin salida a internet (el agente es el único,
+# junto a ClamAV, con salida: llama a Gemini y ClamAV actualiza sus firmas).
 #
 #   cp .env.prod.example .env.prod   # y completar los secretos
 #   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+#   # Flyway (API Java) aplica las migraciones al arrancar. Primera organización, sin abrir el
+#   # registro público:
 #   docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm \
-#       -e MEDTENDER_ADMIN_PASSWORD='...' api python -m app.cli crear-tenant \
+#       -e MEDTENDER_ADMIN_PASSWORD='...' agente python -m app.cli crear-tenant \
 #       --nombre "Hospital X" --nit 900123 --email admin@hospital.co
 name: medtender-prod
 
-x-backend: &backend
-  build:
-    context: ../backend
-  image: medtender-backend:prod
+x-endurecido: &endurecido
   restart: unless-stopped
   # Contenedor endurecido: sin privilegios, sistema de archivos de solo lectura.
   security_opt: ["no-new-privileges:true"]
@@ -19,27 +19,26 @@ x-backend: &backend
   read_only: true
   tmpfs:
     - /tmp:size=512m
-  environment: &entorno
+
+x-agente: &agente
+  <<: *endurecido
+  build:
+    context: ../agente
+  image: medtender-agente:prod
+  environment: &entorno_agente
     ENTORNO: produccion
     LOG_JSON: "true"
-    CONFIAR_PROXY: "true"
-    ALLOW_TENANT_SIGNUP: "false"
     DATABASE_URL: postgresql+asyncpg://medtender:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}@postgres:5432/medtender
     REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
-    JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET}
+    INTERNAL_TOKEN: ${INTERNAL_TOKEN:?defina INTERNAL_TOKEN}
     METRICS_TOKEN: ${METRICS_TOKEN:-}
     GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     EMBEDDING_MODEL_DEFAULT: ${EMBEDDING_MODEL_DEFAULT:-gemini-embedding-001}
     LLM_MODEL: ${LLM_MODEL:-gemini-2.5-flash}
-    ANTIVIRUS_BACKEND: clamav
-    CLAMAV_HOST: clamav
     COLA_BACKEND: arq
-    RATE_LIMIT_BACKEND: redis
-    CORS_ORIGINS: '["https://${DOMINIO:?defina DOMINIO}"]'
     EPHEMERAL_DIR: /var/medtender-ephemeral
     BARRIDO_HABILITADO: "false"  # el barrido de purga lo ejecuta el worker
-    MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-300}
   networks: [interna, externa]
 
 services:
@@ -91,19 +90,50 @@ services:
     # Necesita salida a internet para actualizar firmas.
     networks: [interna, externa]
 
-  # Aplica las migraciones una sola vez, antes de arrancar la API y el worker.
-  migrar:
-    <<: *backend
-    restart: "no"
-    command: ["alembic", "upgrade", "head"]
+  # API pública (Spring Boot). Aplica las migraciones de Flyway al arrancar. Sin salida a internet.
+  api:
+    <<: *endurecido
+    build:
+      context: ../api-java
+    image: medtender-api:prod
+    environment:
+      SPRING_PROFILES_ACTIVE: produccion   # logs JSON
+      ENTORNO: produccion
+      CONFIAR_PROXY: "true"
+      ALLOW_TENANT_SIGNUP: "false"
+      DATABASE_URL: jdbc:postgresql://postgres:5432/medtender
+      DATABASE_USER: medtender
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET}
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+      AGENTE_URL: http://agente:8000
+      AGENTE_TOKEN: ${INTERNAL_TOKEN:?defina INTERNAL_TOKEN}
+      ANTIVIRUS_BACKEND: clamav
+      CLAMAV_HOST: clamav
+      CORS_ORIGINS: https://${DOMINIO:?defina DOMINIO}
+      EPHEMERAL_DIR: /var/medtender-ephemeral
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-300}
+    volumes:
+      - ephemeral:/var/medtender-ephemeral
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 60s
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+    networks: [interna]
 
-  api:
-    <<: *backend
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000",
-              "--proxy-headers", "--forwarded-allow-ips", "*", "--no-access-log"]
+  # Agente de IA (FastAPI). Solo la API Java le habla, con X-Internal-Token. Nunca se publica.
+  agente:
+    <<: *agente
     volumes:
       - ephemeral:/var/medtender-ephemeral
     healthcheck:
@@ -114,15 +144,13 @@ services:
       retries: 5
       start_period: 20s
     depends_on:
-      migrar:
-        condition: service_completed_successfully
-      redis:
+      postgres:
         condition: service_healthy
-      clamav:
+      redis:
         condition: service_healthy
 
   worker:
-    <<: *backend
+    <<: *agente
     command: ["arq", "app.worker.WorkerSettings"]
     volumes:
       - ephemeral:/var/medtender-ephemeral
@@ -133,8 +161,8 @@ services:
       retries: 3
       start_period: 40s
     depends_on:
-      migrar:
-        condition: service_completed_successfully
+      api:
+        condition: service_healthy   # Flyway ya aplicó las migraciones
       redis:
         condition: service_healthy
 

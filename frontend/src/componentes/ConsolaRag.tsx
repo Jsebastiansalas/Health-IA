@@ -1,8 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { AlertOctagon, Check, Copy, CornerDownLeft, Lightbulb, SendHorizontal, SearchX, TriangleAlert } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
 import { api, post } from "../api/cliente";
 import type { Cita, RespuestaConsulta } from "../api/tipos";
+import { PlacaVacia } from "../arte/Placa";
+import { cn } from "../lib/cn";
+import { Logotipo } from "./Marca";
 import { TarjetaCita } from "./TarjetaCita";
+import { Boton } from "./ui/Boton";
+import { Esqueleto } from "./ui/Esqueleto";
+import { Insignia } from "./ui/Insignia";
 
 const SUGERENCIAS = [
   "¿Cuál es el plazo de entrega y alguna adenda lo modifica?",
@@ -28,6 +37,7 @@ export function ConsolaRag({
   const [pregunta, setPregunta] = useState("");
   const [pendiente, setPendiente] = useState<string | null>(null);
   const fin = useRef<HTMLDivElement>(null);
+  const campo = useRef<HTMLTextAreaElement>(null);
 
   const consultar = useMutation({
     mutationFn: (p: string) => post<RespuestaConsulta>(`/expedientes/${expedienteId}/consultas`, { pregunta: p }),
@@ -46,32 +56,46 @@ export function ConsolaRag({
     fin.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [conversacion.length, pendiente]);
 
-  function enviar(e: FormEvent) {
+  function enviar(e: { preventDefault: () => void }) {
     e.preventDefault();
     const p = pregunta.trim();
     if (p.length >= 3 && !consultar.isPending) consultar.mutate(p);
   }
 
+  const vacio = conversacion.length === 0 && !pendiente;
   return (
     <section aria-labelledby="titulo-consulta" className="flex min-h-[70vh] flex-col">
-      <div className="mb-4 flex items-baseline justify-between">
-        <h2 id="titulo-consulta" className="font-display text-2xl">Consulta del expediente</h2>
-        <span className="etiqueta">Respuestas solo con evidencia citada</span>
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="titulo-consulta" className="text-2xl font-semibold">
+          Consulta del expediente
+        </h2>
+        <span className="text-sm text-tx-3">Respuestas solo con evidencia citada</span>
       </div>
 
-      <div className="flex-1 space-y-10 pb-6">
-        {conversacion.length === 0 && !pendiente && (
-          <div className="border border-dashed border-papel-3 p-8">
-            <p className="font-display text-xl">
-              {hayIndice ? "Pregunte lo que necesite del expediente." : "Aún no hay documentos indexados."}
+      <div className="flex-1 space-y-8 pb-6" role="log" aria-live="polite" aria-label="Conversación">
+        {vacio && (
+          <div className="vidrio relative overflow-hidden rounded-2xl p-8">
+            <PlacaVacia className="absolute -right-2 -top-3 hidden w-32 rotate-6 opacity-80 sm:block" />
+            <Lightbulb className="relative size-7 text-hema" strokeWidth={1.5} aria-hidden />
+            <p className="relative mt-4 max-w-md text-2xl font-semibold leading-tight">
+              {hayIndice ? "Pregunta lo que necesites del expediente." : "Aún no hay documentos indexados."}
             </p>
-            <p className="mt-2 text-sm text-tinta-2">
-              Cada respuesta cita documento, página y sección. Si la evidencia no alcanza, el sistema lo dice.
+            <p className="relative mt-3 max-w-lg text-tx-2">
+              {hayIndice
+                ? "Cada respuesta cita documento, página y sección. Si la evidencia no alcanza, el sistema lo dice."
+                : "Sube un PDF y espera a que termine el proceso: cuando el original se elimine del servidor, podrás consultarlo aquí."}
             </p>
             {hayIndice && (
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className="relative mt-6 flex flex-wrap gap-2">
                 {SUGERENCIAS.map((s) => (
-                  <button key={s} className="boton boton-linea !py-1.5 text-xs font-normal" onClick={() => setPregunta(s)}>
+                  <button
+                    key={s}
+                    onClick={() => {
+                      setPregunta(s);
+                      campo.current?.focus();
+                    }}
+                    className="rounded-full border border-ink/25 px-3.5 py-2 text-left text-[0.84rem] text-tx-2 transition-colors hover:border-hema/50 hover:bg-hema/10 hover:text-tx"
+                  >
                     {s}
                   </button>
                 ))}
@@ -85,70 +109,195 @@ export function ConsolaRag({
         ))}
 
         {pendiente && (
-          <div className="animate-aparecer">
-            <p className="font-display text-xl">{pendiente}</p>
-            <p className="etiqueta mt-4 animate-pulse">Recuperando fragmentos y redactando con citas…</p>
+          <div className="space-y-5 animate-aparecer">
+            <Burbuja texto={pendiente} />
+            <div className="flex gap-3.5" aria-busy aria-label="Analizando el expediente">
+              <AvatarIA />
+              <div className="vidrio flex-1 rounded-2xl rounded-tl-lg p-5">
+                <p className="mb-4 text-sm font-medium text-hema">Analizando el expediente…</p>
+                <div className="space-y-2.5">
+                  <Esqueleto className="h-3.5 w-[92%]" />
+                  <Esqueleto className="h-3.5 w-[78%]" />
+                  <Esqueleto className="h-3.5 w-[55%]" />
+                </div>
+              </div>
+            </div>
           </div>
         )}
         {consultar.error && (
-          <p role="alert" className="border-l-2 border-sello bg-sello-claro px-3 py-2 text-sm text-sello">
+          <p role="alert" className="flex items-start gap-2.5 rounded-2xl border border-coral/35 bg-coral/10 px-4 py-3 text-sm text-coral">
+            <AlertOctagon className="mt-0.5 size-4 shrink-0 text-coral" aria-hidden />
             {(consultar.error as Error).message}
           </p>
         )}
         <div ref={fin} />
       </div>
 
-      <form onSubmit={enviar} className="sticky bottom-4 folio flex items-end gap-3 p-3">
-        <textarea
-          className="min-h-[2.75rem] flex-1 resize-none bg-transparent px-2 py-2 text-[0.95rem] outline-none"
-          rows={2}
-          maxLength={2000}
-          placeholder={hayIndice ? "Ej.: ¿Qué requisitos técnicos exige la ficha del equipo de rayos X?" : "Cargue y espere la indexación de un documento"}
-          disabled={!hayIndice}
-          value={pregunta}
-          onChange={(e) => setPregunta(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) enviar(e);
-          }}
-        />
-        <button className="boton boton-tinta" disabled={!hayIndice || pregunta.trim().length < 3 || consultar.isPending}>
-          Consultar
-        </button>
+      <form
+        onSubmit={enviar}
+        className="vidrio sticky bottom-4 z-10 rounded-2xl p-2.5 "
+      >
+        <div className="flex items-end gap-2.5">
+          <textarea
+            ref={campo}
+            className="max-h-40 min-h-[2.9rem] flex-1 resize-none bg-transparent px-3 py-3 text-[0.95rem] outline-none disabled:cursor-not-allowed"
+            rows={2}
+            maxLength={2000}
+            aria-label="Tu pregunta"
+            placeholder={
+              hayIndice
+                ? "Ej.: ¿Qué requisitos técnicos exige la ficha del equipo de rayos X?"
+                : "Carga un documento y espera la indexación"
+            }
+            disabled={!hayIndice}
+            value={pregunta}
+            onChange={(e) => setPregunta(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) enviar(e);
+            }}
+          />
+          <Boton
+            type="submit"
+            variante="primario"
+            tamano="icono"
+            className="size-11 shrink-0"
+            disabled={!hayIndice || pregunta.trim().length < 3}
+            cargando={consultar.isPending}
+            aria-label="Consultar"
+          >
+            {!consultar.isPending && <SendHorizontal className="size-[1.15rem]" aria-hidden />}
+          </Boton>
+        </div>
+        <p className="mt-1 flex items-center gap-1.5 px-3 text-[0.72rem] text-tx-3">
+          <CornerDownLeft className="size-3" aria-hidden />
+          Enter envía · Mayús + Enter salto de línea
+        </p>
       </form>
     </section>
   );
 }
 
-function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsulta; alAbrirCita: (c: Cita) => void }) {
+function AvatarIA() {
   return (
-    <article className="animate-aparecer">
-      <p className="font-display text-xl leading-snug">{r.pregunta}</p>
-      <div className={`mt-4 border-l-2 pl-5 ${r.sinEvidencia ? "border-ambar" : "border-tinta"}`}>
-        {r.sinEvidencia && <span className="sello mb-3 text-ambar">Sin evidencia suficiente</span>}
-        <div className="space-y-3 whitespace-pre-line text-[0.97rem] leading-relaxed">{r.respuestaAnalitica}</div>
+    <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-xl border border-hema/25 bg-sala">
+      <Logotipo className="size-6" />
+    </span>
+  );
+}
 
-        {r.alertas.length > 0 && (
-          <ul className="mt-5 space-y-2">
-            {r.alertas.map((a) => (
-              <li key={a} className="flex gap-3 bg-sello-claro px-3 py-2 text-sm text-sello">
-                <span aria-hidden className="font-mono font-bold">!</span>
-                <span>{a}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+function Burbuja({ texto }: { texto: string }) {
+  return (
+    <div className="flex justify-end">
+      <p className="max-w-[85%] rounded-2xl rounded-tr-md bg-obsidiana px-5 py-3 text-[0.97rem] leading-relaxed text-tx">
+        {texto}
+      </p>
+    </div>
+  );
+}
 
-        {r.citas.length > 0 && (
-          <div className="mt-6 grid gap-3 xl:grid-cols-2">
-            {r.citas.map((c, i) => (
-              <TarjetaCita key={`${c.documentoId}-${c.orden}-${i}`} cita={c} numero={i + 1} alAbrir={alAbrirCita} />
-            ))}
+/** Convierte las referencias [n] del texto en enlaces a su tarjeta de cita (solo si esa cita existe). */
+function conReferencias(texto: string, total: number) {
+  return texto.replace(/\[(\d{1,2})\]/g, (m, n) => (Number(n) >= 1 && Number(n) <= total ? `[${n}](#cita-${n})` : m));
+}
+
+function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsulta; alAbrirCita: (c: Cita) => void }) {
+  const [resaltada, setResaltada] = useState<number | null>(null);
+  const [copiado, setCopiado] = useState(false);
+  const base = `cita-${r.consultaId}`;
+
+  function irACita(n: number) {
+    setResaltada(n);
+    document.getElementById(`${base}-${n}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(() => setResaltada(null), 2200);
+  }
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(r.respuestaAnalitica);
+      setCopiado(true);
+      toast.success("Respuesta copiada");
+      window.setTimeout(() => setCopiado(false), 1800);
+    } catch {
+      toast.error("No se pudo copiar la respuesta");
+    }
+  }
+
+  return (
+    <article className="space-y-5 animate-aparecer">
+      <Burbuja texto={r.pregunta ?? ""} />
+      <div className="flex gap-3.5">
+        <AvatarIA />
+        <div className="min-w-0 flex-1">
+          <div className={cn("vidrio rounded-2xl rounded-tl-lg p-5 sm:p-6", r.sinEvidencia && "border-ambar/30")}>
+            {r.sinEvidencia && (
+              <Insignia tono="ambar" className="mb-3.5">
+                <SearchX className="size-3.5" aria-hidden />
+                Sin evidencia suficiente
+              </Insignia>
+            )}
+            <div className="space-y-3 text-[0.98rem] leading-relaxed [&_li]:ml-5 [&_li]:list-disc [&_strong]:font-semibold [&_strong]:text-ink">
+              <ReactMarkdown
+                components={{
+                  a: ({ href, children }) => {
+                    const n = Number(href?.replace("#cita-", ""));
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => irACita(n)}
+                        className="mx-0.5 inline-grid size-5 -translate-y-0.5 place-items-center rounded-md bg-eosina/15 align-middle text-[0.7rem] font-bold text-eosina transition-colors hover:bg-eosina hover:text-[#1a1405]"
+                        aria-label={`Ir a la cita ${n}`}
+                      >
+                        {children}
+                      </button>
+                    );
+                  },
+                }}
+              >
+                {conReferencias(r.respuestaAnalitica, r.citas.length)}
+              </ReactMarkdown>
+            </div>
+
+            {r.alertas.length > 0 && (
+              <ul className="mt-5 space-y-2">
+                {r.alertas.map((a) => (
+                  <li
+                    key={a}
+                    className="flex gap-2.5 rounded-xl border border-ambar/30 bg-ambar/10 px-3.5 py-2.5 text-sm text-ambar"
+                  >
+                    <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+                    <span>{a}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-ink/8 pt-3.5">
+              <p className="font-mono text-[0.7rem] leading-relaxed text-tx-3">
+                {r.fragmentosRecuperados} fragmentos recuperados · {r.modeloEmbeddings}
+                {r.modeloLlm ? ` · ${r.modeloLlm}` : ""} · {(r.latenciaMs / 1000).toFixed(1)} s
+              </p>
+              <Boton tamano="sm" variante="fantasma" onClick={copiar}>
+                {copiado ? <Check className="size-4 text-hema" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+                {copiado ? "Copiada" : "Copiar"}
+              </Boton>
+            </div>
           </div>
-        )}
-        <p className="mt-4 font-mono text-[0.62rem] text-grafito">
-          {r.fragmentosRecuperados} fragmentos recuperados · {r.modeloEmbeddings}
-          {r.modeloLlm ? ` · ${r.modeloLlm}` : ""} · {(r.latenciaMs / 1000).toFixed(1)} s
-        </p>
+
+          {r.citas.length > 0 && (
+            <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-3 2xl:grid-cols-2">
+              {r.citas.map((c, i) => (
+                <TarjetaCita
+                  key={`${c.documentoId}-${c.orden}-${i}`}
+                  id={`${base}-${i + 1}`}
+                  cita={c}
+                  numero={i + 1}
+                  resaltada={resaltada === i + 1}
+                  alAbrir={alAbrirCita}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </article>
   );

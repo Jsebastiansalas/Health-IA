@@ -5,7 +5,7 @@ import { defineConfig } from "vite";
 
 declare const process: { env: Record<string, string | undefined> };
 
-// En desarrollo, /api se reenvía a la API (docker compose la publica en el 8010).
+// En desarrollo, /api se reenvía a la API Java (docker compose la publica en el 8010).
 // Así no hace falta CORS y la File System Access API funciona en localhost (contexto seguro).
 export default defineConfig({
   plugins: [react(), tailwindcss()],

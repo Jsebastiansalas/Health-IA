@@ -23,18 +23,18 @@
 		-Server
 	}
 
-	# Nada operativo se publica: ni métricas ni documentación de la API.
+	# Nada operativo se publica: ni métricas ni salud ni documentación.
 	@internos path /metrics /health /docs /docs/* /redoc /openapi.json
 	handle @internos {
 		respond 404
 	}
 
 	handle /api/* {
-		# Un pliego puede pesar cientos de MB (MAX_UPLOAD_MB en la API es el límite real).
+		# Un pliego puede pesar cientos de MB (MAX_UPLOAD_MB en la API Java es el límite real).
 		request_body {
 			max_size 320MB
 		}
-		reverse_proxy api:8000 {
+		reverse_proxy api:8080 {
 			# Caddy pone en X-Forwarded-For la IP real del cliente (descarta la que envíe el cliente).
 			header_up X-Request-ID {http.request.uuid}
 			flush_interval -1

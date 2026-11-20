@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-20T00:00:00Z",
+  "title": "Design System: MedTender",
+  "extensions": {
+    "colorMeta": {
+      "sala": { "role": "neutral", "displayName": "Sala (cuarto oscuro)", "canonical": "#05080e", "tonalRamp": ["#05080e", "#0a1322", "#0c1829", "#111f33", "#19293f", "#2b4059", "#5b7387", "#a8bcc7"] },
+      "luz": { "role": "primary", "displayName": "Luz de Negatoscopio", "canonical": "#e4f3f8", "tonalRamp": ["#5b8392", "#8fb3c0", "#b9d3dc", "#bfd9e2", "#d3e8ef", "#e4f3f8", "#f1fafc", "#ffffff"] },
+      "hema": { "role": "secondary", "displayName": "Cian de Pelicula", "canonical": "#7cd4e6", "tonalRamp": ["#0e3640", "#175868", "#237b90", "#3ea1b8", "#5dbdd2", "#7cd4e6", "#a9e5f1", "#d4f3f8"] },
+      "eosina": { "role": "tertiary", "displayName": "Rotulador de Cera", "canonical": "#ffc247", "tonalRamp": ["#4d3500", "#7a5600", "#a67700", "#d49a14", "#ffc247", "#ffd27a", "#ffe2a3", "#fff1d1"] },
+      "ok": { "role": "semantic", "displayName": "Verificado", "canonical": "#5fe0bf", "tonalRamp": ["#0c3a2e", "#14614d", "#1f8a6e", "#37b896", "#5fe0bf", "#8aebd2", "#b5f3e3", "#dcfaf3"] },
+      "coral": { "role": "semantic", "displayName": "Coral de Peligro", "canonical": "#ff8494", "tonalRamp": ["#4a111a", "#7a1f2d", "#b03347", "#e0566a", "#ff8494", "#ffa5b0", "#ffc6cd", "#ffe3e6"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Titular del heroe, Archivo 800 comprimido." },
+      "headline": { "displayName": "Headline", "purpose": "Titulares de ingreso y secciones." },
+      "title": { "displayName": "Title", "purpose": "Titulos de dialogos y bloques." },
+      "body": { "displayName": "Body", "purpose": "Texto corrido en Hanken Grotesk." },
+      "label": { "displayName": "Rotulo", "purpose": "Datos de placa y figura en mono mayusculas." },
+      "cera": { "displayName": "Cera", "purpose": "Anotacion manuscrita sobre la placa o el acta." }
+    },
+    "shadows": [
+      { "name": "chapa", "value": "inset 0 1px 0 rgb(220 236 242 / 0.06), 0 18px 30px -22px rgb(0 0 0 / 0.8)", "purpose": "Superficies de app." },
+      { "name": "chapa-solida", "value": "inset 0 1px 0 rgb(220 236 242 / 0.07), 0 26px 50px -24px rgb(0 0 0 / 0.9)", "purpose": "Menus, dialogos, tarjeta de ingreso." },
+      { "name": "placa", "value": "0 18px 24px -14px rgb(0 0 0 / 0.7)", "purpose": "Placa asentada sobre el panel de luz." },
+      { "name": "boton-primario", "value": "0 10px 18px -10px rgb(0 0 0 / 0.9), inset 0 -2px 0 rgb(91 131 146 / 0.45)", "purpose": "Boton primario." },
+      { "name": "foco-campo", "value": "0 0 0 3px rgb(124 212 230 / 0.22)", "purpose": "Halo de campo enfocado." }
+    ],
+    "motion": [
+      { "name": "ease-salida", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Curva unica de toda la interfaz." },
+      { "name": "aparecer", "value": "700ms ease-salida", "purpose": "Entrada de elementos." },
+      { "name": "trazo", "value": "900ms ease-salida", "purpose": "Dibujo del subrayado de rotulador." },
+      { "name": "ciclo", "value": "14s", "purpose": "Ciclo del mecanismo del negatoscopio." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Boton primario",
+      "kind": "button",
+      "refersTo": "boton-primario",
+      "description": "Accion principal: bloque de luz con texto oscuro.",
+      "html": "<button class=\"ds-btn-primario\">Empezar</button>",
+      "css": ".ds-btn-primario{height:48px;padding:0 24px;border:0;border-radius:16px;background:#e4f3f8;color:#07101c;font:600 0.95rem 'Hanken Grotesk Variable',sans-serif;box-shadow:0 10px 18px -10px rgb(0 0 0/0.9),inset 0 -2px 0 rgb(91 131 146/0.45);transition:background-color .2s,transform .2s cubic-bezier(.16,1,.3,1)}.ds-btn-primario:hover{background:#fff}.ds-btn-primario:active{transform:translateY(1px)}.ds-btn-primario:focus-visible{outline:2px solid #7cd4e6;outline-offset:3px}"
+    },
+    {
+      "name": "Boton secundario",
+      "kind": "button",
+      "refersTo": "boton-secundario",
+      "description": "Accion secundaria: contorno de tinta clara.",
+      "html": "<button class=\"ds-btn-sec\">Ingresar</button>",
+      "css": ".ds-btn-sec{height:40px;padding:0 16px;border:1px solid rgb(220 236 242/0.25);border-radius:12px;background:transparent;color:#e8f3f7;font:600 0.875rem 'Hanken Grotesk Variable',sans-serif;transition:border-color .2s,background-color .2s}.ds-btn-sec:hover{border-color:rgb(124 212 230/0.7);background:rgb(220 236 242/0.06)}.ds-btn-sec:focus-visible{outline:2px solid #7cd4e6;outline-offset:3px}"
+    },
+    {
+      "name": "Campo de texto",
+      "kind": "input",
+      "refersTo": "campo",
+      "description": "Campo con etiqueta y foco cian.",
+      "html": "<label class=\"ds-lbl\" for=\"c\">Correo electronico</label><input id=\"c\" class=\"ds-campo\" placeholder=\"nombre@organizacion\">",
+      "css": ".ds-lbl{display:block;margin-bottom:6px;font:500 0.8rem 'Hanken Grotesk Variable',sans-serif;color:#a8bcc7}.ds-campo{width:100%;height:48px;padding:0 14px;border:1px solid rgb(220 236 242/0.2);border-radius:16px;background:#05080e;color:#e8f3f7;caret-color:#ffc247;font-size:0.95rem;outline:none;transition:border-color .2s,box-shadow .2s}.ds-campo::placeholder{color:#8196a3}.ds-campo:focus{border-color:#7cd4e6;box-shadow:0 0 0 3px rgb(124 212 230/0.22)}"
+    },
+    {
+      "name": "Insignia ambar",
+      "kind": "chip",
+      "refersTo": "insignia",
+      "description": "Etiqueta de adenda o hallazgo en ambar de rotulador.",
+      "html": "<span class=\"ds-ins\">Adenda</span>",
+      "css": ".ds-ins{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border:1px solid rgb(255 194 71/0.35);border-radius:8px;background:rgb(255 194 71/0.1);color:#ffc247;font:600 0.72rem/1.25rem 'Hanken Grotesk Variable',sans-serif}"
+    },
+    {
+      "name": "Item de navegacion activo",
+      "kind": "nav",
+      "refersTo": "nav-activo",
+      "description": "Barra lateral: activo en bloque de luz.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-a on\">Expedientes</a><a class=\"ds-nav-a\">Otro</a></nav>",
+      "css": ".ds-nav{width:240px;padding:16px;border:1px solid rgb(220 236 242/0.1);border-radius:16px;background:#070d19}.ds-nav-a{display:block;padding:10px 14px;border-radius:8px;color:#a8bcc7;font:500 0.875rem 'Hanken Grotesk Variable',sans-serif;transition:background-color .2s}.ds-nav-a:hover{background:rgb(220 236 242/0.08);color:#e8f3f7}.ds-nav-a.on{background:#e4f3f8;color:#07101c}"
+    },
+    {
+      "name": "Chapa de app",
+      "kind": "card",
+      "refersTo": "superficie-vidrio",
+      "description": "Superficie opaca con filo de luz arriba.",
+      "html": "<div class=\"ds-chapa\">Contenido</div>",
+      "css": ".ds-chapa{padding:20px;border:1px solid rgb(220 236 242/0.1);border-radius:16px;background:#0a1322;color:#e8f3f7;box-shadow:inset 0 1px 0 rgb(220 236 242/0.06),0 18px 30px -22px rgb(0 0 0/0.8)}"
+    },
+    {
+      "name": "Cita verificada",
+      "kind": "custom",
+      "refersTo": "superficie-vidrio",
+      "description": "Tarjeta de cita leida sobre la placa, con huella SHA-256.",
+      "html": "<figure class=\"ds-cita\"><span class=\"ds-ok\">Fuente verificada</span><blockquote>La garantia de cumplimiento tendra una vigencia de doce (12) meses...</blockquote><figcaption>Pliego de condiciones, pag. 14 <b>sha256 9f3a...c41e</b></figcaption></figure>",
+      "css": ".ds-cita{margin:0;padding:16px;border:1px solid rgb(255 255 255/0.15);border-radius:6px;background:#0a1322;color:#e8f3f7;box-shadow:0 18px 28px -14px rgb(0 0 0/0.9)}.ds-ok{display:inline-block;padding:2px 8px;border:1px solid rgb(95 224 191/0.35);border-radius:8px;background:rgb(95 224 191/0.1);color:#5fe0bf;font:600 0.7rem 'Hanken Grotesk Variable',sans-serif}.ds-cita blockquote{margin:10px 0;font:500 1rem/1.35 'Archivo Variable',sans-serif}.ds-cita figcaption{font-size:0.76rem;color:#a8bcc7}.ds-cita b{margin-left:12px;font:600 0.76rem 'JetBrains Mono Variable',monospace;color:#5fe0bf}"
+    }
+  ],
+  "narrative": {
+    "northStar": "El Negatoscopio",
+    "overview": "Un cuarto oscuro azul noche donde lo unico que ilumina es el panel de luz fria. El expediente es una placa radiografica puesta sobre ese panel, y lo que importa se marca a mano con rotulador de cera ambar. La app hereda el mismo cuarto, mas calmado: chapas oscuras, filos de luz, nada de brillo decorativo.",
+    "keyCharacteristics": [
+      "Penumbra azul noche con un unico panel de luz frio como fuente de claridad.",
+      "Ambar de rotulador solo para hallazgos, citas y adendas; cian solo para estado activo.",
+      "Cuatro familias tipograficas con roles fijos: Archivo comprimido, Hanken, JetBrains Mono, Reenie Beanie.",
+      "Planos, sin vidrio: superficies opacas con filo de luz superior y sombra baja difusa.",
+      "Mecanismo animado en ciclo de 14 s con fotograma de lectura fijo en movimiento reducido."
+    ],
+    "rules": [
+      { "name": "La Regla de los Dos Acentos", "body": "El ambar marca lo que importa del expediente; el cian marca lo activo. Nunca se intercambian.", "section": "colors" },
+      { "name": "La Regla de la Tinta Clara", "body": "Bordes y velos son ink con opacidad, nunca negro ni gris neutro.", "section": "colors" },
+      { "name": "La Regla de una Sola Luz", "body": "El bloque claro (luz) es escaso y siempre lleva texto oscuro.", "section": "colors" },
+      { "name": "La Regla del Dato en Mono", "body": "Huellas, fechas, numeros de pagina y fragmento van en JetBrains Mono con tabular-nums.", "section": "typography" },
+      { "name": "La Regla de la Mano Escasa", "body": "La fuente manuscrita aparece solo como marca sobre una placa o el acta.", "section": "typography" },
+      { "name": "La Regla de Sombra Baja", "body": "Toda sombra es desplazada hacia abajo, con radio negativo; nunca halo ni sombra de color.", "section": "elevation" },
+      { "name": "La Regla Sin Vidrio", "body": "Las superficies son opacas: sin backdrop-filter ni transparencia de fondo.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do usar luz solo para el panel, el primario y el item activo, siempre con texto #07101c.",
+      "Do marcar citas y adendas en eosina; reservar hema para foco y estado activo.",
+      "Do construir bordes y velos con ink a baja opacidad.",
+      "Do mantener todo movimiento con la curva --ease-salida y respetar prefers-reduced-motion.",
+      "Do dibujar ilustraciones en SVG en codigo y rotular lo ficticio como ejemplo."
+    ],
+    "donts": [
+      "Don't usar vidrio translucido, backdrop-filter ni brillos de neon.",
+      "Don't usar ambar para estado activo ni cian para hallazgos.",
+      "Don't poner sombras de halo ni de color; solo sombras bajas desplazadas.",
+      "Don't usar texto claro sobre luz ni texto oscuro sobre sala.",
+      "Don't usar la fuente manuscrita para informacion funcional."
+    ]
+  }
+}

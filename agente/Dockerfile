@@ -26,5 +26,6 @@ RUN useradd --system --uid 1001 medtender \
 USER medtender
 
 EXPOSE 8000
-# Imagen compartida por la API (por defecto) y el worker (command en docker-compose).
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# Imagen compartida por el agente (por defecto) y el worker (command en docker-compose).
+# El esquema de la base de datos lo aplica Flyway desde la API Java: aquí no hay migraciones.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]

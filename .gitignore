@@ -37,3 +37,6 @@ infra/backups/
 target/
 *.class
 .mvn/wrapper/maven-wrapper.jar
+
+# Registro de sesiones de Impeccable (local)
+.impeccable/questions/
