@@ -1,8 +1,8 @@
-import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, LockKeyhole, Mail, Trash2 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { AvisoPurga } from "../arte/TarjetasUI";
+import { Sello } from "../arte/Folios";
 import { Marca } from "../componentes/Marca";
 import { Boton } from "../componentes/ui/Boton";
 import { Campo } from "../componentes/ui/Campo";
@@ -31,17 +31,15 @@ export function PaginaIngreso() {
   }
 
   return (
-    <div className="relative isolate grid min-h-[100svh] overflow-hidden lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-      {/* Lado de marca: el cielo de la bienvenida, con la promesa del producto */}
-      <section className="relative isolate m-3 hidden flex-col justify-between overflow-hidden rounded-xl p-10 text-tinta lg:flex xl:p-14">
-        <Link to="/" aria-label="MedTender, volver al inicio" className="relative w-fit">
+    <div className="grid min-h-[100svh] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      {/* Lado de marca: la carpeta manila con la promesa del producto */}
+      <section className="relative m-3 hidden flex-col justify-between rounded-md bg-carpeta p-10 text-tinta lg:flex xl:p-14">
+        <Link to="/" aria-label="MedTender, volver al inicio" className="w-fit">
           <Marca />
         </Link>
-        <div className="relative max-w-lg">
-          <h1 className="text-[clamp(2.2rem,3.2vw,3.2rem)]">
-            Tu expediente, con la fuente a un clic.
-          </h1>
-          <ul className="mt-8 space-y-3.5 text-[1.02rem] text-tinta">
+        <div className="max-w-lg">
+          <h1 className="text-[clamp(2.2rem,3.2vw,3.2rem)]">Tu expediente, con la fuente a un clic.</h1>
+          <ul className="mt-8 space-y-3.5 text-[1.02rem]">
             {[
               "Respuestas con extracto literal, página y huella del archivo.",
               "El PDF se elimina del servidor tras indexarlo.",
@@ -53,18 +51,20 @@ export function PaginaIngreso() {
               </li>
             ))}
           </ul>
-          <AvisoPurga className="mt-10" />
         </div>
-        <span aria-hidden />
+        <Sello className="w-fit bg-folio">
+          <Trash2 className="size-3.5" aria-hidden />
+          PDF eliminado
+        </Sello>
       </section>
 
       {/* Formulario */}
       <section className="relative flex items-center justify-center px-5 py-10 sm:px-10">
         <motion.div
-          initial={quieto ? false : { opacity: 0, y: 24, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="relative w-full max-w-md rounded-xl bg-folio p-8 sm:p-10"
+          initial={quieto ? false : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="folio relative w-full max-w-md p-8 sm:p-10"
         >
           <Link
             to="/"
@@ -73,7 +73,7 @@ export function PaginaIngreso() {
             <ArrowLeft className="size-4" aria-hidden />
             Inicio
           </Link>
-          <h2 className="relative font-display text-[1.7rem] font-[480] leading-tight text-tinta [font-stretch:112%]">Ingresa a tu cuenta</h2>
+          <h2 className="relative font-display text-[1.7rem] font-semibold leading-tight text-tinta">Ingresa a tu cuenta</h2>
           <p className="relative mt-2 text-[0.95rem] text-tinta-2">Usa el correo con el que tu organización te registró.</p>
 
           <form onSubmit={enviar} className="relative mt-8 space-y-5" noValidate>
@@ -100,7 +100,7 @@ export function PaginaIngreso() {
                 <button
                   type="button"
                   onClick={() => setVerClave((v) => !v)}
-                  className="grid size-8 place-items-center rounded-lg text-tinta-3 transition-colors hover:bg-tinta/8 hover:text-tinta"
+                  className="grid size-8 place-items-center rounded-md text-tinta-3 transition-colors hover:bg-tinta/8 hover:text-tinta"
                   aria-label={verClave ? "Ocultar contraseña" : "Mostrar contraseña"}
                   aria-pressed={verClave}
                 >
