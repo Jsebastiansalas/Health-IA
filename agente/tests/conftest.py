@@ -68,7 +68,7 @@ def _configurar_entorno(postgres_url: str, ephemeral_dir: Path) -> Iterator[None
 
     # Esquema: los mismos V1..V6 que aplica Flyway (orden numérico, no alfabético).
     scripts = sorted(MIGRACIONES.glob("V*__*.sql"), key=lambda p: int(p.name[1:].split("__")[0]))
-    assert len(scripts) >= 6, f"No se encontraron las migraciones de Flyway en {MIGRACIONES}"
+    assert len(scripts) >= 7, f"No se encontraron las migraciones de Flyway en {MIGRACIONES}"
     with psycopg.connect(postgres_url, autocommit=True) as conn:
         for script in scripts:
             conn.execute(script.read_text(encoding="utf-8"))
@@ -81,7 +81,8 @@ def _limpiar(postgres_url: str, ephemeral_dir: Path) -> Iterator[None]:
     with psycopg.connect(postgres_url) as conn:
         conn.execute(
             "TRUNCATE auditoria, actas_purga, consultas, fragmentos, documentos, "
-            "expediente_permisos, expedientes, usuarios, tenants RESTART IDENTITY CASCADE"
+            "expediente_permisos, expedientes, usuarios, tenants, med_cum, med_precio, med_carga "
+            "RESTART IDENTITY CASCADE"
         )
     for f in ephemeral_dir.iterdir():
         f.unlink()

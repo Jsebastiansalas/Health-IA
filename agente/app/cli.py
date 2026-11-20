@@ -2,6 +2,7 @@
 
     python -m app.cli verificar-config
     python -m app.cli crear-tenant --nombre "Hospital X" --nit 900123 --email admin@hospital.co
+    python -m app.cli cargar-medicamentos [--fuente VIGENTE --fuente PRECIO ...]
 
 Sirve para dar de alta la primera organización en producción sin dejar abierto el registro
 público (ALLOW_TENANT_SIGNUP=false). La contraseña se lee de MEDTENDER_ADMIN_PASSWORD o se pide
@@ -65,10 +66,44 @@ async def _crear_tenant(
     return 0
 
 
+async def _cargar_medicamentos(fuentes: list[str]) -> int:
+    import httpx
+
+    from app.medicamentos.carga import CONJUNTOS, cargar_fuente
+
+    codigo = 0
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(180.0, connect=20.0)) as cliente:
+            for fuente in fuentes:
+                print(f"Cargando {CONJUNTOS[fuente].nombre} ({CONJUNTOS[fuente].dataset_id})…")
+                try:
+                    async with get_sessionmaker()() as session:
+                        filas = await cargar_fuente(
+                            session, cliente, fuente, avance=lambda m: print(f"  {m}", flush=True)
+                        )
+                    print(f"  Listo: {filas} filas.")
+                except Exception as exc:  # una fuente que falla no tumba las demás
+                    print(f"  Error en {fuente}: {exc}", file=sys.stderr)
+                    codigo = 1
+    finally:
+        await get_engine().dispose()
+    return codigo
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m app.cli")
     sub = p.add_subparsers(dest="comando", required=True)
     sub.add_parser("verificar-config", help="Revisa la configuración de producción")
+    m = sub.add_parser(
+        "cargar-medicamentos",
+        help="Descarga los datos abiertos de INVIMA (datos.gov.co) a la base de medicamentos",
+    )
+    m.add_argument(
+        "--fuente",
+        action="append",
+        choices=["VIGENTE", "RENOVACION", "OTROS", "VENCIDO", "PRECIO"],
+        help="Repetible. Sin esta opción se cargan todas.",
+    )
     c = sub.add_parser("crear-tenant", help="Crea una organización y su administrador")
     c.add_argument("--nombre", required=True)
     c.add_argument("--nit", required=True)
@@ -83,6 +118,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.comando == "verificar-config":
         return verificar_config()
+    if args.comando == "cargar-medicamentos":
+        todas = ["VIGENTE", "RENOVACION", "OTROS", "VENCIDO", "PRECIO"]
+        return asyncio.run(_cargar_medicamentos(args.fuente or todas))
 
     # Mismo validador que usa el login: un correo que la API rechazaría dejaría un
     # administrador que nunca podría ingresar.

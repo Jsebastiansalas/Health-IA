@@ -115,3 +115,80 @@ export interface RespuestaConsulta {
   fragmentosRecuperados: number;
   latenciaMs: number;
 }
+
+/* ---- Medicamentos de Colombia (datos abiertos de INVIMA) ---- */
+export interface FuenteDato {
+  conjunto: string;
+  datasetId: string;
+  enlace: string;
+  cargadoAt: string | null;
+  licencia: string;
+}
+
+export interface CitaRegistro {
+  tipo: "REGISTRO_INVIMA";
+  id: string;
+  cum: string;
+  producto: string | null;
+  titular: string | null;
+  registroSanitario: string | null;
+  estadoRegistro: string | null;
+  conjunto: "VIGENTE" | "RENOVACION" | "OTROS" | "VENCIDO";
+  fechaExpedicion: string | null;
+  fechaVencimiento: string | null;
+  atc: string | null;
+  descripcionAtc: string | null;
+  formaFarmaceutica: string | null;
+  viaAdministracion: string | null;
+  principiosActivos: { nombre: string; cantidad: string | null; unidad: string | null }[];
+  presentacion: string | null;
+  presentaciones: number;
+  fuente: FuenteDato;
+}
+
+export interface CitaPrecio {
+  tipo: "PRECIO_REGULADO";
+  id: string;
+  cum: string;
+  medicamento: string | null;
+  precioInstitucional: string | null;
+  precioComercial: string | null;
+  precioFinalComercial: string | null;
+  circular: string | null;
+  vigenciaDesde: string | null;
+  fuente: FuenteDato;
+}
+
+export interface CitaAgregada {
+  tipo: "CONSULTA_AGREGADA";
+  id: string;
+  filtros: Record<string, string>;
+  coincidenciasCum: number;
+  registrosSanitarios: number;
+  titularesDistintos: number;
+  porConjunto: { conjunto: string; cum: number; registros: number }[];
+  fuente: FuenteDato;
+}
+
+export type CitaMedicamento = CitaRegistro | CitaPrecio | CitaAgregada;
+
+export interface RespuestaMedicamentos {
+  consultaId: string;
+  pregunta?: string;
+  respuestaAnalitica: string;
+  sinEvidencia: boolean;
+  alertas: string[];
+  citas: CitaMedicamento[];
+  aviso: string;
+  totalCoincidencias?: number;
+  modeloLlm: string | null;
+  latenciaMs: number;
+}
+
+export interface FuenteCargada {
+  fuente: string;
+  datasetId: string;
+  nombre: string;
+  filas: number;
+  cargadoAt: string;
+}

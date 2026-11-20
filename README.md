@@ -55,13 +55,13 @@ Sin Docker para la API Java: `cd infra; docker compose up -d postgres redis clam
 ## Pruebas
 Requieren Docker en ejecución (Testcontainers levanta PostgreSQL + pgvector y Redis desechables):
 ```powershell
-cd api-java; mvn test          # 72 pruebas: identidad, expedientes, ingesta, consultas
-cd agente;   uv run pytest     # 146 pruebas: pipeline, RAG, purga, API interna
+cd api-java; mvn test          # identidad, expedientes, ingesta, consultas
+cd agente;   uv run pytest     # pipeline, RAG, purga, API interna
 cd agente;   uv run ruff check .
 cd frontend; npm test          # Vitest
 ```
 - **Java:** clamd y el agente se simulan con servidores reales en proceso (protocolo INSTREAM y HTTP); el multipart se prueba sobre HTTP real, no con MockMvc.
-- **Python:** el esquema se crea con los mismos `V1…V6.sql` de Flyway (`api-java/src/main/resources/db/migration`), así que ambas mitades se prueban contra la misma base.
+- **Python:** el esquema se crea con los mismos `V1…V7.sql` de Flyway (`api-java/src/main/resources/db/migration`), así que ambas mitades se prueban contra la misma base.
 
 ## Ingesta efímera de PDFs (API Java)
 `POST /api/v1/expedientes/{id}/documentos` (multipart: `archivo`, `tipo_documento`, `numero_adenda`), requiere permiso `EDITOR`.
@@ -122,6 +122,33 @@ Los vectores de menor dimensión se rellenan con ceros hasta 1536. La similitud 
    - Cada cita indica si requiere verificar el PDF original: sellos o firmas, tablas, imágenes u OCR de baja confianza.
 
 **Errores.** Los de negocio del agente (404, 409, 422) llegan al usuario con su texto. Cualquier otro fallo (Gemini caído, token interno rechazado, agente apagado) se muestra como un 503 genérico «El servicio de IA no está disponible…»; el detalle solo queda en el log.
+
+## Medicamentos de Colombia (datos abiertos de INVIMA)
+
+Además de la consola de cada expediente, la app tiene una consulta **«Medicamentos»** que responde preguntas
+sobre cualquier medicamento con registro en Colombia **solo con datos oficiales y citables**, sin usar el
+conocimiento propio del modelo:
+
+- **Fuentes** (datos.gov.co, publicadas por INVIMA, licencia CC BY-SA 4.0, que la interfaz cita): código único
+  de medicamentos *vigentes*, *en trámite de renovación*, *otros estados* y *vencidos*, y el *precio máximo de
+  venta* regulado por presentación.
+- **Qué responde:** registro sanitario, titular, vigencia y vencimiento, principios activos y concentración,
+  forma y vía, ATC, presentaciones (CUM), equivalentes y precio máximo. **No** responde dosis, indicaciones ni
+  interacciones: esos datos no están en la fuente y el asistente lo dice y remite a la ficha técnica.
+- **Cómo:** el modelo traduce la pregunta a filtros (no escribe SQL), PostgreSQL busca (trigramas, sin
+  vectores) y el modelo redacta solo con lo encontrado. Las citas se arman desde la base: registro, CUM, enlace
+  al dato en datos.gov.co y fecha de carga. El código marca registros «vigentes» con fecha de vencimiento ya
+  pasada y datos con más de 45 días.
+- **Carga** (los datos no vienen en el repositorio; ~415 MB en total, tarda unos minutos):
+
+```bash
+docker compose -f infra/docker-compose.yml exec agente python -m app.cli cargar-medicamentos
+# o solo algunas: ... cargar-medicamentos --fuente VIGENTE --fuente PRECIO
+```
+
+  Cada fuente se reemplaza completa en una transacción; repetir el comando la actualiza. Variable opcional
+  `SOCRATA_APP_TOKEN` para evitar límites de la API. Endpoints: `POST /api/v1/medicamentos/consultas` y
+  `GET /api/v1/medicamentos/fuentes` (cualquier usuario autenticado; límite y auditoría como la consola RAG).
 
 ## Frontend web
 ```powershell

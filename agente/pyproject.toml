@@ -56,3 +56,4 @@ ignore = ["B008"]  # Depends() en argumentos por defecto es el patrón de FastAP
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E501", "ASYNC240"]
 "scripts/*" = ["E501", "ASYNC240", "T201"]  # utilidades de línea de comandos
+"app/medicamentos/*" = ["E501"]  # prompts y textos largos en español

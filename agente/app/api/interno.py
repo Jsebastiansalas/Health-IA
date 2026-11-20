@@ -23,6 +23,8 @@ from app.core.enums import EstadoIndexacion as E
 from app.core.metricas import CONSULTA_DURACION, CONSULTAS, LLM_RESPUESTAS
 from app.ia.embeddings import EmbeddingRouter, ErrorEmbeddings, ModeloNoSoportado, get_router
 from app.ia.llm import ErrorLLM, ProveedorLLM, get_llm
+from app.medicamentos import busqueda as med_busqueda
+from app.medicamentos import consulta as med_consulta
 from app.models import Consulta, Documento, Expediente, Reindexacion
 from app.rag import motor
 from app.schemas import ModeloEmbeddingOut, ReindexacionIn, ReindexacionOut
@@ -163,6 +165,53 @@ async def historial(
     return [
         {"pregunta": c.pregunta, "createdAt": c.created_at.isoformat(), **c.respuesta}
         for c in filas
+    ]
+
+
+# ---------- Medicamentos (datos abiertos de INVIMA) ----------
+class ConsultaMedicamentosIn(BaseModel):
+    tenant_id: uuid.UUID
+    usuario_id: uuid.UUID
+    pregunta: str = Field(min_length=3, max_length=1000)
+
+
+@router.post("/medicamentos/consultas")
+async def consultar_medicamentos(
+    data: ConsultaMedicamentosIn,
+    session: SessionDep,
+    llm: Annotated[ProveedorLLM, Depends(get_llm)],
+) -> dict:
+    """Pregunta sobre medicamentos de Colombia respondida solo con la base de INVIMA. No depende de
+    un expediente: los datos son públicos; tenant y usuario viajan para trazabilidad."""
+    pregunta = " ".join(data.pregunta.split())
+    try:
+        r = await med_consulta.responder(session, pregunta, llm)
+    except ErrorLLM as exc:
+        CONSULTAS.labels("error_ia").inc()
+        log.error("Consulta de medicamentos fallida: %s", exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "El servicio de IA no está disponible en este momento; intente de nuevo.",
+        ) from exc
+    CONSULTAS.labels("sin_evidencia" if r.sin_evidencia else "con_evidencia").inc()
+    CONSULTA_DURACION.observe(r.latencia_ms / 1000)
+    if r.modelo_llm:
+        LLM_RESPUESTAS.labels(r.modelo_llm).inc()
+    return r.cuerpo
+
+
+@router.get("/medicamentos/fuentes")
+async def fuentes_medicamentos(session: SessionDep) -> list[dict]:
+    """Qué conjuntos de INVIMA están cargados, de dónde y desde cuándo."""
+    return [
+        {
+            "fuente": c["fuente"],
+            "datasetId": c["dataset_id"],
+            "nombre": c["nombre"],
+            "filas": c["filas"],
+            "cargadoAt": c["cargado_at"].isoformat(),
+        }
+        for c in await med_busqueda.fuentes_cargadas(session)
     ]
 
 
