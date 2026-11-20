@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ArrowUpRight, CalendarDays, ClipboardCheck, Cpu, FilePlus2, Pill, Search, Stethoscope } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { AlertTriangle, FilePlus2, Search } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -12,15 +11,14 @@ import { Dialogo } from "../componentes/ui/Dialogo";
 import { Esqueleto } from "../componentes/ui/Esqueleto";
 import { Insignia } from "../componentes/ui/Insignia";
 import { cn } from "../lib/cn";
-import { fecha, TIPOS_EXPEDIENTE } from "../lib/formato";
+import { TIPOS_EXPEDIENTE } from "../lib/formato";
 import { useSesion } from "../sesion";
 
+/** Día sin hora: en un índice importa cuándo se abrió, no a qué minuto. */
+const dia = (iso: string) =>
+  new Date(iso).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" });
+
 const PERMISO: Record<string, string> = { ADMIN: "Administras", EDITOR: "Editas", LECTOR: "Consultas" };
-const ICONO_TIPO = {
-  LICITACION_MEDICAMENTOS: Pill,
-  DOTACION_BIOMEDICA: Stethoscope,
-  AUDITORIA_CLINICA: ClipboardCheck,
-} as const;
 const FILTROS = [
   ["TODOS", "Todos"],
   ["ABIERTO", "Abiertos"],
@@ -30,7 +28,6 @@ const FILTROS = [
 
 export function PaginaExpedientes() {
   const { usuario } = useSesion();
-  const quieto = useReducedMotion();
   const { data: expedientes, isLoading, error, refetch } = useQuery({
     queryKey: ["expedientes"],
     queryFn: () => api<Expediente[]>("/expedientes?limit=200"),
@@ -64,14 +61,14 @@ export function PaginaExpedientes() {
     <div>
       <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
         <div>
-          <h1 className="text-4xl font-semibold sm:text-5xl">Expedientes</h1>
+          <h1 className="text-3xl font-semibold sm:text-4xl">Expedientes</h1>
           <p className="mt-2 text-tinta-2">
             {usuario ? `Hola, ${usuario.nombre_completo.split(" ")[0]}. ` : ""}
             Elige un expediente para subir documentos o consultarlo.
           </p>
         </div>
         {puedeCrear && (
-          <Boton variante="primario" tamano="lg" onClick={() => setCreando(true)}>
+          <Boton variante="primario" onClick={() => setCreando(true)}>
             <FilePlus2 className="size-[1.1rem]" aria-hidden />
             Abrir expediente
           </Boton>
@@ -79,7 +76,7 @@ export function PaginaExpedientes() {
       </div>
 
       <div className="mb-8 flex flex-wrap items-center gap-3">
-        <div className="group flex h-11 w-full items-center gap-2.5 rounded-md border border-tinta/35 bg-folio px-5 transition-[border-color] focus-within:border-tinta sm:w-80">
+        <div className="group flex h-11 w-full items-center gap-2.5 rounded-md border border-tinta/35 bg-folio px-3 transition-[border-color] focus-within:border-accion sm:w-96">
           <Search className="size-4 text-tinta-3 group-focus-within:text-accion" aria-hidden />
           <input
             ref={buscador}
@@ -94,34 +91,41 @@ export function PaginaExpedientes() {
           </kbd>
         </div>
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por estado">
-          {FILTROS.map(([valor, texto]) => (
-            <button
-              key={valor}
-              onClick={() => setEstado(valor)}
-              aria-pressed={estado === valor}
-              className={cn(
-                "rounded-md border px-3.5 py-1.5 text-[0.82rem] font-semibold transition-colors",
-                estado === valor
-                  ? "border-accion/40 bg-accion/14 text-accion"
-                  : "border-tinta/10 text-tinta-2 hover:border-tinta/25 hover:text-tinta",
-              )}
-            >
-              {texto}
-            </button>
-          ))}
+          {FILTROS.map(([valor, texto]) => {
+            const n = (expedientes ?? []).filter((e) => valor === "TODOS" || e.estado === valor).length;
+            return (
+              <button
+                key={valor}
+                onClick={() => setEstado(valor)}
+                aria-pressed={estado === valor}
+                className={cn(
+                  "rounded-md border px-3 py-1.5 text-[0.82rem] font-medium transition-colors",
+                  estado === valor
+                    ? "border-accion/50 bg-accion/12 text-accion"
+                    : "border-tinta/15 text-tinta-2 hover:border-tinta/35 hover:text-tinta",
+                )}
+              >
+                {texto}
+                {expedientes && <span className="num ml-1.5 text-tinta-3">{n}</span>}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {isLoading && (
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3" aria-busy aria-label="Cargando expedientes">
-          {[0, 1, 2].map((i) => (
-            <Esqueleto key={i} className="h-56 rounded-2xl" />
+        <div className="folio divide-y divide-tinta/10" aria-busy aria-label="Cargando expedientes">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="px-5 py-4">
+              <Esqueleto className="h-5 w-2/3" />
+              <Esqueleto className="mt-2 h-3.5 w-1/3" />
+            </div>
           ))}
         </div>
       )}
 
       {error && (
-        <div role="alert" className="vidrio flex max-w-xl items-start gap-4 rounded-2xl p-6">
+        <div role="alert" className="folio flex max-w-xl items-start gap-4 p-6">
           <AlertTriangle className="mt-0.5 size-6 shrink-0 text-peligro" aria-hidden />
           <div>
             <p className="font-semibold">No pudimos cargar tus expedientes</p>
@@ -134,8 +138,8 @@ export function PaginaExpedientes() {
       )}
 
       {expedientes?.length === 0 && (
-        <div className="vidrio relative max-w-2xl overflow-hidden rounded-2xl p-9">
-          <h2 className="relative max-w-sm text-3xl font-semibold">Aún no hay expedientes.</h2>
+        <div className="max-w-2xl py-6">
+          <h2 className="max-w-sm text-3xl font-semibold">Aún no hay expedientes.</h2>
           <p className="relative mt-3 max-w-md text-tinta-2">
             {puedeCrear
               ? "Abre el primero para empezar a indexar pliegos y adendas, y luego pregúntale lo que necesites."
@@ -157,52 +161,46 @@ export function PaginaExpedientes() {
         </p>
       )}
 
-      <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {visibles.map((e, i) => {
-          const Icono = ICONO_TIPO[e.tipo_expediente];
-          return (
-            <motion.li
-              key={e.id}
-              initial={quieto ? false : { opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: Math.min(i, 9) * 0.05, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <Link
-                to={`/expedientes/${e.id}`}
-                className="vidrio group relative flex h-full flex-col overflow-hidden rounded-2xl p-6 transition-[transform,border-color,box-shadow] duration-300 ease-[var(--ease-salida)] hover:bg-folio-2 "
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <span className="grid size-12 place-items-center rounded-2xl border border-accion/25 bg-accion/10 text-accion">
-                    <Icono className="size-6" strokeWidth={1.6} aria-hidden />
-                  </span>
-                  <Insignia tono={e.estado === "ABIERTO" ? "accion" : "neutro"}>{e.estado}</Insignia>
-                </div>
-                <p className="mt-5 font-mono text-[0.78rem] text-accion">{e.codigo_expediente}</p>
-                <h2 className="mt-1 text-[1.35rem] font-semibold leading-tight tracking-tight">{e.titulo}</h2>
-                <p className="mt-2 text-sm text-tinta-2">
-                  {e.entidad_contratante ?? "Entidad no registrada"} · {TIPOS_EXPEDIENTE[e.tipo_expediente]}
-                </p>
-                <div className="mt-auto flex items-center justify-between gap-3 border-t border-tinta/8 pt-4 text-[0.78rem] text-tinta-3">
-                  <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <span className="inline-flex items-center gap-1.5">
-                      <CalendarDays className="size-3.5" aria-hidden />
-                      {fecha(e.created_at)}
+      {visibles.length > 0 && (
+        <div className="folio overflow-hidden">
+          <div
+            className="hidden grid-cols-[8.5rem_minmax(0,1fr)_9rem_6.5rem_7.5rem] gap-x-4 border-b border-tinta/15 px-5 py-2.5 text-[0.74rem] font-medium text-tinta-3 md:grid"
+            aria-hidden
+          >
+            <span>Código</span>
+            <span>Expediente</span>
+            <span>Tipo</span>
+            <span>Estado</span>
+            <span className="text-right">Creado</span>
+          </div>
+          <ul className="divide-y divide-tinta/10">
+            {visibles.map((e) => (
+              <li key={e.id}>
+                <Link
+                  to={`/expedientes/${e.id}`}
+                  className="group grid gap-x-4 gap-y-1 px-5 py-4 transition-colors hover:bg-folio-2 focus-visible:bg-folio-2 md:grid-cols-[8.5rem_minmax(0,1fr)_9rem_6.5rem_7.5rem] md:items-center"
+                >
+                  <span className="font-mono text-[0.82rem] text-tinta">{e.codigo_expediente}</span>
+                  <span className="min-w-0">
+                    <span className="block font-display text-[1.1rem] font-semibold leading-snug group-hover:text-accion">
+                      {e.titulo}
                     </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <Cpu className="size-3.5" aria-hidden />
-                      <span className="font-mono">{e.embedding_model_activo}</span>
+                    <span className="mt-0.5 block truncate text-[0.82rem] text-tinta-2">
+                      {e.entidad_contratante ?? "Entidad no registrada"}
+                      {e.mi_permiso ? ` · ${PERMISO[e.mi_permiso]}` : ""}
                     </span>
                   </span>
-                  <span className="inline-flex items-center gap-1 font-semibold text-tinta-2 transition-colors group-hover:text-accion">
-                    {e.mi_permiso ? PERMISO[e.mi_permiso] : ""}
-                    <ArrowUpRight className="size-4" aria-hidden />
+                  <span className="text-[0.82rem] text-tinta-2">{TIPOS_EXPEDIENTE[e.tipo_expediente]}</span>
+                  <span>
+                    <Insignia tono={e.estado === "ABIERTO" ? "accion" : "neutro"}>{e.estado}</Insignia>
                   </span>
-                </div>
-              </Link>
-            </motion.li>
-          );
-        })}
-      </ul>
+                  <span className="num text-[0.8rem] text-tinta-3 md:text-right">{dia(e.created_at)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <Dialogo
         abierto={creando}
@@ -249,14 +247,14 @@ function NuevoExpediente({ alCrear }: { alCrear: () => void }) {
       <Campo etiqueta="Título" required maxLength={250} placeholder="Suministro de medicamentos oncológicos"
         value={datos.titulo} onChange={cambiar("titulo")} />
       <div>
-        <label htmlFor="tipo-expediente" className="mb-1.5 block text-[0.8rem] font-medium text-tinta-2">
+        <label htmlFor="tipo-expediente" className="mb-1.5 block text-[0.85rem] font-medium text-tinta-2">
           Tipo de expediente
         </label>
         <select
           id="tipo-expediente"
           value={datos.tipo_expediente}
           onChange={cambiar("tipo_expediente")}
-          className="h-12 w-full rounded-md border border-tinta/35 bg-folio px-5 text-[0.95rem] outline-none transition-[border-color,box-shadow] focus:border-tinta"
+          className="h-11 w-full rounded-md border border-tinta/35 bg-folio px-3 text-[0.95rem] outline-none transition-[border-color,box-shadow] focus:border-accion focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--accion)_22%,transparent)]"
         >
           {Object.entries(TIPOS_EXPEDIENTE).map(([v, t]) => (
             <option key={v} value={v} className="bg-folio">

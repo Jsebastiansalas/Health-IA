@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertOctagon, ExternalLink, Pill, SearchX, SendHorizontal, TriangleAlert } from "lucide-react";
+import { AlertOctagon, ArrowUpRight, ExternalLink, SearchX, SendHorizontal, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { api, post } from "../api/cliente";
@@ -65,9 +65,9 @@ export function PaginaMedicamentos() {
 
   const vacio = conversacion.length === 0 && !pendiente;
   return (
-    <section aria-labelledby="titulo-med" className="mx-auto flex min-h-[78vh] max-w-4xl flex-col">
+    <section aria-labelledby="titulo-med" className="mx-auto flex min-h-[78vh] max-w-5xl flex-col">
       <header className="mb-8">
-        <h1 id="titulo-med" className="text-4xl sm:text-5xl">
+        <h1 id="titulo-med" className="text-3xl sm:text-4xl">
           Medicamentos
         </h1>
         <p className="mt-3 max-w-2xl text-tinta-2">
@@ -85,27 +85,28 @@ export function PaginaMedicamentos() {
 
       <div className="flex-1 space-y-8 pb-6" role="log" aria-live="polite" aria-label="Conversación">
         {vacio && (
-          <div className="vidrio rounded-xl p-8">
-            <Pill className="size-7 text-tinta-2" strokeWidth={1.5} aria-hidden />
-            <p className="mt-4 max-w-md font-display text-2xl leading-tight [font-stretch:112%]">Pregunta por un medicamento.</p>
-            <p className="mt-3 max-w-lg text-tinta-2">
+          <div className="animate-aparecer">
+            <p className="max-w-xl font-display text-2xl font-semibold leading-tight">Pregunta por un medicamento.</p>
+            <p className="mt-2 max-w-lg text-tinta-2">
               Responde con la base oficial de INVIMA. Dosis, indicaciones e interacciones no están en esa fuente: para eso, consulta
               la ficha técnica o el prospecto.
             </p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {SUGERENCIAS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => {
-                    setPregunta(s);
-                    campo.current?.focus();
-                  }}
-                  className="rounded-md border border-tinta/25 px-4 py-2 text-left text-[0.84rem] text-tinta-2 transition-colors hover:border-tinta/60 hover:text-tinta"
-                >
-                  {s}
-                </button>
+            <ul className="mt-5 max-w-2xl divide-y divide-tinta/12 border-y border-tinta/12">
+              {SUGERENCIAS.map((q) => (
+                <li key={q}>
+                  <button
+                    onClick={() => {
+                      setPregunta(q);
+                      campo.current?.focus();
+                    }}
+                    className="group flex w-full items-center justify-between gap-4 py-3 text-left text-[0.95rem] text-tinta-2 transition-colors hover:text-tinta"
+                  >
+                    {q}
+                    <ArrowUpRight className="size-4 shrink-0 text-tinta-3 transition-colors group-hover:text-accion" aria-hidden />
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
 
@@ -116,7 +117,7 @@ export function PaginaMedicamentos() {
         {pendiente && (
           <div className="animate-aparecer space-y-5">
             <Burbuja texto={pendiente} />
-            <div className="vidrio rounded-xl p-5" aria-busy aria-label="Consultando la base de INVIMA">
+            <div className="folio p-5" aria-busy aria-label="Consultando la base de INVIMA">
               <p className="mb-4 text-sm text-tinta-2">Consultando la base de INVIMA…</p>
               <div className="space-y-2.5">
                 <Esqueleto className="h-3.5 w-[92%]" />
@@ -135,7 +136,7 @@ export function PaginaMedicamentos() {
         <div ref={fin} />
       </div>
 
-      <form onSubmit={enviar} className="vidrio sticky bottom-4 z-10 rounded-xl p-2.5">
+      <form onSubmit={enviar} className="folio sticky bottom-4 z-10 p-2.5">
         <div className="flex items-end gap-2.5">
           <textarea
             ref={campo}
@@ -170,7 +171,7 @@ export function PaginaMedicamentos() {
 function Burbuja({ texto }: { texto: string }) {
   return (
     <div className="flex justify-end">
-      <p className="max-w-[85%] rounded-2xl rounded-tr-md bg-folio-2 px-5 py-3 text-[0.97rem] leading-relaxed text-tinta">{texto}</p>
+      <p className="max-w-[85%] rounded-md bg-folio-2 px-5 py-3 text-[0.97rem] leading-relaxed text-tinta">{texto}</p>
     </div>
   );
 }
@@ -194,7 +195,7 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
   return (
     <article className="animate-aparecer space-y-5">
       <Burbuja texto={pregunta} />
-      <div className="vidrio rounded-xl p-5 sm:p-6">
+      <div className="folio p-5 sm:p-6">
         {r.sinEvidencia && (
           <Insignia tono="aviso" className="mb-3.5">
             <SearchX className="size-3.5" aria-hidden />
@@ -210,7 +211,7 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
                   <button
                     type="button"
                     onClick={() => irA(id)}
-                    className="mx-0.5 inline-grid h-5 min-w-5 -translate-y-0.5 place-items-center rounded-md bg-tinta px-1.5 align-middle text-[0.68rem] font-medium text-mesa"
+                    className="mx-0.5 inline-grid h-5 min-w-5 -translate-y-0.5 place-items-center rounded-[3px] bg-marca px-1.5 align-middle text-[0.68rem] font-bold text-marca-tx transition-colors hover:bg-accion hover:text-accion-tx"
                     aria-label={`Ir a la fuente ${id}`}
                   >
                     {children}
@@ -236,49 +237,162 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
         <p className="mt-5 border-t border-tinta/10 pt-3.5 text-[0.74rem] leading-relaxed text-tinta-3">{r.aviso}</p>
       </div>
 
-      {r.citas.length > 0 && (
-        <div className="grid gap-3 md:grid-cols-2">
-          {r.citas.map((c) => (
-            <Fuente key={c.id} cita={c} id={`${base}-${c.id}`} resaltada={resaltada === c.id} />
-          ))}
-        </div>
-      )}
+      <FuentesCitadas citas={r.citas} base={base} resaltada={resaltada} />
     </article>
   );
 }
 
-function Dato({ k, v }: { k: string; v: string | null | undefined }) {
-  if (!v) return null;
+const th = "px-3 py-2 text-left text-[0.74rem] font-medium text-tinta-3";
+const td = "px-3 py-2.5 align-top";
+
+/** Marcador de la fuente: el mismo amarillo que la referencia [R1] dentro de la respuesta. */
+function Marcador({ id }: { id: string }) {
+  return <span className="inline-grid h-6 min-w-6 place-items-center rounded-[3px] bg-marca px-1.5 text-[0.72rem] font-bold text-marca-tx">{id}</span>;
+}
+
+function EnlaceFuente({ c }: { c: CitaMedicamento }) {
   return (
-    <div className="flex justify-between gap-4 border-t border-tinta/10 py-2 text-[0.82rem]">
-      <dt className="shrink-0 text-tinta-3">{k}</dt>
-      <dd className="text-right">{v}</dd>
+    <div className="min-w-[7rem] text-[0.72rem] leading-snug text-tinta-3">
+      {c.fuente.conjunto}
+      {c.fuente.cargadoAt ? <span className="block">cargado el {fecha(c.fuente.cargadoAt)}</span> : null}
+      <a
+        href={c.fuente.enlace}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-0.5 inline-flex items-center gap-1 text-tinta-2 underline underline-offset-4 hover:text-tinta"
+      >
+        Ver fuente
+        <ExternalLink className="size-3" aria-hidden />
+      </a>
     </div>
   );
 }
 
-function Fuente({ cita, id, resaltada }: { cita: CitaMedicamento; id: string; resaltada: boolean }) {
+/**
+ * Las fuentes citadas, agrupadas por tipo y en tabla: comparar registros o precios lado a lado es lo
+ * que hace quien audita. Cada fila lleva su marcador, su estado y su enlace a datos.gov.co.
+ */
+export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicamento[]; base: string; resaltada: string | null }) {
+  const registros = citas.filter((c): c is CitaRegistro => c.tipo === "REGISTRO_INVIMA");
+  const precios = citas.filter((c): c is CitaPrecio => c.tipo === "PRECIO_REGULADO");
+  const agregadas = citas.filter((c): c is CitaAgregada => c.tipo === "CONSULTA_AGREGADA");
+  const fila = (id: string) => cn("border-t border-tinta/10 transition-colors duration-500", resaltada === id && "bg-marca/35");
   return (
-    <article id={id} className={cn("vidrio-solido flex flex-col rounded-xl p-5 transition-[box-shadow] duration-500", resaltada && "ring-1 ring-tinta/70")}>
-      {cita.tipo === "REGISTRO_INVIMA" && <TarjetaRegistro c={cita} />}
-      {cita.tipo === "PRECIO_REGULADO" && <TarjetaPrecio c={cita} />}
-      {cita.tipo === "CONSULTA_AGREGADA" && <TarjetaAgregada c={cita} />}
-      <footer className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-tinta/10 pt-3 text-[0.7rem] text-tinta-3">
-        <span>
-          {cita.fuente.conjunto}
-          {cita.fuente.cargadoAt ? ` · cargado el ${fecha(cita.fuente.cargadoAt)}` : ""}
-        </span>
-        <a
-          href={cita.fuente.enlace}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-tinta-2 underline underline-offset-4 hover:text-tinta"
+    <div className="space-y-4">
+      {registros.length > 0 && (
+        <section aria-label="Registros sanitarios citados" className="folio overflow-x-auto">
+          <table className="w-full min-w-[46rem] border-collapse text-[0.83rem]">
+            <caption className="px-3 pb-1 pt-3 text-left text-[0.8rem] font-semibold">Registros sanitarios citados</caption>
+            <thead>
+              <tr>
+                <th className={th} scope="col">Ref.</th>
+                <th className={th} scope="col">Producto</th>
+                <th className={th} scope="col">Titular · registro</th>
+                <th className={th} scope="col">Principio activo</th>
+                <th className={th} scope="col">Estado</th>
+                <th className={th} scope="col">Vence</th>
+                <th className={th} scope="col">Fuente</th>
+              </tr>
+            </thead>
+            <tbody>
+              {registros.map((c) => (
+                <tr key={c.id} id={`${base}-${c.id}`} className={fila(c.id)}>
+                  <th scope="row" className={cn(td, "font-normal")}><Marcador id={c.id} /></th>
+                  <td className={td}>
+                    <span className="block font-medium">{c.producto ?? "Sin nombre"}</span>
+                    <span className="etiqueta block">CUM {c.cum}</span>
+                    <span className="block text-[0.76rem] text-tinta-2">
+                      {[c.formaFarmaceutica, c.viaAdministracion].filter(Boolean).join(" · ")}
+                      {c.presentaciones > 1 ? ` · ${c.presentaciones} presentaciones` : ""}
+                    </span>
+                  </td>
+                  <td className={td}>
+                    {c.titular ?? "—"}
+                    <span className="num block text-[0.76rem] text-tinta-2">{c.registroSanitario ?? ""}</span>
+                  </td>
+                  <td className={td}>
+                    {c.principiosActivos.length
+                      ? c.principiosActivos
+                          .map((p) => [p.nombre, [p.cantidad, p.unidad].filter(Boolean).join(" ")].filter(Boolean).join(" "))
+                          .join("; ")
+                      : "—"}
+                    {c.atc ? <span className="etiqueta block">ATC {c.atc}</span> : null}
+                  </td>
+                  <td className={td}>
+                    <Insignia tono={ESTADO_TONO[c.conjunto]}>{c.estadoRegistro ?? c.conjunto}</Insignia>
+                  </td>
+                  <td className={cn(td, "num whitespace-nowrap")}>{c.fechaVencimiento ? dia(c.fechaVencimiento) : "—"}</td>
+                  <td className={td}><EnlaceFuente c={c} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {precios.length > 0 && (
+        <section aria-label="Precios máximos regulados citados" className="folio overflow-x-auto">
+          <table className="w-full min-w-[40rem] border-collapse text-[0.83rem]">
+            <caption className="px-3 pb-1 pt-3 text-left text-[0.8rem] font-semibold">Precio máximo regulado</caption>
+            <thead>
+              <tr>
+                <th className={th} scope="col">Ref.</th>
+                <th className={th} scope="col">Medicamento</th>
+                <th className={cn(th, "text-right")} scope="col">Institucional</th>
+                <th className={cn(th, "text-right")} scope="col">Comercial</th>
+                <th className={cn(th, "text-right")} scope="col">Final comercial</th>
+                <th className={th} scope="col">Circular · desde</th>
+                <th className={th} scope="col">Fuente</th>
+              </tr>
+            </thead>
+            <tbody>
+              {precios.map((c) => (
+                <tr key={c.id} id={`${base}-${c.id}`} className={fila(c.id)}>
+                  <th scope="row" className={cn(td, "font-normal")}><Marcador id={c.id} /></th>
+                  <td className={td}>
+                    <span className="block font-medium">{c.medicamento ?? c.cum}</span>
+                    <span className="etiqueta block">CUM {c.cum}</span>
+                  </td>
+                  <td className={cn(td, "num text-right")}>{plata(c.precioInstitucional)}</td>
+                  <td className={cn(td, "num text-right")}>{plata(c.precioComercial)}</td>
+                  <td className={cn(td, "num text-right font-semibold")}>{plata(c.precioFinalComercial)}</td>
+                  <td className={td}>
+                    {c.circular ?? "—"}
+                    <span className="block text-[0.76rem] text-tinta-2">{c.vigenciaDesde ? dia(c.vigenciaDesde) : ""}</span>
+                  </td>
+                  <td className={td}><EnlaceFuente c={c} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {agregadas.map((c) => (
+        <section
+          key={c.id}
+          id={`${base}-${c.id}`}
+          aria-label="Consulta agregada"
+          className={cn("folio p-4 transition-shadow duration-500", resaltada === c.id && "ring-2 ring-marca")}
         >
-          Ver fuente
-          <ExternalLink className="size-3" aria-hidden />
-        </a>
-      </footer>
-    </article>
+          <div className="flex flex-wrap items-center gap-3">
+            <Marcador id={c.id} />
+            <p className="font-display text-[1.05rem] font-semibold">{c.registrosSanitarios} registros sanitarios</p>
+          </div>
+          <dl className="mt-3 grid gap-x-8 gap-y-1 text-[0.83rem] sm:grid-cols-2">
+            <div className="flex justify-between gap-4"><dt className="text-tinta-3">Presentaciones (CUM)</dt><dd className="num">{c.coincidenciasCum}</dd></div>
+            <div className="flex justify-between gap-4"><dt className="text-tinta-3">Titulares distintos</dt><dd className="num">{c.titularesDistintos}</dd></div>
+            {c.porConjunto.map((x) => (
+              <div key={x.conjunto} className="flex justify-between gap-4"><dt className="text-tinta-3">{x.conjunto}</dt><dd className="num">{x.registros} registros</dd></div>
+            ))}
+          </dl>
+          {Object.keys(c.filtros).length > 0 && (
+            <p className="etiqueta mt-3">Filtros: {Object.entries(c.filtros).map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>
+          )}
+          <div className="mt-3 border-t border-tinta/10 pt-3"><EnlaceFuente c={c} /></div>
+        </section>
+      ))}
+    </div>
   );
 }
 
@@ -288,62 +402,3 @@ const ESTADO_TONO: Record<CitaRegistro["conjunto"], "ok" | "aviso" | "peligro" |
   OTROS: "neutro",
   VENCIDO: "peligro",
 };
-
-function TarjetaRegistro({ c }: { c: CitaRegistro }) {
-  return (
-    <>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="etiqueta">{c.id} · CUM {c.cum}</p>
-          <h3 className="mt-1 break-words text-[1.1rem]">{c.producto ?? "Sin nombre"}</h3>
-        </div>
-        <Insignia tono={ESTADO_TONO[c.conjunto]}>{c.estadoRegistro ?? c.conjunto}</Insignia>
-      </div>
-      <dl className="mt-3">
-        <Dato k="Registro sanitario" v={c.registroSanitario} />
-        <Dato k="Titular" v={c.titular} />
-        <Dato
-          k="Principio activo"
-          v={c.principiosActivos.map((p) => [p.nombre, [p.cantidad, p.unidad].filter(Boolean).join(" ")].filter(Boolean).join(" ")).join("; ")}
-        />
-        <Dato k="Forma · vía" v={[c.formaFarmaceutica, c.viaAdministracion].filter(Boolean).join(" · ")} />
-        <Dato k="ATC" v={[c.atc, c.descripcionAtc].filter(Boolean).join(" · ")} />
-        <Dato k="Vence" v={c.fechaVencimiento ? dia(c.fechaVencimiento) : null} />
-        <Dato k="Presentaciones" v={c.presentaciones > 1 ? `${c.presentaciones} en este registro` : c.presentacion} />
-      </dl>
-    </>
-  );
-}
-
-function TarjetaPrecio({ c }: { c: CitaPrecio }) {
-  return (
-    <>
-      <p className="etiqueta">{c.id} · CUM {c.cum} · precio máximo regulado</p>
-      <h3 className="mt-1 break-words text-[1.05rem]">{c.medicamento ?? c.cum}</h3>
-      <dl className="mt-3">
-        <Dato k="Institucional" v={plata(c.precioInstitucional)} />
-        <Dato k="Comercial" v={plata(c.precioComercial)} />
-        <Dato k="Final comercial" v={plata(c.precioFinalComercial)} />
-        <Dato k="Circular" v={c.circular} />
-        <Dato k="Vigente desde" v={c.vigenciaDesde ? dia(c.vigenciaDesde) : null} />
-      </dl>
-    </>
-  );
-}
-
-function TarjetaAgregada({ c }: { c: CitaAgregada }) {
-  return (
-    <>
-      <p className="etiqueta">{c.id} · consulta agregada</p>
-      <h3 className="mt-1 text-[1.05rem]">{c.registrosSanitarios} registros sanitarios</h3>
-      <dl className="mt-3">
-        <Dato k="Presentaciones (CUM)" v={String(c.coincidenciasCum)} />
-        <Dato k="Titulares distintos" v={String(c.titularesDistintos)} />
-        <Dato k="Filtros" v={Object.entries(c.filtros).map(([k, v]) => `${k}: ${v}`).join(" · ")} />
-        {c.porConjunto.map((x) => (
-          <Dato key={x.conjunto} k={x.conjunto} v={`${x.registros} registros`} />
-        ))}
-      </dl>
-    </>
-  );
-}
