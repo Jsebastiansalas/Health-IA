@@ -1,115 +1,154 @@
 @import "tailwindcss";
-@import "@fontsource-variable/fraunces";
-@import "@fontsource/instrument-sans/400.css";
-@import "@fontsource/instrument-sans/500.css";
-@import "@fontsource/instrument-sans/600.css";
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/hanken-grotesk";
 @import "@fontsource-variable/jetbrains-mono";
 
-/* Dirección: expediente notarial. Papel, tinta, sello rojo para lo probatorio,
-   verde clínico para lo que el sistema ya verificó. */
+/* Mundo: noche de quirófano. Un solo color luminoso (menta de monitor) sobre azul casi negro;
+   el azul eléctrico solo une los vectores, el ámbar avisa de adendas y el coral de rechazos. */
 @theme {
-  --color-papel: #f3efe6;
-  --color-papel-2: #e9e3d4;
-  --color-papel-3: #ddd5c2;
-  --color-tinta: #1d1b17;
-  --color-tinta-2: #48443b;
-  --color-grafito: #7b7568;
-  --color-sello: #a4262c;
-  --color-sello-claro: #f4dfdc;
-  --color-clinico: #1f5f5b;
-  --color-clinico-claro: #d8e7e2;
-  --color-ambar: #8f6410;
-  --color-ambar-claro: #f3e6c6;
+  /* Portaobjetos claro y tinción H&E: hematoxilina (índigo) y eosina (rosa magenta). */
+  --color-lila-50: #fbf7fd;
+  --color-lila-100: #f4ecfa;
+  --color-lila-200: #e8dcf3;
+  --color-lila-300: #d6c5e9;
 
-  --font-display: "Fraunces Variable", Georgia, serif;
-  --font-sans: "Instrument Sans", "Segoe UI", sans-serif;
+  --color-ink: #1a1446;
+  --color-tx: #1a1446;
+  --color-tx-2: #433d72;
+  --color-tx-3: #66618d;
+
+  --color-hema: #4b3fc9;
+  --color-hema-osc: #2f2699;
+  --color-hema-pro: #1c1752;
+  --color-eosina: #d9306f;
+  --color-eosina-osc: #b8205a;
+  --color-eosina-clara: #f7c1d6;
+  --color-ok: #0b8f77;
+  --color-ambar: #9a5b00;
+  --color-coral: #c42b3a;
+
+  --font-display: "Bricolage Grotesque Variable", "Segoe UI", sans-serif;
+  --font-sans: "Hanken Grotesk Variable", "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono Variable", Consolas, monospace;
 
-  --animate-estampar: estampar 420ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
-  --animate-aparecer: aparecer 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --ease-salida: cubic-bezier(0.16, 1, 0.3, 1);
 
-  @keyframes estampar {
-    0% { opacity: 0; transform: scale(1.8) rotate(-14deg); }
-    100% { opacity: 1; transform: scale(1) rotate(-6deg); }
-  }
+  --animate-aparecer: aparecer 700ms var(--ease-salida) both;
+  --animate-flotar: flotar 9s ease-in-out infinite;
+  --animate-respirar: respirar 18s ease-in-out infinite;
+  --animate-girar: girar 60s linear infinite;
+  --animate-brillo: brillo 1.8s ease-in-out infinite;
+  --animate-sello: sello 520ms var(--ease-salida) both;
+  --animate-ecg: ecg 3.2s linear infinite;
+  --animate-pulso: pulso 2.4s ease-out infinite;
+
   @keyframes aparecer {
-    0% { opacity: 0; transform: translateY(10px); }
+    0% { opacity: 0; transform: translateY(14px); }
     100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes flotar {
+    0%, 100% { transform: translateY(0) rotate(var(--giro, 0deg)); }
+    50% { transform: translateY(-10px) rotate(var(--giro, 0deg)); }
+  }
+  @keyframes respirar {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(2.5%, -3%, 0) scale(1.08); }
+  }
+  @keyframes girar {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes brillo {
+    0% { background-position: 150% 0; }
+    100% { background-position: -50% 0; }
+  }
+  @keyframes ecg {
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes pulso {
+    0% { transform: scale(0.6); opacity: 0.8; }
+    100% { transform: scale(2.4); opacity: 0; }
+  }
+  /* Ciclo del mecanismo (11 s). La hoja y las estrellas las dibuja el canvas con el mismo reloj. */
+  @keyframes ciclo-cita {
+    0%, 52% { opacity: 0; transform: translateY(18px) scale(0.96); }
+    60%, 90% { opacity: 1; transform: translateY(0) scale(1); }
+    97%, 100% { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  }
+  @keyframes ciclo-sello {
+    0%, 62% { opacity: 0; transform: scale(1.5) rotate(-12deg); }
+    68%, 90% { opacity: 1; transform: scale(1) rotate(-4deg); }
+    97%, 100% { opacity: 0; transform: scale(1) rotate(-4deg); }
+  }
+  @keyframes sello {
+    0% { opacity: 0; transform: scale(1.5) rotate(-12deg); filter: blur(4px); }
+    100% { opacity: 1; transform: scale(1) rotate(-4deg); filter: blur(0); }
   }
 }
 
 @layer base {
   html {
-    background-color: var(--color-papel);
-    color: var(--color-tinta);
+    background-color: var(--color-lila-50);
+    color: var(--color-tx);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    color-scheme: light;
+    scroll-behavior: smooth;
   }
-  body {
-    min-height: 100vh;
-    /* Grano de papel: ruido SVG muy tenue, sin imágenes externas. */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.11 0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-  ::selection { background: var(--color-sello-claro); color: var(--color-tinta); }
-  :focus-visible { outline: 2px solid var(--color-clinico); outline-offset: 2px; }
+  body { min-height: 100vh; }
+  ::selection { background: var(--color-eosina-clara); color: var(--color-ink); }
+  :focus-visible { outline: 2px solid var(--color-hema); outline-offset: 3px; border-radius: 6px; }
+  * { scrollbar-width: thin; scrollbar-color: var(--color-lila-300) transparent; }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-thumb { background: var(--color-lila-300); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
+  input, textarea, select { caret-color: var(--color-eosina); }
+  ::placeholder { color: var(--color-tx-3); opacity: 0.85; }
+  .num { font-variant-numeric: tabular-nums; }
+  h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; text-wrap: balance; }
+  p { text-wrap: pretty; }
 }
 
 @layer components {
-  .folio {
-    background: color-mix(in oklab, var(--color-papel) 70%, white);
-    border: 1px solid var(--color-papel-3);
-    box-shadow: 0 1px 0 rgb(0 0 0 / 0.03), 0 12px 30px -18px rgb(29 27 23 / 0.35);
+  /* Tarjeta: portaobjetos blanco con borde lila y sombra con desplazamiento. */
+  .vidrio {
+    background: rgb(255 255 255 / 0.86);
+    border: 1px solid rgb(75 63 201 / 0.14);
+    box-shadow: 0 1px 0 rgb(255 255 255), 0 22px 44px -26px rgb(36 31 120 / 0.35), 0 2px 5px -2px rgb(36 31 120 / 0.1);
   }
+  .vidrio-solido {
+    background: #fff;
+    border: 1px solid rgb(75 63 201 / 0.14);
+    box-shadow: 0 20px 44px -28px rgb(36 31 120 / 0.38), 0 2px 5px -2px rgb(36 31 120 / 0.1);
+  }
+  .linea { border-color: rgb(26 20 70 / 0.12); }
   .etiqueta {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--color-grafito);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--color-tx-3);
   }
-  .sello {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    border: 2px solid currentColor;
-    border-radius: 3px;
-    padding: 0.15rem 0.55rem;
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    transform: rotate(-6deg);
-    mix-blend-mode: multiply;
+  .ciclo-cita { animation: ciclo-cita 11s var(--ease-salida) infinite both; }
+  .ciclo-sello { animation: ciclo-sello 11s var(--ease-salida) infinite both; }
+  .esqueleto {
+    background: linear-gradient(100deg, rgb(75 63 201 / 0.06) 30%, rgb(217 48 111 / 0.12) 50%, rgb(75 63 201 / 0.06) 70%);
+    background-size: 200% 100%;
+    animation: var(--animate-brillo);
+    border-radius: 12px;
   }
-  .boton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    border-radius: 2px;
-    padding: 0.55rem 1rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    transition: transform 120ms, background-color 160ms, color 160ms;
+  /* Graduación de ocular: marcas cada 6° sobre el borde de un círculo. */
+  .graticula {
+    background: repeating-conic-gradient(from -1deg, var(--color-hema-pro) 0 2deg, transparent 2deg 6deg);
+    mask: radial-gradient(circle, transparent 0 calc(100% - 14px), #000 calc(100% - 13px) calc(100% - 7px), transparent calc(100% - 6px));
+    -webkit-mask: radial-gradient(circle, transparent 0 calc(100% - 14px), #000 calc(100% - 13px) calc(100% - 7px), transparent calc(100% - 6px));
   }
-  .boton:active { transform: translateY(1px); }
-  .boton-tinta { background: var(--color-tinta); color: var(--color-papel); }
-  .boton-tinta:hover { background: var(--color-sello); }
-  .boton-linea { border: 1px solid var(--color-tinta-2); color: var(--color-tinta); }
-  .boton-linea:hover { background: var(--color-papel-2); }
-  .boton:disabled { opacity: 0.45; pointer-events: none; }
-  .campo {
-    width: 100%;
-    background: transparent;
-    border: 0;
-    border-bottom: 1.5px solid var(--color-tinta-2);
-    padding: 0.5rem 0.1rem;
-    font-size: 0.95rem;
-  }
-  .campo:focus { outline: none; border-bottom-color: var(--color-sello); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+  html { scroll-behavior: auto; }
+  /* Sin movimiento, el mecanismo se queda en su fotograma final: la cita y el sello visibles. */
+  .ciclo-cita, .ciclo-sello { animation: none !important; opacity: 1 !important; }
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
 }

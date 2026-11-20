@@ -61,7 +61,8 @@ services:
       AGENTE_TOKEN: ${INTERNAL_TOKEN:?defina INTERNAL_TOKEN en infra/.env}
       CLAMAV_HOST: clamav
       EPHEMERAL_DIR: /var/medtender-ephemeral
-      CORS_ORIGINS: http://localhost:5173
+      # 5173: Vite en desarrollo. 4173: `vite preview` del build de producción.
+      CORS_ORIGINS: http://localhost:5173,http://localhost:4173
     ports:
       - "${MT_API_PORT:-8010}:8080"
     # Volumen dedicado compartido con el agente y el worker. Los PDFs nunca salen de aquí.
