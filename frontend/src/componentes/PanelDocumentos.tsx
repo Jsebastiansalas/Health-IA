@@ -88,7 +88,7 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
 
   const subiendo = progreso !== null;
   return (
-    <form onSubmit={enviar} className="vidrio space-y-4 rounded-3xl p-5">
+    <form onSubmit={enviar} className="folio space-y-4 p-5">
       <label
         className={cn(
           "relative block cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed p-6 text-center transition-[border-color,background-color,transform] duration-300",

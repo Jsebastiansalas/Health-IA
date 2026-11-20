@@ -127,6 +127,8 @@
   ::placeholder { color: var(--tinta-3); opacity: 1; }
   .num { font-variant-numeric: tabular-nums; }
   p { text-wrap: pretty; }
+  /* Un código, una URL o un nombre de archivo sin espacios no debe ensanchar la página. */
+  h1, h2, h3, p, blockquote, dd { overflow-wrap: anywhere; }
 }
 
 /* Titulares: serif con tamaño óptico. Sin capa para ganar a las utilidades de peso. */
@@ -147,9 +149,6 @@ h2, h3 { line-height: 1.18; }
     box-shadow: var(--sombra-folio);
     border-radius: 4px;
   }
-  /* Compatibilidad con las pantallas aún no migradas (sprints 19-22). */
-  .vidrio,
-  .vidrio-solido { background: var(--folio); box-shadow: var(--sombra-folio); }
   .linea { border-color: color-mix(in oklab, var(--tinta) 16%, transparent); }
   .etiqueta {
     font-family: var(--font-mono);

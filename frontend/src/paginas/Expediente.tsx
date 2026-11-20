@@ -53,7 +53,7 @@ export function PaginaExpediente() {
 
   if (error) {
     return (
-      <div role="alert" className="vidrio flex max-w-xl items-start gap-4 rounded-2xl p-7">
+      <div role="alert" className="folio flex max-w-xl items-start gap-4 p-7">
         <AlertTriangle className="mt-1 size-6 shrink-0 text-peligro" aria-hidden />
         <div>
           <h1 className="text-2xl font-semibold">Expediente no disponible</h1>
@@ -117,7 +117,7 @@ export function PaginaExpediente() {
       </header>
 
       <Tabs.Root value={pestana} onValueChange={setPestana}>
-        <Tabs.List className="vidrio-solido mb-5 grid grid-cols-2 gap-1 rounded-md p-1 xl:hidden" aria-label="Secciones del expediente">
+        <Tabs.List className="folio mb-5 grid grid-cols-2 gap-1 rounded-md p-1 xl:hidden" aria-label="Secciones del expediente">
           {[
             ["folios", "Documentos", FileStack],
             ["consulta", "Consulta", MessagesSquare],
@@ -159,7 +159,7 @@ export function PaginaExpediente() {
         createPortal(
           <Suspense
             fallback={
-              <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 text-white ">
+              <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 text-white">
                 Abriendo visor…
               </div>
             }

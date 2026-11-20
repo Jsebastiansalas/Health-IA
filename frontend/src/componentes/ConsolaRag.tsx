@@ -112,7 +112,7 @@ export function ConsolaRag({
             <Burbuja texto={pendiente} />
             <div className="flex gap-3.5" aria-busy aria-label="Analizando el expediente">
               <AvatarIA />
-              <div className="vidrio flex-1  p-5">
+              <div className="folio flex-1 p-5">
                 <p className="mb-4 text-sm font-medium text-accion">Analizando el expediente…</p>
                 <div className="space-y-2.5">
                   <Esqueleto className="h-3.5 w-[92%]" />
@@ -134,7 +134,7 @@ export function ConsolaRag({
 
       <form
         onSubmit={enviar}
-        className="vidrio sticky bottom-4 z-10 rounded-2xl p-2.5 "
+        className="folio sticky bottom-4 z-10 p-2.5"
       >
         <div className="flex items-end gap-2.5">
           <textarea
@@ -187,7 +187,7 @@ function AvatarIA() {
 function Burbuja({ texto }: { texto: string }) {
   return (
     <div className="flex justify-end">
-      <p className="max-w-[85%]  bg-folio-2 px-5 py-3 text-[0.97rem] leading-relaxed text-tinta">
+      <p className="max-w-[85%] bg-folio-2 px-5 py-3 text-[0.97rem] leading-relaxed text-tinta">
         {texto}
       </p>
     </div>
@@ -227,7 +227,7 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
       <div className="flex gap-3.5">
         <AvatarIA />
         <div className="min-w-0 flex-1">
-          <div className={cn("vidrio  p-5 sm:p-6", r.sinEvidencia && "border-aviso/30")}>
+          <div className={cn("folio  p-5 sm:p-6", r.sinEvidencia && "border-aviso/30")}>
             {r.sinEvidencia && (
               <Insignia tono="aviso" className="mb-3.5">
                 <SearchX className="size-3.5" aria-hidden />

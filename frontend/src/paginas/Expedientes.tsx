@@ -182,7 +182,7 @@ export function PaginaExpedientes() {
                 >
                   <span className="font-mono text-[0.82rem] text-tinta">{e.codigo_expediente}</span>
                   <span className="min-w-0">
-                    <span className="block font-display text-[1.1rem] font-semibold leading-snug group-hover:text-accion">
+                    <span className="block font-display text-[1.1rem] font-semibold leading-snug [overflow-wrap:anywhere] group-hover:text-accion">
                       {e.titulo}
                     </span>
                     <span className="mt-0.5 block truncate text-[0.82rem] text-tinta-2">

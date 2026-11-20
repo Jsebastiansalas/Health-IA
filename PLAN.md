@@ -67,7 +67,7 @@ React ──HTTPS──> Caddy ──> API Java (Spring Boot :8080)
 | 20 | Frontend: la cita como pieza central y visor acoplado | ✅ |
 | 21 | Frontend: índice de expedientes y tablas de Medicamentos | ✅ |
 | 22 | Frontend: portada e ingreso con el producto en acción | ✅ |
-| 23 | Frontend: pulido (movimiento, responsive, casos extremos) | ⏳ |
+| 23 | Frontend: pulido (residuos, casos extremos, táctil) | ✅ |
 
 Historias principales: aislamiento de tenants y permisos (1, 7, 8), PDF efímero con purga verificada (2, 8, 9), OCR y fragmentación 500–1000 tokens con 15 % de solape (3), embeddings por modelo del expediente (4), búsqueda híbrida RRF + citas con extractos literales + visor local con SHA-256 (5), observabilidad y auditoría (6, 7).
 
