@@ -132,21 +132,38 @@ def localizar_extracto(
 
 
 # ---------- Verificación visual del original ----------
-def verificacion_visual(metadata: dict, umbral_ocr: float) -> tuple[bool, str | None]:
-    motivos = []
+def tipos_evidencia(metadata: dict, umbral_ocr: float) -> list[str]:
+    """Qué tiene el fragmento que el texto extraído no puede garantizar (códigos estables para la
+    UI): FIRMA_O_SELLO, TABLA, IMAGEN, OCR_BAJA_CONFIANZA y OCR."""
+    tipos = []
     if metadata.get("has_signatures_or_stamps"):
-        motivos.append("contiene sellos o firmas")
+        tipos.append("FIRMA_O_SELLO")
     if metadata.get("has_tables"):
-        motivos.append("contiene tablas cuya estructura debe confirmarse")
+        tipos.append("TABLA")
     if metadata.get("has_visual_elements") and not metadata.get("has_signatures_or_stamps"):
-        motivos.append("contiene imágenes, planos o gráficas")
-    metodo = metadata.get("extraction_method")
-    confianza = metadata.get("ocr_confidence")
-    if metodo in ("OCR", "MIXED"):
-        if confianza is not None and confianza < umbral_ocr:
-            motivos.append(f"el texto proviene de OCR con confianza {confianza:.0%}")
+        tipos.append("IMAGEN")
+    if metadata.get("extraction_method") in ("OCR", "MIXED"):
+        confianza = metadata.get("ocr_confidence")
+        bajo = confianza is not None and confianza < umbral_ocr
+        tipos.append("OCR_BAJA_CONFIANZA" if bajo else "OCR")
+    return tipos
+
+
+def verificacion_visual(metadata: dict, umbral_ocr: float) -> tuple[bool, str | None]:
+    explicacion = {
+        "FIRMA_O_SELLO": "contiene sellos o firmas",
+        "TABLA": "contiene tablas cuya estructura debe confirmarse",
+        "IMAGEN": "contiene imágenes, planos o gráficas",
+        "OCR": "el texto proviene de una página escaneada (OCR)",
+    }
+    motivos = []
+    for tipo in tipos_evidencia(metadata, umbral_ocr):
+        if tipo == "OCR_BAJA_CONFIANZA":
+            motivos.append(
+                f"el texto proviene de OCR con confianza {metadata['ocr_confidence']:.0%}"
+            )
         else:
-            motivos.append("el texto proviene de una página escaneada (OCR)")
+            motivos.append(explicacion[tipo])
     if not motivos:
         return False, None
     return True, (
@@ -164,6 +181,7 @@ class CitaFinal:
     ajustado: bool
     requiere_verificacion: bool
     motivo_verificacion: str | None
+    tipos_evidencia: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -194,7 +212,8 @@ def ensamblar(
             continue
         vistas.add((parte.id, extracto))
         requiere, motivo = verificacion_visual(parte.metadata, umbral_ocr)
-        citas.append(CitaFinal(parte, extracto, ajustado, requiere, motivo))
+        tipos = tipos_evidencia(parte.metadata, umbral_ocr)
+        citas.append(CitaFinal(parte, extracto, ajustado, requiere, motivo, tipos))
 
     hay_evidencia = bool(salida_llm.get("hay_evidencia")) and bool(citas)
     alertas = [str(a).strip() for a in salida_llm.get("alertas") or [] if str(a).strip()]

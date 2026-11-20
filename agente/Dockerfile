@@ -1,8 +1,8 @@
 FROM python:3.12-slim
 
-# Tesseract OCR con datos de español (OCR selectivo del Paso 5).
+# Tesseract OCR con datos de español y detección de orientación (OSD) para páginas rotadas.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-spa \
+    && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-spa tesseract-ocr-osd \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv

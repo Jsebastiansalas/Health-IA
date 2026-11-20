@@ -114,6 +114,7 @@ def a_json(r: RespuestaRag, consulta_id: uuid.UUID) -> dict:
                 "confianzaOcr": c.fragmento.metadata.get("ocr_confidence"),
                 "requiereVerificacionVisualOriginal": c.requiere_verificacion,
                 "motivoVerificacionVisual": c.motivo_verificacion,
+                "tiposEvidencia": c.tipos_evidencia,
             }
             for c in r.resultado.citas
         ],

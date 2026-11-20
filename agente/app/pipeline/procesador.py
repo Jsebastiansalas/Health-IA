@@ -49,6 +49,7 @@ def config_extraccion(s: Settings) -> ConfigExtraccion:
         umbral_texto_nativo=s.umbral_texto_nativo,
         ocr_dpi=s.ocr_dpi,
         ocr_idioma=s.ocr_idioma,
+        ocr_umbral_reintento=s.umbral_confianza_ocr,
         imagen_relevante_min_area=s.imagen_relevante_min_area,
         imagen_escaneo_min_area=s.imagen_escaneo_min_area,
         imagen_sello_max_area=s.imagen_sello_max_area,

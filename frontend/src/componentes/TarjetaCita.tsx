@@ -1,5 +1,5 @@
 import { BookOpenCheck, Eye, FileText, ScrollText } from "lucide-react";
-import type { Cita } from "../api/tipos";
+import type { Cita, TipoEvidencia } from "../api/tipos";
 import { cn } from "../lib/cn";
 import { etiquetaDocumento, paginas } from "../lib/formato";
 import { Boton } from "./ui/Boton";
@@ -9,6 +9,15 @@ const METODO: Record<Cita["metodoExtraccion"], string> = {
   NATIVE: "Texto nativo",
   OCR: "OCR",
   MIXED: "Nativo + OCR",
+};
+
+/** Etiqueta corta y tono por tipo de evidencia; el motivo completo va debajo. */
+const EVIDENCIA: Record<TipoEvidencia, { etiqueta: string; tono: "coral" | "ambar" | "neutro" }> = {
+  FIRMA_O_SELLO: { etiqueta: "Firma o sello", tono: "coral" },
+  TABLA: { etiqueta: "Tabla", tono: "ambar" },
+  IMAGEN: { etiqueta: "Imagen o plano", tono: "ambar" },
+  OCR_BAJA_CONFIANZA: { etiqueta: "OCR de baja confianza", tono: "coral" },
+  OCR: { etiqueta: "Página escaneada", tono: "neutro" },
 };
 
 type Props = {
@@ -58,9 +67,16 @@ export function TarjetaCita({ cita, numero, alAbrir, resaltada = false, id }: Pr
         <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-coral/30 bg-coral/10 px-3 py-2.5">
           <Eye className="mt-0.5 size-4 shrink-0 text-coral" aria-hidden />
           <div className="min-w-0 text-xs leading-relaxed text-coral">
-            <Insignia tono="coral" className="mb-1.5" title={cita.motivoVerificacionVisual ?? undefined}>
-              Verificar original
-            </Insignia>
+            <div className="mb-1.5 flex flex-wrap gap-1.5">
+              <Insignia tono="coral" title={cita.motivoVerificacionVisual ?? undefined}>
+                Verificar original
+              </Insignia>
+              {(cita.tiposEvidencia ?? []).map((t) => (
+                <Insignia key={t} tono={EVIDENCIA[t].tono}>
+                  {EVIDENCIA[t].etiqueta}
+                </Insignia>
+              ))}
+            </div>
             {cita.motivoVerificacionVisual && <p>{cita.motivoVerificacionVisual}</p>}
           </div>
         </div>
