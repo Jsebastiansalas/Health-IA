@@ -9,7 +9,7 @@ type Props = InputHTMLAttributes<HTMLInputElement> & {
   extremo?: ReactNode;
 };
 
-/** Campo de texto con etiqueta, icono opcional y foco luminoso. */
+/** Campo de texto con etiqueta, icono opcional y foco cian. */
 export const Campo = forwardRef<HTMLInputElement, Props>(function Campo(
   { etiqueta, icono: Icono, extremo, className, id, ...resto },
   ref,
@@ -23,8 +23,8 @@ export const Campo = forwardRef<HTMLInputElement, Props>(function Campo(
       </label>
       <div
         className={cn(
-          "group flex h-12 items-center gap-2.5 rounded-xl border border-ink/20 bg-white px-3.5 transition-[border-color,box-shadow] duration-200",
-          "focus-within:border-hema focus-within:shadow-[0_0_0_4px_rgb(75_63_201/0.14)]",
+          "group flex h-12 items-center gap-2.5 rounded-xl border border-ink/20 bg-sala px-3.5 transition-[border-color,box-shadow] duration-200",
+          "focus-within:border-hema focus-within:shadow-[0_0_0_3px_rgb(124_212_230/0.22)]",
         )}
       >
         {Icono && (

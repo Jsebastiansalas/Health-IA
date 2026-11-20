@@ -26,8 +26,8 @@ export function TarjetaCita({ cita, numero, alAbrir, resaltada = false, id }: Pr
     <article
       id={id}
       className={cn(
-        "vidrio-solido relative flex flex-col rounded-2xl p-4 transition-[box-shadow,border-color] duration-500",
-        resaltada && "border-hema/70 shadow-[0_0_0_3px_rgb(75_63_201/0.22),0_24px_50px_-24px_rgb(75_63_201/0.5)]",
+        "vidrio-solido relative flex flex-col rounded-xl p-4 transition-[box-shadow,border-color] duration-500",
+        resaltada && "border-eosina shadow-[0_0_0_2px_rgb(255_194_71/0.55),0_24px_40px_-24px_rgb(0_0_0/0.9)]",
       )}
     >
       <header className="flex items-start gap-3">
@@ -50,14 +50,14 @@ export function TarjetaCita({ cita, numero, alAbrir, resaltada = false, id }: Pr
         </div>
       </header>
 
-      <blockquote className="mt-3.5 rounded-xl bg-white px-3.5 py-3 font-display text-[1.02rem] leading-snug text-tx">
+      <blockquote className="mt-3.5 rounded-lg bg-luz px-3.5 py-3 font-display text-[1.02rem] leading-snug text-[#0a1322]">
         «{cita.extractoLiteral}»
       </blockquote>
 
       {cita.requiereVerificacionVisualOriginal && (
         <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-coral/30 bg-coral/10 px-3 py-2.5">
           <Eye className="mt-0.5 size-4 shrink-0 text-coral" aria-hidden />
-          <div className="min-w-0 text-xs leading-relaxed text-[#b3202f]">
+          <div className="min-w-0 text-xs leading-relaxed text-coral">
             <Insignia tono="coral" className="mb-1.5" title={cita.motivoVerificacionVisual ?? undefined}>
               Verificar original
             </Insignia>

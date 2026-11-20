@@ -111,7 +111,7 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
             ? "scale-[1.01] border-hema bg-hema/12"
             : archivo
               ? "border-hema/60 bg-hema/[0.07]"
-              : "border-ink/16 bg-white hover:border-hema/50 hover:bg-hema/[0.05]",
+              : "border-ink/16 bg-sala hover:border-hema/50 hover:bg-hema/[0.05]",
         )}
         onDragOver={(e) => {
           e.preventDefault();
@@ -166,10 +166,10 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
             id="tipo-doc"
             value={tipo}
             onChange={(e) => setTipo(e.target.value as TipoDocumento)}
-            className="h-11 w-full rounded-xl border border-ink/12 bg-white px-3 text-sm outline-none transition-[border-color,box-shadow] focus:border-hema/70 focus:shadow-[0_0_0_4px_rgb(75_63_201/0.12)]"
+            className="h-11 w-full rounded-xl border border-ink/12 bg-sala px-3 text-sm outline-none transition-[border-color,box-shadow] focus:border-hema/70 focus:shadow-[0_0_0_3px_rgb(124_212_230/0.2)]"
           >
             {Object.entries(TIPOS_DOCUMENTO).map(([v, t]) => (
-              <option key={v} value={v} className="bg-white">
+              <option key={v} value={v} className="bg-panel">
                 {t}
               </option>
             ))}
@@ -187,7 +187,7 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
               max={999}
               value={numero}
               onChange={(e) => setNumero(Number(e.target.value))}
-              className="num h-11 w-full rounded-xl border border-ink/12 bg-white px-3 text-sm outline-none focus:border-hema/70"
+              className="num h-11 w-full rounded-xl border border-ink/12 bg-sala px-3 text-sm outline-none focus:border-hema/70"
             />
           </div>
         )}
@@ -206,13 +206,13 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
           aria-valuenow={Math.round(progreso * 100)}
         >
           <div
-            className="h-full rounded-full bg-gradient-to-r from-eosina-osc to-hema shadow-[0_0_14px_rgb(75_63_201/0.7)] transition-[width] duration-200"
+            className="h-full rounded-full bg-hema transition-[width] duration-200"
             style={{ width: `${progreso * 100}%` }}
           />
         </div>
       )}
       {error && (
-        <p role="alert" className="flex items-start gap-2 rounded-xl border border-coral/35 bg-coral/10 px-3.5 py-3 text-sm text-[#b3202f]">
+        <p role="alert" className="flex items-start gap-2 rounded-xl border border-coral/35 bg-coral/10 px-3.5 py-3 text-sm text-coral">
           <AlertOctagon className="mt-0.5 size-4 shrink-0 text-coral" aria-hidden />
           {error}
         </p>
@@ -270,7 +270,7 @@ function FilaDocumento({ doc }: { doc: Documento }) {
       </div>
 
       {error ? (
-        <p className="mt-4 flex items-start gap-2.5 rounded-xl border border-coral/30 bg-coral/10 px-3.5 py-3 text-sm text-[#b3202f]">
+        <p className="mt-4 flex items-start gap-2.5 rounded-xl border border-coral/30 bg-coral/10 px-3.5 py-3 text-sm text-coral">
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-coral" aria-hidden />
           {doc.motivo_error}
         </p>
@@ -313,7 +313,7 @@ function Pipeline({ estado, progreso }: { estado: EstadoIndexacion; progreso: nu
               <span
                 className={cn(
                   "absolute left-1/2 top-[1.15rem] -z-0 h-0.5 w-full",
-                  siguienteHecho ? "bg-hema/70" : e === "hecho" ? "bg-gradient-to-r from-hema/70 to-white/10" : "bg-ink/10",
+                  siguienteHecho ? "bg-hema/70" : e === "hecho" ? "bg-hema/40" : "bg-ink/10",
                 )}
                 aria-hidden
               />
@@ -321,9 +321,9 @@ function Pipeline({ estado, progreso }: { estado: EstadoIndexacion; progreso: nu
             <span
               className={cn(
                 "relative z-10 grid size-9 place-items-center rounded-full border transition-colors duration-500",
-                e === "hecho" && "border-hema bg-eosina text-white",
-                e === "actual" && "border-hema bg-white text-hema shadow-[0_0_0_4px_rgb(75_63_201/0.15),0_0_22px_rgb(75_63_201/0.45)]",
-                e === "pendiente" && "border-ink/14 bg-white text-tx-3",
+                e === "hecho" && "border-hema bg-hema text-[#06121a]",
+                e === "actual" && "border-hema bg-sala text-hema shadow-[0_0_0_3px_rgb(124_212_230/0.25)]",
+                e === "pendiente" && "border-ink/14 bg-sala text-tx-3",
               )}
             >
               {e === "hecho" ? (

@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/cliente";
 import type { Cita, Documento, Expediente } from "../api/tipos";
-import { Molecula } from "../arte/Decoracion";
+import { PlacaVacia } from "../arte/Placa";
 import { ConsolaRag } from "../componentes/ConsolaRag";
 import { PanelDocumentos } from "../componentes/PanelDocumentos";
 import { boton } from "../componentes/ui/Boton";
@@ -21,7 +21,7 @@ const PERMISO: Record<string, string> = { ADMIN: "Administras", EDITOR: "Editas"
 
 function Dato({ icono: Icono, etiqueta, valor }: { icono: typeof Cpu; etiqueta: string; valor: string | number }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-ink/8 bg-white px-4 py-3">
+    <div className="flex items-center gap-3 rounded-xl border border-ink/10 bg-sala px-4 py-3">
       <Icono className="size-5 shrink-0 text-hema" strokeWidth={1.6} aria-hidden />
       <div className="min-w-0 leading-tight">
         <p className="num truncate text-[1.05rem] font-semibold">{valor}</p>
@@ -46,7 +46,7 @@ export function PaginaExpediente() {
 
   if (error) {
     return (
-      <div role="alert" className="vidrio flex max-w-xl items-start gap-4 rounded-3xl p-7">
+      <div role="alert" className="vidrio flex max-w-xl items-start gap-4 rounded-2xl p-7">
         <AlertTriangle className="mt-1 size-6 shrink-0 text-coral" aria-hidden />
         <div>
           <h1 className="text-2xl font-semibold">Expediente no disponible</h1>
@@ -63,10 +63,10 @@ export function PaginaExpediente() {
     return (
       <div aria-busy aria-label="Abriendo expediente">
         <Esqueleto className="mb-4 h-5 w-48" />
-        <Esqueleto className="h-44 rounded-3xl" />
+        <Esqueleto className="h-44 rounded-2xl" />
         <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(320px,440px)_1fr]">
-          <Esqueleto className="h-96 rounded-3xl" />
-          <Esqueleto className="h-96 rounded-3xl" />
+          <Esqueleto className="h-96 rounded-2xl" />
+          <Esqueleto className="h-96 rounded-2xl" />
         </div>
       </div>
     );
@@ -87,8 +87,8 @@ export function PaginaExpediente() {
         <span className="font-mono text-tx-2">{expediente.codigo_expediente}</span>
       </nav>
 
-      <header className="vidrio relative mb-8 overflow-hidden rounded-3xl p-6 sm:p-8">
-        <Molecula className="absolute -right-6 -top-6 hidden w-64 opacity-60 md:block" />
+      <header className="vidrio relative mb-8 overflow-hidden rounded-2xl p-6 sm:p-8">
+        <PlacaVacia className="absolute -top-4 right-6 hidden w-28 rotate-6 opacity-70 md:block" />
         <div className="relative flex flex-wrap items-center gap-2">
           <Insignia tono={expediente.estado === "ABIERTO" ? "hema" : "neutro"}>{expediente.estado}</Insignia>
           <Insignia tono="hema">
@@ -147,7 +147,7 @@ export function PaginaExpediente() {
         createPortal(
           <Suspense
             fallback={
-              <div className="fixed inset-0 z-50 grid place-items-center bg-hema-pro/45 text-white backdrop-blur-[2px]">
+              <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 text-white ">
                 Abriendo visor…
               </div>
             }

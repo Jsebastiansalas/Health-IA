@@ -18,7 +18,7 @@ export function Dialogo({ abierto, alCambiar, titulo, descripcion, children, tip
   return (
     <Dialog.Root open={abierto} onOpenChange={alCambiar}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-hema-pro/45 backdrop-blur-[2px] data-[state=open]:animate-[aparecer_300ms_var(--ease-salida)]" />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/60 data-[state=open]:animate-[aparecer_300ms_var(--ease-salida)]" />
         <Dialog.Content
           className={cn(
             "vidrio-solido fixed z-50 flex flex-col overflow-hidden outline-none",

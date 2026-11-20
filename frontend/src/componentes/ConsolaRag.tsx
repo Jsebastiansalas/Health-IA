@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { api, post } from "../api/cliente";
 import type { Cita, RespuestaConsulta } from "../api/tipos";
-import { Molecula } from "../arte/Decoracion";
+import { PlacaVacia } from "../arte/Placa";
 import { cn } from "../lib/cn";
 import { Logotipo } from "./Marca";
 import { TarjetaCita } from "./TarjetaCita";
@@ -74,8 +74,8 @@ export function ConsolaRag({
 
       <div className="flex-1 space-y-8 pb-6" role="log" aria-live="polite" aria-label="Conversación">
         {vacio && (
-          <div className="vidrio relative overflow-hidden rounded-3xl p-8">
-            <Molecula className="absolute -right-4 -top-2 w-52 opacity-60" />
+          <div className="vidrio relative overflow-hidden rounded-2xl p-8">
+            <PlacaVacia className="absolute -right-2 -top-3 hidden w-32 rotate-6 opacity-80 sm:block" />
             <Lightbulb className="relative size-7 text-hema" strokeWidth={1.5} aria-hidden />
             <p className="relative mt-4 max-w-md text-2xl font-semibold leading-tight">
               {hayIndice ? "Pregunta lo que necesites del expediente." : "Aún no hay documentos indexados."}
@@ -113,7 +113,7 @@ export function ConsolaRag({
             <Burbuja texto={pendiente} />
             <div className="flex gap-3.5" aria-busy aria-label="Analizando el expediente">
               <AvatarIA />
-              <div className="vidrio flex-1 rounded-3xl rounded-tl-lg p-5">
+              <div className="vidrio flex-1 rounded-2xl rounded-tl-lg p-5">
                 <p className="mb-4 text-sm font-medium text-hema">Analizando el expediente…</p>
                 <div className="space-y-2.5">
                   <Esqueleto className="h-3.5 w-[92%]" />
@@ -125,7 +125,7 @@ export function ConsolaRag({
           </div>
         )}
         {consultar.error && (
-          <p role="alert" className="flex items-start gap-2.5 rounded-2xl border border-coral/35 bg-coral/10 px-4 py-3 text-sm text-[#b3202f]">
+          <p role="alert" className="flex items-start gap-2.5 rounded-2xl border border-coral/35 bg-coral/10 px-4 py-3 text-sm text-coral">
             <AlertOctagon className="mt-0.5 size-4 shrink-0 text-coral" aria-hidden />
             {(consultar.error as Error).message}
           </p>
@@ -135,7 +135,7 @@ export function ConsolaRag({
 
       <form
         onSubmit={enviar}
-        className="vidrio sticky bottom-4 z-10 rounded-2xl p-2.5 shadow-[0_-20px_40px_-20px_rgb(28_23_82/0.28)]"
+        className="vidrio sticky bottom-4 z-10 rounded-2xl p-2.5 shadow-[0_-18px_30px_-20px_rgb(0_0_0/0.8)]"
       >
         <div className="flex items-end gap-2.5">
           <textarea
@@ -179,7 +179,7 @@ export function ConsolaRag({
 
 function AvatarIA() {
   return (
-    <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-xl border border-hema/25 bg-white">
+    <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-xl border border-hema/25 bg-sala">
       <Logotipo className="size-6" />
     </span>
   );
@@ -188,7 +188,7 @@ function AvatarIA() {
 function Burbuja({ texto }: { texto: string }) {
   return (
     <div className="flex justify-end">
-      <p className="max-w-[85%] rounded-3xl rounded-tr-lg bg-hema-osc px-5 py-3 text-[0.97rem] leading-relaxed text-white">
+      <p className="max-w-[85%] rounded-2xl rounded-tr-md bg-luz px-5 py-3 text-[0.97rem] leading-relaxed text-[#07101c]">
         {texto}
       </p>
     </div>
@@ -228,7 +228,7 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
       <div className="flex gap-3.5">
         <AvatarIA />
         <div className="min-w-0 flex-1">
-          <div className={cn("vidrio rounded-3xl rounded-tl-lg p-5 sm:p-6", r.sinEvidencia && "border-ambar/30")}>
+          <div className={cn("vidrio rounded-2xl rounded-tl-lg p-5 sm:p-6", r.sinEvidencia && "border-ambar/30")}>
             {r.sinEvidencia && (
               <Insignia tono="ambar" className="mb-3.5">
                 <SearchX className="size-3.5" aria-hidden />
@@ -244,7 +244,7 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
                       <button
                         type="button"
                         onClick={() => irACita(n)}
-                        className="mx-0.5 inline-grid size-5 -translate-y-0.5 place-items-center rounded-md bg-eosina/15 align-middle text-[0.7rem] font-bold text-eosina-osc transition-colors hover:bg-eosina hover:text-white"
+                        className="mx-0.5 inline-grid size-5 -translate-y-0.5 place-items-center rounded-md bg-eosina/15 align-middle text-[0.7rem] font-bold text-eosina transition-colors hover:bg-eosina hover:text-[#1a1405]"
                         aria-label={`Ir a la cita ${n}`}
                       >
                         {children}

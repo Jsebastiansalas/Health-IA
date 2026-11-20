@@ -5,7 +5,6 @@ import { NavLink } from "react-router-dom";
 import { Toaster } from "sonner";
 import { cn } from "../lib/cn";
 import { useSesion } from "../sesion";
-import { Tejido } from "../arte/Tejido";
 import { Marca } from "./Marca";
 
 export const ROLES: Record<string, string> = {
@@ -28,7 +27,7 @@ function Avatar({ nombre, className }: { nombre?: string; className?: string }) 
   return (
     <span
       className={cn(
-        "grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-eosina to-hema font-display text-sm font-bold text-white",
+        "grid size-10 shrink-0 place-items-center rounded-lg bg-luz font-display text-sm font-bold text-[#07101c]",
         className,
       )}
       aria-hidden
@@ -44,7 +43,7 @@ function MenuUsuario({ compacto = false }: { compacto?: boolean }) {
     <Menu.Root>
       <Menu.Trigger
         className={cn(
-          "group flex w-full items-center gap-3 rounded-2xl border border-white/15 bg-white/[0.07] p-2.5 text-left text-white transition-colors hover:bg-white/[0.14]",
+          "group flex w-full items-center gap-3 rounded-xl border border-ink/15 bg-ink/[0.05] p-2.5 text-left text-tx transition-colors hover:bg-ink/[0.1]",
           compacto && "w-auto border-0 bg-transparent p-1 text-tx",
         )}
         aria-label="Menú de usuario"
@@ -54,9 +53,9 @@ function MenuUsuario({ compacto = false }: { compacto?: boolean }) {
           <>
             <span className="min-w-0 flex-1 leading-tight">
               <span className="block truncate text-sm font-semibold">{usuario?.nombre_completo ?? "…"}</span>
-              <span className="block truncate text-xs text-white/65">{usuario ? ROLES[usuario.rol_global] : ""}</span>
+              <span className="block truncate text-xs text-tx-2">{usuario ? ROLES[usuario.rol_global] : ""}</span>
             </span>
-            <ChevronsUpDown className="size-4 text-white/60 transition-colors group-hover:text-white" aria-hidden />
+            <ChevronsUpDown className="size-4 text-tx-3 transition-colors group-hover:text-tx" aria-hidden />
           </>
         )}
       </Menu.Trigger>
@@ -87,25 +86,17 @@ function MenuUsuario({ compacto = false }: { compacto?: boolean }) {
 
 const enlaceNav = ({ isActive }: { isActive: boolean }) =>
   cn(
-    "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors",
-    isActive ? "bg-eosina text-white shadow-[0_10px_22px_-12px_rgb(217_48_111/0.9)]" : "text-white/75 hover:bg-white/10 hover:text-white",
+    "flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors",
+    isActive ? "bg-luz text-[#07101c]" : "text-tx-2 hover:bg-ink/[0.08] hover:text-tx",
   );
 
 export function Marco({ children }: { children: ReactNode }) {
   return (
     <div className="relative min-h-screen lg:pl-72">
-      {/* Lavado de tejido muy tenue: da identidad al fondo sin competir con el contenido. */}
-      <div
-        className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[26rem] [mask-image:linear-gradient(to_bottom,black_0%,transparent_85%)]"
-        aria-hidden
-      >
-        <Tejido semilla={3} celula={64} tinte={0.3} lavanda={0.5} />
-      </div>
-
       {/* Barra lateral (escritorio) */}
-      <aside className="fixed inset-y-3 left-3 z-30 hidden w-64 flex-col rounded-3xl bg-hema-pro p-4 text-white shadow-[0_30px_60px_-30px_rgb(28_23_82/0.8)] lg:flex">
+      <aside className="fixed inset-y-3 left-3 z-30 hidden w-64 flex-col rounded-2xl border border-ink/10 bg-hema-pro p-4 text-tx lg:flex">
         <NavLink to="/" className="px-2 pb-5 pt-2" aria-label="MedTender, inicio">
-          <Marca oscuro />
+          <Marca />
         </NavLink>
         <nav className="flex-1 space-y-1" aria-label="Principal">
           <NavLink to="/" end className={enlaceNav}>
@@ -113,15 +104,15 @@ export function Marco({ children }: { children: ReactNode }) {
             Expedientes
           </NavLink>
         </nav>
-        <div className="mb-3 rounded-2xl border border-white/15 bg-white/[0.07] p-3.5 text-[0.8rem] leading-relaxed text-white/80">
-          <ShieldCheck className="mb-1.5 size-5 text-eosina-clara" aria-hidden />
+        <div className="mb-3 rounded-xl border border-ink/12 p-3.5 text-[0.8rem] leading-relaxed text-tx-2">
+          <ShieldCheck className="mb-1.5 size-5 text-eosina" aria-hidden />
           Tus PDF se eliminan del servidor al indexarlos. Los originales se abren desde tu equipo.
         </div>
         <MenuUsuario />
       </aside>
 
       {/* Barra superior (móvil y tableta) */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-ink/10 bg-white/90 px-4 py-2.5 backdrop-blur lg:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-ink/10 bg-sala px-4 py-2.5 lg:hidden">
         <NavLink to="/" aria-label="MedTender, inicio">
           <Marca />
         </NavLink>
@@ -130,11 +121,11 @@ export function Marco({ children }: { children: ReactNode }) {
 
       <main className="mx-auto max-w-[1400px] px-4 py-7 sm:px-8 lg:py-10">{children}</main>
       <Toaster
-        theme="light"
+        theme="dark"
         position="bottom-right"
         toastOptions={{
           classNames: {
-            toast: "!border !border-ink/10 !bg-white !text-tx !shadow-2xl !rounded-2xl",
+            toast: "!border !border-ink/15 !bg-panel !text-tx !shadow-2xl !rounded-xl",
             description: "!text-tx-2",
           },
         }}

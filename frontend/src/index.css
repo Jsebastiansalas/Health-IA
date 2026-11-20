@@ -1,151 +1,175 @@
 @import "tailwindcss";
-@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/archivo/wdth.css";
 @import "@fontsource-variable/hanken-grotesk";
 @import "@fontsource-variable/jetbrains-mono";
+@import "@fontsource/reenie-beanie/latin-400.css";
 
-/* Mundo: noche de quirófano. Un solo color luminoso (menta de monitor) sobre azul casi negro;
-   el azul eléctrico solo une los vectores, el ámbar avisa de adendas y el coral de rechazos. */
+/* Mundo: negatoscopio. Un cuarto oscuro azul noche; el panel de luz fría es lo único que ilumina.
+   Sobre él se leen las placas (el expediente) y se marca a mano, en ámbar de rotulador de cera,
+   lo que importa: citas y adendas. El cian de película solo indica estado activo. */
 @theme {
-  /* Portaobjetos claro y tinción H&E: hematoxilina (índigo) y eosina (rosa magenta). */
-  --color-lila-50: #fbf7fd;
-  --color-lila-100: #f4ecfa;
-  --color-lila-200: #e8dcf3;
-  --color-lila-300: #d6c5e9;
+  /* Nombres heredados para no reescribir cada componente: aquí cambian de significado. */
+  --color-lila-50: #0d1828;
+  --color-lila-100: #111f33;
+  --color-lila-200: #19293f;
+  --color-lila-300: #2b4059;
 
-  --color-ink: #1a1446;
-  --color-tx: #1a1446;
-  --color-tx-2: #433d72;
-  --color-tx-3: #66618d;
+  --color-sala: #05080e;
+  --color-panel: #0a1322;
+  --color-placa: #1b2430;
+  --color-luz: #e4f3f8;
+  --color-luz-2: #bfd9e2;
 
-  --color-hema: #4b3fc9;
-  --color-hema-osc: #2f2699;
-  --color-hema-pro: #1c1752;
-  --color-eosina: #d9306f;
-  --color-eosina-osc: #b8205a;
-  --color-eosina-clara: #f7c1d6;
-  --color-ok: #0b8f77;
-  --color-ambar: #9a5b00;
-  --color-coral: #c42b3a;
+  --color-ink: #dcecf2; /* tinta clara: sobre fondo oscuro, bordes y velos translúcidos usan ink/N */
+  --color-tx: #e8f3f7;
+  --color-tx-2: #a8bcc7;
+  --color-tx-3: #8196a3;
 
-  --font-display: "Bricolage Grotesque Variable", "Segoe UI", sans-serif;
+  --color-hema: #7cd4e6; /* cian de película: estado activo */
+  --color-hema-osc: #a9e5f1;
+  --color-hema-pro: #070d19;
+  --color-eosina: #ffc247; /* rotulador de cera */
+  --color-eosina-osc: #ffd27a;
+  --color-eosina-clara: #ffe2a3;
+  --color-ok: #5fe0bf;
+  --color-ambar: #f2b84b;
+  --color-coral: #ff8494;
+
+  --font-display: "Archivo Variable", "Segoe UI", sans-serif;
   --font-sans: "Hanken Grotesk Variable", "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono Variable", Consolas, monospace;
+  --font-cera: "Reenie Beanie", "Segoe Print", cursive;
 
   --ease-salida: cubic-bezier(0.16, 1, 0.3, 1);
 
   --animate-aparecer: aparecer 700ms var(--ease-salida) both;
-  --animate-flotar: flotar 9s ease-in-out infinite;
-  --animate-respirar: respirar 18s ease-in-out infinite;
-  --animate-girar: girar 60s linear infinite;
   --animate-brillo: brillo 1.8s ease-in-out infinite;
-  --animate-sello: sello 520ms var(--ease-salida) both;
-  --animate-ecg: ecg 3.2s linear infinite;
-  --animate-pulso: pulso 2.4s ease-out infinite;
+  --animate-trazo: trazo 900ms var(--ease-salida) both;
 
   @keyframes aparecer {
     0% { opacity: 0; transform: translateY(14px); }
     100% { opacity: 1; transform: translateY(0); }
   }
-  @keyframes flotar {
-    0%, 100% { transform: translateY(0) rotate(var(--giro, 0deg)); }
-    50% { transform: translateY(-10px) rotate(var(--giro, 0deg)); }
-  }
-  @keyframes respirar {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-    50% { transform: translate3d(2.5%, -3%, 0) scale(1.08); }
-  }
-  @keyframes girar {
-    to { transform: rotate(360deg); }
-  }
   @keyframes brillo {
     0% { background-position: 150% 0; }
     100% { background-position: -50% 0; }
   }
-  @keyframes ecg {
+  @keyframes trazo {
+    from { stroke-dashoffset: var(--largo, 400); }
     to { stroke-dashoffset: 0; }
   }
-  @keyframes pulso {
-    0% { transform: scale(0.6); opacity: 0.8; }
-    100% { transform: scale(2.4); opacity: 0; }
+  /* Ciclo del mecanismo (14 s): la placa entra al panel, se marca el hallazgo, la placa se retira. */
+  @keyframes ciclo-placa {
+    0% { transform: translateY(-5%) scale(0.985); opacity: 0; }
+    8%, 74% { transform: translateY(0) scale(1); opacity: 1; }
+    88%, 100% { transform: translateY(7%) scale(0.985); opacity: 0; }
   }
-  /* Ciclo del mecanismo (11 s). La hoja y las estrellas las dibuja el canvas con el mismo reloj. */
-  @keyframes ciclo-cita {
-    0%, 52% { opacity: 0; transform: translateY(18px) scale(0.96); }
-    60%, 90% { opacity: 1; transform: translateY(0) scale(1); }
-    97%, 100% { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  @keyframes ciclo-marca {
+    0%, 22% { opacity: 0; }
+    30%, 76% { opacity: 1; }
+    84%, 100% { opacity: 0; }
   }
-  @keyframes ciclo-sello {
-    0%, 62% { opacity: 0; transform: scale(1.5) rotate(-12deg); }
-    68%, 90% { opacity: 1; transform: scale(1) rotate(-4deg); }
-    97%, 100% { opacity: 0; transform: scale(1) rotate(-4deg); }
+  @keyframes ciclo-trazo {
+    0%, 22% { stroke-dashoffset: var(--largo, 400); }
+    36%, 100% { stroke-dashoffset: 0; }
   }
-  @keyframes sello {
-    0% { opacity: 0; transform: scale(1.5) rotate(-12deg); filter: blur(4px); }
-    100% { opacity: 1; transform: scale(1) rotate(-4deg); filter: blur(0); }
+  @keyframes ciclo-nota {
+    0%, 38% { opacity: 0; transform: translateY(6px); }
+    46%, 76% { opacity: 1; transform: translateY(0); }
+    84%, 100% { opacity: 0; transform: translateY(0); }
+  }
+  @keyframes ciclo-acta {
+    0%, 78% { opacity: 0; transform: translateY(10px); }
+    86%, 97% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(0); }
+  }
+  @keyframes ciclo-luz {
+    0%, 8%, 74%, 100% { opacity: 0.0; }
+    86%, 96% { opacity: 1; }
   }
 }
 
 @layer base {
   html {
-    background-color: var(--color-lila-50);
+    background-color: var(--color-sala);
     color: var(--color-tx);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
-    color-scheme: light;
+    color-scheme: dark;
     scroll-behavior: smooth;
   }
   body { min-height: 100vh; }
-  ::selection { background: var(--color-eosina-clara); color: var(--color-ink); }
+  ::selection { background: var(--color-eosina); color: #1a1405; }
   :focus-visible { outline: 2px solid var(--color-hema); outline-offset: 3px; border-radius: 6px; }
   * { scrollbar-width: thin; scrollbar-color: var(--color-lila-300) transparent; }
   *::-webkit-scrollbar { width: 10px; height: 10px; }
   *::-webkit-scrollbar-thumb { background: var(--color-lila-300); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
-  input, textarea, select { caret-color: var(--color-eosina); }
-  ::placeholder { color: var(--color-tx-3); opacity: 0.85; }
+  input, textarea, select { caret-color: var(--color-eosina); color-scheme: dark; }
+  ::placeholder { color: var(--color-tx-3); opacity: 1; }
   .num { font-variant-numeric: tabular-nums; }
-  h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; text-wrap: balance; }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-stretch: 88%;
+    letter-spacing: -0.02em;
+    word-spacing: 0.09em;
+    text-wrap: balance;
+  }
   p { text-wrap: pretty; }
 }
 
 @layer components {
-  /* Tarjeta: portaobjetos blanco con borde lila y sombra con desplazamiento. */
+  /* Superficie de la app: chapa oscura con un filo de luz arriba, sin vidrio ni difuminado. */
   .vidrio {
-    background: rgb(255 255 255 / 0.86);
-    border: 1px solid rgb(75 63 201 / 0.14);
-    box-shadow: 0 1px 0 rgb(255 255 255), 0 22px 44px -26px rgb(36 31 120 / 0.35), 0 2px 5px -2px rgb(36 31 120 / 0.1);
+    background: var(--color-panel);
+    border: 1px solid rgb(220 236 242 / 0.1);
+    box-shadow: inset 0 1px 0 rgb(220 236 242 / 0.06), 0 18px 30px -22px rgb(0 0 0 / 0.8);
   }
   .vidrio-solido {
-    background: #fff;
-    border: 1px solid rgb(75 63 201 / 0.14);
-    box-shadow: 0 20px 44px -28px rgb(36 31 120 / 0.38), 0 2px 5px -2px rgb(36 31 120 / 0.1);
+    background: #0c1829;
+    border: 1px solid rgb(220 236 242 / 0.14);
+    box-shadow: inset 0 1px 0 rgb(220 236 242 / 0.07), 0 26px 50px -24px rgb(0 0 0 / 0.9);
   }
-  .linea { border-color: rgb(26 20 70 / 0.12); }
+  .linea { border-color: rgb(220 236 242 / 0.12); }
   .etiqueta {
     font-family: var(--font-mono);
     font-size: 0.72rem;
     letter-spacing: 0.04em;
     color: var(--color-tx-3);
   }
-  .ciclo-cita { animation: ciclo-cita 11s var(--ease-salida) infinite both; }
-  .ciclo-sello { animation: ciclo-sello 11s var(--ease-salida) infinite both; }
+  /* Rótulo de placa: marcador de plomo y datos del estudio. */
+  .rotulo {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .cera { font-family: var(--font-cera); }
   .esqueleto {
-    background: linear-gradient(100deg, rgb(75 63 201 / 0.06) 30%, rgb(217 48 111 / 0.12) 50%, rgb(75 63 201 / 0.06) 70%);
+    background: linear-gradient(100deg, rgb(220 236 242 / 0.05) 30%, rgb(220 236 242 / 0.12) 50%, rgb(220 236 242 / 0.05) 70%);
     background-size: 200% 100%;
     animation: var(--animate-brillo);
     border-radius: 12px;
   }
-  /* Graduación de ocular: marcas cada 6° sobre el borde de un círculo. */
-  .graticula {
-    background: repeating-conic-gradient(from -1deg, var(--color-hema-pro) 0 2deg, transparent 2deg 6deg);
-    mask: radial-gradient(circle, transparent 0 calc(100% - 14px), #000 calc(100% - 13px) calc(100% - 7px), transparent calc(100% - 6px));
-    -webkit-mask: radial-gradient(circle, transparent 0 calc(100% - 14px), #000 calc(100% - 13px) calc(100% - 7px), transparent calc(100% - 6px));
+  /* Panel de luz: la superficie iluminada del negatoscopio, con la caída de luz de un tubo fluorescente. */
+  .panel-luz {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.55), transparent 22%),
+      radial-gradient(120% 90% at 50% 40%, #f1fafc 0%, var(--color-luz) 55%, #b9d3dc 100%);
   }
+  .ciclo-placa { animation: ciclo-placa 14s var(--ease-salida) infinite both; }
+  .ciclo-marca { animation: ciclo-marca 14s linear infinite both; }
+  .ciclo-trazo { stroke-dasharray: var(--largo, 400); animation: ciclo-trazo 14s var(--ease-salida) infinite both; }
+  .ciclo-nota { animation: ciclo-nota 14s var(--ease-salida) infinite both; }
+  .ciclo-acta { animation: ciclo-acta 14s var(--ease-salida) infinite both; }
+  .ciclo-luz { animation: ciclo-luz 14s linear infinite both; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  /* Sin movimiento, el mecanismo se queda en su fotograma final: la cita y el sello visibles. */
-  .ciclo-cita, .ciclo-sello { animation: none !important; opacity: 1 !important; }
+  /* Sin movimiento, el mecanismo se queda en su fotograma de lectura: placa, hallazgo y nota visibles. */
+  .ciclo-placa, .ciclo-marca, .ciclo-nota { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .ciclo-trazo { animation: none !important; stroke-dashoffset: 0 !important; }
+  .ciclo-acta, .ciclo-luz { animation: none !important; opacity: 0 !important; }
   *, *::before, *::after {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;

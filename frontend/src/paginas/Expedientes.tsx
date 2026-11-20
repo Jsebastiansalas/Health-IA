@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { api, post } from "../api/cliente";
 import type { Expediente, TipoExpediente } from "../api/tipos";
-import { Molecula } from "../arte/Decoracion";
+import { PlacaVacia } from "../arte/Placa";
 import { Boton } from "../componentes/ui/Boton";
 import { Campo } from "../componentes/ui/Campo";
 import { Dialogo } from "../componentes/ui/Dialogo";
@@ -80,7 +80,7 @@ export function PaginaExpedientes() {
       </div>
 
       <div className="mb-8 flex flex-wrap items-center gap-3">
-        <div className="group flex h-11 w-full items-center gap-2.5 rounded-xl border border-ink/12 bg-white px-3.5 transition-[border-color,box-shadow] focus-within:border-hema/70 focus-within:shadow-[0_0_0_4px_rgb(75_63_201/0.12)] sm:w-80">
+        <div className="group flex h-11 w-full items-center gap-2.5 rounded-xl border border-ink/12 bg-sala px-3.5 transition-[border-color,box-shadow] focus-within:border-hema/70 focus-within:shadow-[0_0_0_3px_rgb(124_212_230/0.2)] sm:w-80">
           <Search className="size-4 text-tx-3 group-focus-within:text-hema" aria-hidden />
           <input
             ref={buscador}
@@ -116,13 +116,13 @@ export function PaginaExpedientes() {
       {isLoading && (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3" aria-busy aria-label="Cargando expedientes">
           {[0, 1, 2].map((i) => (
-            <Esqueleto key={i} className="h-56 rounded-3xl" />
+            <Esqueleto key={i} className="h-56 rounded-2xl" />
           ))}
         </div>
       )}
 
       {error && (
-        <div role="alert" className="vidrio flex max-w-xl items-start gap-4 rounded-3xl p-6">
+        <div role="alert" className="vidrio flex max-w-xl items-start gap-4 rounded-2xl p-6">
           <AlertTriangle className="mt-0.5 size-6 shrink-0 text-coral" aria-hidden />
           <div>
             <p className="font-semibold">No pudimos cargar tus expedientes</p>
@@ -135,8 +135,8 @@ export function PaginaExpedientes() {
       )}
 
       {expedientes?.length === 0 && (
-        <div className="vidrio relative max-w-2xl overflow-hidden rounded-3xl p-9">
-          <Molecula className="absolute -right-6 -top-4 w-56 opacity-70" />
+        <div className="vidrio relative max-w-2xl overflow-hidden rounded-2xl p-9">
+          <PlacaVacia className="absolute -top-3 right-8 w-32 rotate-6 opacity-80" />
           <h2 className="relative max-w-sm text-3xl font-semibold">Aún no hay expedientes.</h2>
           <p className="relative mt-3 max-w-md text-tx-2">
             {puedeCrear
@@ -171,7 +171,7 @@ export function PaginaExpedientes() {
             >
               <Link
                 to={`/expedientes/${e.id}`}
-                className="vidrio group relative flex h-full flex-col overflow-hidden rounded-3xl p-6 transition-[transform,border-color,box-shadow] duration-300 ease-[var(--ease-salida)] hover:-translate-y-1 hover:border-hema/35 hover:shadow-[0_30px_60px_-28px_rgb(75_63_201/0.35)]"
+                className="vidrio group relative flex h-full flex-col overflow-hidden rounded-2xl p-6 transition-[transform,border-color,box-shadow] duration-300 ease-[var(--ease-salida)] hover:-translate-y-1 hover:border-hema/35 hover:shadow-[0_26px_40px_-26px_rgb(0_0_0/0.9)]"
               >
                 <div className="flex items-start justify-between gap-3">
                   <span className="grid size-12 place-items-center rounded-2xl border border-hema/25 bg-hema/10 text-hema">
@@ -258,10 +258,10 @@ function NuevoExpediente({ alCrear }: { alCrear: () => void }) {
           id="tipo-expediente"
           value={datos.tipo_expediente}
           onChange={cambiar("tipo_expediente")}
-          className="h-12 w-full rounded-xl border border-ink/12 bg-white px-3.5 text-[0.95rem] outline-none transition-[border-color,box-shadow] focus:border-hema/70 focus:shadow-[0_0_0_4px_rgb(75_63_201/0.12)]"
+          className="h-12 w-full rounded-xl border border-ink/12 bg-sala px-3.5 text-[0.95rem] outline-none transition-[border-color,box-shadow] focus:border-hema/70 focus:shadow-[0_0_0_3px_rgb(124_212_230/0.2)]"
         >
           {Object.entries(TIPOS_EXPEDIENTE).map(([v, t]) => (
-            <option key={v} value={v} className="bg-white">
+            <option key={v} value={v} className="bg-panel">
               {t}
             </option>
           ))}
@@ -270,7 +270,7 @@ function NuevoExpediente({ alCrear }: { alCrear: () => void }) {
       <Campo etiqueta="Entidad contratante" maxLength={200} placeholder="Hospital Universitario"
         value={datos.entidad_contratante} onChange={cambiar("entidad_contratante")} />
       {crear.error && (
-        <p role="alert" className="rounded-xl border border-coral/35 bg-coral/10 px-3.5 py-3 text-sm text-[#b3202f]">
+        <p role="alert" className="rounded-xl border border-coral/35 bg-coral/10 px-3.5 py-3 text-sm text-coral">
           {(crear.error as Error).message}
         </p>
       )}

@@ -115,7 +115,7 @@ export function VisorLocal({ cita, alCerrar }: { cita: Cita; alCerrar: () => voi
   return (
     <Dialog.Root open onOpenChange={(abierto) => !abierto && alCerrar()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-hema-pro/45 backdrop-blur-[2px]" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 " />
         <Dialog.Content
           aria-describedby={undefined}
           className="vidrio-solido fixed inset-y-0 right-0 z-50 flex w-full max-w-5xl flex-col outline-none data-[state=open]:animate-[aparecer_350ms_var(--ease-salida)] sm:inset-y-3 sm:right-3 sm:rounded-3xl"
@@ -188,9 +188,9 @@ function Fase({
   children?: ReactNode;
 }) {
   const colores = {
-    hema: "border-hema/30 bg-hema/10 text-hema shadow-[0_0_50px_-10px_rgb(75_63_201/0.5)]",
-    coral: "border-coral/35 bg-coral/10 text-coral shadow-[0_0_50px_-10px_rgb(255_107_134/0.5)]",
-    ambar: "border-ambar/35 bg-ambar/10 text-ambar shadow-[0_0_50px_-10px_rgb(255_184_77/0.5)]",
+    hema: "border-hema/30 bg-hema/10 text-hema",
+    coral: "border-coral/35 bg-coral/10 text-coral",
+    ambar: "border-ambar/35 bg-ambar/10 text-ambar",
   }[tono];
   return (
     <div className="mx-auto max-w-lg text-center">
@@ -317,7 +317,7 @@ function Indicaciones({
               «{estado.pdf.ruta}» tiene el nombre esperado pero su contenido cambió. Las citas corresponden a la versión
               indexada: revisarlas en otra versión podría llevar a conclusiones equivocadas.
             </p>
-            <dl className="mt-5 space-y-2 rounded-2xl border border-ink/8 bg-white p-4 text-left font-mono text-[0.7rem]">
+            <dl className="mt-5 space-y-2 rounded-xl border border-ink/10 bg-sala p-4 text-left font-mono text-[0.7rem]">
               <div>
                 <dt className="text-tx-3">Indexado</dt>
                 <dd className="break-all text-hema">{cita.sha256Original}</dd>
