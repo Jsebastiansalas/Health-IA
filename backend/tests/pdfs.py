@@ -4,9 +4,6 @@ import io
 
 from pypdf import PdfWriter
 
-# Marcador que el antivirus simulado de las pruebas trata como virus.
-MARCADOR_VIRUS = b"MEDTENDER-MARCADOR-VIRUS-DE-PRUEBA"
-
 A4 = (595.0, 842.0)
 
 

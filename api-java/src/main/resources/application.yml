@@ -85,6 +85,7 @@ medtender:
       url: ${AGENTE_URL:http://localhost:8010}
       token: ${AGENTE_TOKEN:}
       timeout-s: 10
+      timeout-consulta-s: 90   # una consulta puede esperar al LLM y a su modelo de respaldo
       reintentos: 3
   rate-limit:
     habilitado: ${RATE_LIMIT_HABILITADO:true}

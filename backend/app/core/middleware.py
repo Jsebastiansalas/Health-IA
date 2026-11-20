@@ -1,15 +1,13 @@
-"""Middleware ASGI puro (sin BaseHTTPMiddleware: la subida de PDFs lee el cuerpo en streaming).
+"""Middleware ASGI puro (sin BaseHTTPMiddleware).
 
 Por cada petición HTTP:
 1. Asigna request_id (se respeta el de Caddy si es válido) y lo devuelve en X-Request-ID.
 2. Determina la IP real del cliente.
-3. Aplica el límite general por IP.
-4. Añade cabeceras de seguridad a las respuestas de la API (Cache-Control: no-store: las
+3. Añade cabeceras de seguridad a las respuestas de la API (Cache-Control: no-store: las
    respuestas contienen datos confidenciales y no deben quedar en cachés).
-5. Registra un log de acceso y las métricas HTTP.
+4. Registra un log de acceso y las métricas HTTP.
 """
 
-import json
 import logging
 import re
 import time
@@ -18,14 +16,13 @@ import uuid
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from app.core import contexto, limites
+from app.core import contexto
 from app.core.config import get_settings
-from app.core.metricas import HTTP_DURACION, HTTP_SOLICITUDES, LIMITE_RECHAZOS
+from app.core.metricas import HTTP_DURACION, HTTP_SOLICITUDES
 
 log = logging.getLogger("medtender.acceso")
 
 _ID_VALIDO = re.compile(r"^[A-Za-z0-9._-]{8,64}$")
-_SIN_LIMITE = {"/health", "/metrics"}
 
 
 def ip_del_cliente(scope: Scope, headers: Headers) -> str:
@@ -81,7 +78,7 @@ class MiddlewareSolicitud:
         ]
         inicio = time.perf_counter()
         codigo = 500
-        es_api = scope["path"].startswith("/api/")
+        es_api = scope["path"].startswith("/internal/")
 
         async def enviar(mensaje: Message) -> None:
             nonlocal codigo
@@ -95,13 +92,6 @@ class MiddlewareSolicitud:
             await send(mensaje)
 
         try:
-            s = get_settings()
-            if scope["path"] not in _SIN_LIMITE:
-                r = await limites.golpear("general_ip", ip, s.rl_general_ip_min, 60)
-                if not r.permitido:
-                    LIMITE_RECHAZOS.labels("general_ip").inc()
-                    await _responder_429(enviar, r.reintentar_en_s)
-                    return
             await self.app(scope, receive, enviar)
         finally:
             self._registrar(scope, codigo, time.perf_counter() - inicio)
@@ -131,21 +121,3 @@ class MiddlewareSolicitud:
                 "duracion_ms": round(duracion_s * 1000),
             },
         )
-
-
-async def _responder_429(enviar, reintentar_en_s: int) -> None:
-    cuerpo = json.dumps(
-        {"detail": f"Demasiadas solicitudes. Intente de nuevo en {reintentar_en_s} s."}
-    ).encode()
-    await enviar(
-        {
-            "type": "http.response.start",
-            "status": 429,
-            "headers": [
-                (b"content-type", b"application/json"),
-                (b"content-length", str(len(cuerpo)).encode()),
-                (b"retry-after", str(reintentar_en_s).encode()),
-            ],
-        }
-    )
-    await enviar({"type": "http.response.body", "body": cuerpo})

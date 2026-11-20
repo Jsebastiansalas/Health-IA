@@ -39,7 +39,7 @@ def ejecutor():
 
 
 @pytest.fixture
-async def expediente(org_a, scanner, cola):
+async def expediente(org_a, cola):
     return await org_a.crear_expediente(org_a.admin)
 
 
@@ -59,7 +59,7 @@ def pliego(sufijo: str = "") -> bytes:
 
 
 async def indexar(client, org_a, expediente, ejecutor, router, contenido=None) -> uuid.UUID:
-    r = await subir(client, org_a.admin, expediente["id"], contenido or pliego())
+    r = await subir(expediente["id"], contenido or pliego())
     doc_id = uuid.UUID(r.json()["id"])
     await procesar_documento(get_sessionmaker(), doc_id, ejecutor, VectorizadorEmbeddings(router))
     return doc_id
@@ -97,18 +97,11 @@ async def test_indexacion_completa_y_purga(
     # Se vectorizó contenido_vectorizado (con cabecera), como documento y no como consulta.
     assert {t for t, _ in proveedores["gemini-embedding-001"].llamadas} == {"documento"}
 
-    r = await client.get(
-        f"/api/v1/expedientes/{expediente['id']}/documentos/{doc_id}", headers=org_a.admin
-    )
-    assert r.json()["progreso"] == 100
-
 
 async def test_politica_diferida_deja_el_pdf_una_hora(
     client, org_a, expediente, ejecutor, router, ephemeral_dir
 ):
-    await client.patch(
-        "/api/v1/tenant", headers=org_a.admin, json={"politica_borrado": "DIFERIDO_1H"}
-    )
+    org_a.politica_de_borrado("DIFERIDO_1H")
     doc_id = await indexar(client, org_a, expediente, ejecutor, router)
     d, _, _ = await _cargar(doc_id)
     assert d.estado_indexacion == E.INDEXADO_PENDIENTE_PURGA
@@ -131,7 +124,7 @@ async def test_fallo_del_proveedor_purga_y_no_deja_indice_parcial(
 async def test_usa_el_modelo_vigente_del_expediente(
     client, org_a, expediente, ejecutor, router, proveedores
 ):
-    r = await subir(client, org_a.admin, expediente["id"], pliego())
+    r = await subir(expediente["id"], pliego())
     doc_id = uuid.UUID(r.json()["id"])
     # El expediente cambió de modelo mientras el documento esperaba en la cola.
     async with get_sessionmaker()() as s:
@@ -173,11 +166,16 @@ async def test_busqueda_vectorial_con_el_mismo_modelo(client, org_a, expediente,
 
 
 # ---------- HU4.4: re-vectorización sin PDF ----------
-async def _reindexar(client, org_a, expediente, modelo="bge-m3", headers=None):
+async def _reindexar(client, org, expediente, modelo="bge-m3"):
     return await client.post(
-        f"/api/v1/expedientes/{expediente['id']}/reindexaciones",
-        headers=headers or org_a.admin,
-        json={"embedding_model": modelo},
+        "/internal/v1/reindexaciones",
+        headers=org.admin,
+        json={
+            "tenant_id": str(org.tenant_id),
+            "expediente_id": expediente["id"],
+            "usuario_id": str(org.admin_id),
+            "embedding_model": modelo,
+        },
     )
 
 
@@ -213,7 +211,9 @@ async def test_reindexacion_a_modelo_local_sin_pdf(
         assert list(b.embedding) != list(a.embedding)
 
     lista = await client.get(
-        f"/api/v1/expedientes/{expediente['id']}/reindexaciones", headers=org_a.admin
+        "/internal/v1/reindexaciones",
+        headers=org_a.admin,
+        params={"tenant_id": str(org_a.tenant_id), "expediente_id": expediente["id"]},
     )
     assert [x["estado"] for x in lista.json()] == ["COMPLETADA"]
 
@@ -248,66 +248,31 @@ async def test_validaciones_de_reindexacion(client, org_a, expediente, ejecutor,
     assert (await _reindexar(client, org_a, expediente, "gemini-embedding-001")).status_code == 409
     assert (await _reindexar(client, org_a, expediente, "modelo-inventado")).status_code == 422
 
-    uid, editor = await org_a.crear_usuario("bio@hospital-a.co", "BIOMEDICO")
-    await client.put(
-        f"/api/v1/expedientes/{expediente['id']}/permisos/{uid}",
-        headers=org_a.admin,
-        json={"permiso": "EDITOR"},
-    )
-    assert (await _reindexar(client, org_a, expediente, headers=editor)).status_code == 403
-
     assert (await _reindexar(client, org_a, expediente)).status_code == 202
-    # Solo una activa a la vez, y mientras tanto no se aceptan subidas.
+    # Solo una activa a la vez (que no se acepten subidas mientras tanto lo vigila la API Java).
     assert (await _reindexar(client, org_a, expediente)).status_code == 409
-    r = await subir(client, org_a.admin, expediente["id"], pliego(" nuevo"))
-    assert r.status_code == 409 and "re-vectorizando" in r.json()["detail"]
 
 
 async def test_no_se_reindexa_con_documentos_en_proceso(client, org_a, expediente, router):
-    await subir(client, org_a.admin, expediente["id"], pliego())  # queda EN_COLA
+    await subir(expediente["id"], pliego())  # queda EN_COLA
     r = await _reindexar(client, org_a, expediente)
     assert r.status_code == 409 and "en procesamiento" in r.json()["detail"]
 
 
 async def test_otro_tenant_no_puede_reindexar(client, org_a, org_b, expediente, router):
-    assert (await _reindexar(client, org_a, expediente, headers=org_b.admin)).status_code == 404
+    # El tenant va en la solicitud: un expediente que no es de ese tenant no existe para el agente.
+    assert (await _reindexar(client, org_b, expediente)).status_code == 404
 
 
 async def test_lista_de_modelos(client, org_a, router):
-    r = await client.get("/api/v1/embeddings/modelos", headers=org_a.admin)
+    r = await client.get("/internal/v1/embeddings/modelos", headers=org_a.admin)
     assert {m["modelo"]: m["dimension"] for m in r.json()} == {
         "gemini-embedding-001": 1536,
         "bge-m3": 1024,
     }
 
 
-# ---------- HU4.5: aviso de versión de OCR ----------
-async def test_aviso_de_ocr_desactualizado(client, org_a, expediente, ejecutor, router):
-    doc_id = await indexar(client, org_a, expediente, ejecutor, router)
-    url = f"/api/v1/expedientes/{expediente['id']}/documentos/{doc_id}"
-    assert (await client.get(url, headers=org_a.admin)).json()["aviso_ocr_desactualizado"] is False
-
-    async with get_sessionmaker()() as s:
-        await s.execute(
-            update(Documento)
-            .where(Documento.id == doc_id)
-            .values(paginas_ocr=2, ocr_version="tesseract-4.1-v1")
-        )
-        await s.commit()
-    cuerpo = (await client.get(url, headers=org_a.admin)).json()
-    assert cuerpo["aviso_ocr_desactualizado"] is True and cuerpo["paginas_ocr"] == 2
-
-    async with get_sessionmaker()() as s:
-        await s.execute(
-            update(Documento).where(Documento.id == doc_id).values(ocr_version="tesseract-5.5-v1")
-        )
-        await s.commit()
-    assert (await client.get(url, headers=org_a.admin)).json()["aviso_ocr_desactualizado"] is False
-
-
-async def test_conteo_de_fragmentos_por_tenant(
-    client, org_a, org_b, ejecutor, router, scanner, cola
-):
+async def test_conteo_de_fragmentos_por_tenant(client, org_a, org_b, ejecutor, router, cola):
     """Los fragmentos llevan tenant_id y expediente_id para el filtro obligatorio del Paso 12."""
     exp_a = await org_a.crear_expediente(org_a.admin, "A-1")
     exp_b = await org_b.crear_expediente(org_b.admin, "B-1")

@@ -31,8 +31,8 @@ async def test_request_id_valido_de_caddy_se_respeta_y_el_invalido_se_ignora(cli
     assert "\n" not in r.headers["x-request-id"] and len(r.headers["x-request-id"]) == 32
 
 
-async def test_respuestas_de_la_api_no_se_cachean(client: AsyncClient, org_a: Org):
-    r = await client.get("/api/v1/expedientes", headers=org_a.admin)
+async def test_respuestas_internas_no_se_cachean(client: AsyncClient, org_a: Org):
+    r = await client.get("/internal/v1/embeddings/modelos", headers=org_a.admin)
     assert r.headers["cache-control"] == "no-store"
     assert r.headers["x-content-type-options"] == "nosniff"
     assert "cache-control" not in (await client.get("/health")).headers
@@ -85,11 +85,13 @@ async def test_el_log_de_acceso_lleva_ruta_plantilla_sin_datos_sensibles(
     exp = await org_a.crear_expediente(org_a.admin)
     caplog.clear()
     with caplog.at_level(logging.INFO, logger="medtender.acceso"):
-        await client.get(f"/api/v1/expedientes/{exp['id']}?secreto=abc", headers=org_a.admin)
+        await client.post(
+            f"/internal/v1/documentos/{exp['id']}/procesar?secreto=abc", headers=org_a.admin
+        )
     registro = next(r for r in caplog.records if r.name == "medtender.acceso")
-    assert registro.ruta == "/api/v1/expedientes/{expediente_id}"
-    assert registro.codigo == 200
-    assert "secreto" not in registro.getMessage() and "Bearer" not in registro.getMessage()
+    assert registro.ruta == "/internal/v1/documentos/{documento_id}/procesar"
+    assert registro.codigo == 404  # no hay tal documento; lo que importa es la ruta registrada
+    assert "secreto" not in registro.getMessage() and "token" not in registro.getMessage().lower()
 
 
 # ---------- Métricas ----------
@@ -112,21 +114,21 @@ async def test_metrics_en_produccion_sin_token_no_existe(client: AsyncClient, mo
 
 async def test_metricas_http_usan_plantilla_de_ruta(client: AsyncClient, org_a: Org):
     exp = await org_a.crear_expediente(org_a.admin)
-    await client.get(f"/api/v1/expedientes/{exp['id']}", headers=org_a.admin)
+    await client.post(f"/internal/v1/documentos/{exp['id']}/procesar", headers=org_a.admin)
     texto = (await client.get("/metrics", headers=TOKEN)).text
-    assert 'ruta="/api/v1/expedientes/{expediente_id}"' in texto
+    assert 'ruta="/internal/v1/documentos/{documento_id}/procesar"' in texto
     assert exp["id"] not in texto  # los ids no pueden convertirse en etiquetas
     assert "medtender_http_duracion_segundos_bucket" in texto
 
 
 async def test_medidores_del_negocio_vienen_de_la_base_de_datos(
-    client: AsyncClient, org_a: Org, scanner, cola
+    client: AsyncClient, org_a: Org, cola
 ):
     from tests.fakes import subir
     from tests.pdfs import pdf
 
     exp = await org_a.crear_expediente(org_a.admin)
-    r = await subir(client, org_a.admin, exp["id"], pdf())
+    r = await subir(exp["id"], pdf())
     assert r.status_code == 202
     texto = (await client.get("/metrics", headers=TOKEN)).text
     assert 'medtender_documentos{estado="EN_COLA"} 1.0' in texto
@@ -136,17 +138,18 @@ async def test_medidores_del_negocio_vienen_de_la_base_de_datos(
 
 
 async def test_estado_de_medidores_no_arrastra_etiquetas_viejas(
-    client: AsyncClient, org_a: Org, scanner, cola
+    client: AsyncClient, org_a: Org, cola
 ):
+    import psycopg
+
     from tests.fakes import subir
     from tests.pdfs import pdf
 
     exp = await org_a.crear_expediente(org_a.admin)
-    doc = (await subir(client, org_a.admin, exp["id"], pdf())).json()
+    doc = (await subir(exp["id"], pdf())).json()
     assert 'estado="EN_COLA"' in (await client.get("/metrics", headers=TOKEN)).text
-    await client.delete(
-        f"/api/v1/expedientes/{exp['id']}/documentos/{doc['id']}", headers=org_a.admin
-    )
+    with psycopg.connect(org_a.postgres_url) as conn:
+        conn.execute("DELETE FROM documentos WHERE id = %s", (doc["id"],))
     # Sin documentos, la etiqueta EN_COLA desaparece en vez de quedarse con el valor anterior.
     assert 'estado="EN_COLA"' not in (await client.get("/metrics", headers=TOKEN)).text
 

@@ -16,7 +16,7 @@ public record IngestaProperties(
     public record Antivirus(String backend, String host, int port, int timeoutS) {}
 
     /** Servicio interno de IA (FastAPI). Solo se le habla por la red interna con un token compartido. */
-    public record Agente(String url, String token, int timeoutS, int reintentos) {}
+    public record Agente(String url, String token, int timeoutS, int timeoutConsultaS, int reintentos) {}
 
     public long maxUploadBytes() {
         return maxUploadMb * 1024L * 1024L;
