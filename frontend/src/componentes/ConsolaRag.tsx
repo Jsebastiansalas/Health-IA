@@ -5,7 +5,6 @@ import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { api, post } from "../api/cliente";
 import type { Cita, RespuestaConsulta } from "../api/tipos";
-import { PlacaVacia } from "../arte/Placa";
 import { cn } from "../lib/cn";
 import { Logotipo } from "./Marca";
 import { TarjetaCita } from "./TarjetaCita";
@@ -69,18 +68,17 @@ export function ConsolaRag({
         <h2 id="titulo-consulta" className="text-2xl font-semibold">
           Consulta del expediente
         </h2>
-        <span className="text-sm text-tx-3">Respuestas solo con evidencia citada</span>
+        <span className="text-sm text-tinta-3">Respuestas solo con evidencia citada</span>
       </div>
 
       <div className="flex-1 space-y-8 pb-6" role="log" aria-live="polite" aria-label="Conversación">
         {vacio && (
           <div className="vidrio relative overflow-hidden rounded-2xl p-8">
-            <PlacaVacia className="absolute -right-2 -top-3 hidden w-32 rotate-6 opacity-80 sm:block" />
-            <Lightbulb className="relative size-7 text-hema" strokeWidth={1.5} aria-hidden />
+            <Lightbulb className="relative size-7 text-accion" strokeWidth={1.5} aria-hidden />
             <p className="relative mt-4 max-w-md text-2xl font-semibold leading-tight">
               {hayIndice ? "Pregunta lo que necesites del expediente." : "Aún no hay documentos indexados."}
             </p>
-            <p className="relative mt-3 max-w-lg text-tx-2">
+            <p className="relative mt-3 max-w-lg text-tinta-2">
               {hayIndice
                 ? "Cada respuesta cita documento, página y sección. Si la evidencia no alcanza, el sistema lo dice."
                 : "Sube un PDF y espera a que termine el proceso: cuando el original se elimine del servidor, podrás consultarlo aquí."}
@@ -94,7 +92,7 @@ export function ConsolaRag({
                       setPregunta(s);
                       campo.current?.focus();
                     }}
-                    className="rounded-full border border-ink/25 px-3.5 py-2 text-left text-[0.84rem] text-tx-2 transition-colors hover:border-hema/50 hover:bg-hema/10 hover:text-tx"
+                    className="rounded-md border border-tinta/25 px-3.5 py-2 text-left text-[0.84rem] text-tinta-2 transition-colors hover:border-accion/50 hover:bg-accion/10 hover:text-tinta"
                   >
                     {s}
                   </button>
@@ -114,7 +112,7 @@ export function ConsolaRag({
             <div className="flex gap-3.5" aria-busy aria-label="Analizando el expediente">
               <AvatarIA />
               <div className="vidrio flex-1 rounded-2xl rounded-tl-lg p-5">
-                <p className="mb-4 text-sm font-medium text-hema">Analizando el expediente…</p>
+                <p className="mb-4 text-sm font-medium text-accion">Analizando el expediente…</p>
                 <div className="space-y-2.5">
                   <Esqueleto className="h-3.5 w-[92%]" />
                   <Esqueleto className="h-3.5 w-[78%]" />
@@ -125,8 +123,8 @@ export function ConsolaRag({
           </div>
         )}
         {consultar.error && (
-          <p role="alert" className="flex items-start gap-2.5 rounded-2xl border border-coral/35 bg-coral/10 px-4 py-3 text-sm text-coral">
-            <AlertOctagon className="mt-0.5 size-4 shrink-0 text-coral" aria-hidden />
+          <p role="alert" className="flex items-start gap-2.5 rounded-2xl border border-peligro/35 bg-peligro/10 px-4 py-3 text-sm text-peligro">
+            <AlertOctagon className="mt-0.5 size-4 shrink-0 text-peligro" aria-hidden />
             {(consultar.error as Error).message}
           </p>
         )}
@@ -168,7 +166,7 @@ export function ConsolaRag({
             {!consultar.isPending && <SendHorizontal className="size-[1.15rem]" aria-hidden />}
           </Boton>
         </div>
-        <p className="mt-1 flex items-center gap-1.5 px-3 text-[0.72rem] text-tx-3">
+        <p className="mt-1 flex items-center gap-1.5 px-3 text-[0.72rem] text-tinta-3">
           <CornerDownLeft className="size-3" aria-hidden />
           Enter envía · Mayús + Enter salto de línea
         </p>
@@ -179,7 +177,7 @@ export function ConsolaRag({
 
 function AvatarIA() {
   return (
-    <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-xl border border-hema/25 bg-sala">
+    <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-xl border border-accion/25 bg-mesa">
       <Logotipo className="size-6" />
     </span>
   );
@@ -188,7 +186,7 @@ function AvatarIA() {
 function Burbuja({ texto }: { texto: string }) {
   return (
     <div className="flex justify-end">
-      <p className="max-w-[85%] rounded-2xl rounded-tr-md bg-obsidiana px-5 py-3 text-[0.97rem] leading-relaxed text-tx">
+      <p className="max-w-[85%] rounded-2xl rounded-tr-md bg-folio-2 px-5 py-3 text-[0.97rem] leading-relaxed text-tinta">
         {texto}
       </p>
     </div>
@@ -228,14 +226,14 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
       <div className="flex gap-3.5">
         <AvatarIA />
         <div className="min-w-0 flex-1">
-          <div className={cn("vidrio rounded-2xl rounded-tl-lg p-5 sm:p-6", r.sinEvidencia && "border-ambar/30")}>
+          <div className={cn("vidrio rounded-2xl rounded-tl-lg p-5 sm:p-6", r.sinEvidencia && "border-aviso/30")}>
             {r.sinEvidencia && (
-              <Insignia tono="ambar" className="mb-3.5">
+              <Insignia tono="aviso" className="mb-3.5">
                 <SearchX className="size-3.5" aria-hidden />
                 Sin evidencia suficiente
               </Insignia>
             )}
-            <div className="space-y-3 text-[0.98rem] leading-relaxed [&_li]:ml-5 [&_li]:list-disc [&_strong]:font-semibold [&_strong]:text-ink">
+            <div className="space-y-3 text-[0.98rem] leading-relaxed [&_li]:ml-5 [&_li]:list-disc [&_strong]:font-semibold [&_strong]:text-tinta">
               <ReactMarkdown
                 components={{
                   a: ({ href, children }) => {
@@ -244,7 +242,7 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
                       <button
                         type="button"
                         onClick={() => irACita(n)}
-                        className="mx-0.5 inline-grid size-5 -translate-y-0.5 place-items-center rounded-md bg-eosina/15 align-middle text-[0.7rem] font-bold text-eosina transition-colors hover:bg-eosina hover:text-[#1a1405]"
+                        className="mx-0.5 inline-grid size-5 -translate-y-0.5 place-items-center rounded-md bg-marca align-middle text-[0.7rem] font-bold text-marca-tx transition-colors hover:bg-accion hover:text-accion-tx"
                         aria-label={`Ir a la cita ${n}`}
                       >
                         {children}
@@ -262,7 +260,7 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
                 {r.alertas.map((a) => (
                   <li
                     key={a}
-                    className="flex gap-2.5 rounded-xl border border-ambar/30 bg-ambar/10 px-3.5 py-2.5 text-sm text-ambar"
+                    className="flex gap-2.5 rounded-xl border border-aviso/30 bg-aviso/10 px-3.5 py-2.5 text-sm text-aviso"
                   >
                     <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
                     <span>{a}</span>
@@ -271,13 +269,13 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
               </ul>
             )}
 
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-ink/8 pt-3.5">
-              <p className="font-mono text-[0.7rem] leading-relaxed text-tx-3">
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-tinta/8 pt-3.5">
+              <p className="font-mono text-[0.7rem] leading-relaxed text-tinta-3">
                 {r.fragmentosRecuperados} fragmentos recuperados · {r.modeloEmbeddings}
                 {r.modeloLlm ? ` · ${r.modeloLlm}` : ""} · {(r.latenciaMs / 1000).toFixed(1)} s
               </p>
               <Boton tamano="sm" variante="fantasma" onClick={copiar}>
-                {copiado ? <Check className="size-4 text-hema" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+                {copiado ? <Check className="size-4 text-accion" aria-hidden /> : <Copy className="size-4" aria-hidden />}
                 {copiado ? "Copiada" : "Copiar"}
               </Boton>
             </div>

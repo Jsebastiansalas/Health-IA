@@ -70,7 +70,7 @@ export function PaginaMedicamentos() {
         <h1 id="titulo-med" className="text-4xl sm:text-5xl">
           Medicamentos
         </h1>
-        <p className="mt-3 max-w-2xl text-tx-2">
+        <p className="mt-3 max-w-2xl text-tinta-2">
           Pregunta por cualquier medicamento con registro en Colombia: titular, registro sanitario, vigencia, presentaciones,
           equivalentes y precio máximo regulado. Cada dato lleva su fuente.
         </p>
@@ -86,9 +86,9 @@ export function PaginaMedicamentos() {
       <div className="flex-1 space-y-8 pb-6" role="log" aria-live="polite" aria-label="Conversación">
         {vacio && (
           <div className="vidrio rounded-xl p-8">
-            <Pill className="size-7 text-tx-2" strokeWidth={1.5} aria-hidden />
+            <Pill className="size-7 text-tinta-2" strokeWidth={1.5} aria-hidden />
             <p className="mt-4 max-w-md font-display text-2xl leading-tight [font-stretch:112%]">Pregunta por un medicamento.</p>
-            <p className="mt-3 max-w-lg text-tx-2">
+            <p className="mt-3 max-w-lg text-tinta-2">
               Responde con la base oficial de INVIMA. Dosis, indicaciones e interacciones no están en esa fuente: para eso, consulta
               la ficha técnica o el prospecto.
             </p>
@@ -100,7 +100,7 @@ export function PaginaMedicamentos() {
                     setPregunta(s);
                     campo.current?.focus();
                   }}
-                  className="rounded-full border border-ink/25 px-4 py-2 text-left text-[0.84rem] text-tx-2 transition-colors hover:border-ink/60 hover:text-tx"
+                  className="rounded-md border border-tinta/25 px-4 py-2 text-left text-[0.84rem] text-tinta-2 transition-colors hover:border-tinta/60 hover:text-tinta"
                 >
                   {s}
                 </button>
@@ -117,7 +117,7 @@ export function PaginaMedicamentos() {
           <div className="animate-aparecer space-y-5">
             <Burbuja texto={pendiente} />
             <div className="vidrio rounded-xl p-5" aria-busy aria-label="Consultando la base de INVIMA">
-              <p className="mb-4 text-sm text-tx-2">Consultando la base de INVIMA…</p>
+              <p className="mb-4 text-sm text-tinta-2">Consultando la base de INVIMA…</p>
               <div className="space-y-2.5">
                 <Esqueleto className="h-3.5 w-[92%]" />
                 <Esqueleto className="h-3.5 w-[74%]" />
@@ -127,7 +127,7 @@ export function PaginaMedicamentos() {
           </div>
         )}
         {consultar.error && (
-          <p role="alert" className="flex items-start gap-2.5 rounded-xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm text-coral">
+          <p role="alert" className="flex items-start gap-2.5 rounded-xl border border-peligro/40 bg-peligro/10 px-4 py-3 text-sm text-peligro">
             <AlertOctagon className="mt-0.5 size-4 shrink-0" aria-hidden />
             {(consultar.error as Error).message}
           </p>
@@ -170,7 +170,7 @@ export function PaginaMedicamentos() {
 function Burbuja({ texto }: { texto: string }) {
   return (
     <div className="flex justify-end">
-      <p className="max-w-[85%] rounded-2xl rounded-tr-md bg-obsidiana px-5 py-3 text-[0.97rem] leading-relaxed text-tx">{texto}</p>
+      <p className="max-w-[85%] rounded-2xl rounded-tr-md bg-folio-2 px-5 py-3 text-[0.97rem] leading-relaxed text-tinta">{texto}</p>
     </div>
   );
 }
@@ -196,12 +196,12 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
       <Burbuja texto={pregunta} />
       <div className="vidrio rounded-xl p-5 sm:p-6">
         {r.sinEvidencia && (
-          <Insignia tono="ambar" className="mb-3.5">
+          <Insignia tono="aviso" className="mb-3.5">
             <SearchX className="size-3.5" aria-hidden />
             Sin evidencia suficiente
           </Insignia>
         )}
-        <div className="space-y-3 text-[0.98rem] leading-relaxed [&_li]:ml-5 [&_li]:list-disc [&_strong]:font-medium [&_strong]:text-ink">
+        <div className="space-y-3 text-[0.98rem] leading-relaxed [&_li]:ml-5 [&_li]:list-disc [&_strong]:font-medium [&_strong]:text-tinta">
           <ReactMarkdown
             components={{
               a: ({ href, children }) => {
@@ -210,7 +210,7 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
                   <button
                     type="button"
                     onClick={() => irA(id)}
-                    className="mx-0.5 inline-grid h-5 min-w-5 -translate-y-0.5 place-items-center rounded-full bg-ink px-1.5 align-middle text-[0.68rem] font-medium text-sala"
+                    className="mx-0.5 inline-grid h-5 min-w-5 -translate-y-0.5 place-items-center rounded-md bg-tinta px-1.5 align-middle text-[0.68rem] font-medium text-mesa"
                     aria-label={`Ir a la fuente ${id}`}
                   >
                     {children}
@@ -226,14 +226,14 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
         {r.alertas.length > 0 && (
           <ul className="mt-5 space-y-2">
             {r.alertas.map((a) => (
-              <li key={a} className="flex gap-2.5 rounded-xl border border-ambar/35 bg-ambar/10 px-3.5 py-2.5 text-sm text-ambar">
+              <li key={a} className="flex gap-2.5 rounded-xl border border-aviso/35 bg-aviso/10 px-3.5 py-2.5 text-sm text-aviso">
                 <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
                 <span>{a}</span>
               </li>
             ))}
           </ul>
         )}
-        <p className="mt-5 border-t border-ink/10 pt-3.5 text-[0.74rem] leading-relaxed text-tx-3">{r.aviso}</p>
+        <p className="mt-5 border-t border-tinta/10 pt-3.5 text-[0.74rem] leading-relaxed text-tinta-3">{r.aviso}</p>
       </div>
 
       {r.citas.length > 0 && (
@@ -250,8 +250,8 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
 function Dato({ k, v }: { k: string; v: string | null | undefined }) {
   if (!v) return null;
   return (
-    <div className="flex justify-between gap-4 border-t border-ink/10 py-2 text-[0.82rem]">
-      <dt className="shrink-0 text-tx-3">{k}</dt>
+    <div className="flex justify-between gap-4 border-t border-tinta/10 py-2 text-[0.82rem]">
+      <dt className="shrink-0 text-tinta-3">{k}</dt>
       <dd className="text-right">{v}</dd>
     </div>
   );
@@ -259,11 +259,11 @@ function Dato({ k, v }: { k: string; v: string | null | undefined }) {
 
 function Fuente({ cita, id, resaltada }: { cita: CitaMedicamento; id: string; resaltada: boolean }) {
   return (
-    <article id={id} className={cn("vidrio-solido flex flex-col rounded-xl p-5 transition-[box-shadow] duration-500", resaltada && "ring-1 ring-ink/70")}>
+    <article id={id} className={cn("vidrio-solido flex flex-col rounded-xl p-5 transition-[box-shadow] duration-500", resaltada && "ring-1 ring-tinta/70")}>
       {cita.tipo === "REGISTRO_INVIMA" && <TarjetaRegistro c={cita} />}
       {cita.tipo === "PRECIO_REGULADO" && <TarjetaPrecio c={cita} />}
       {cita.tipo === "CONSULTA_AGREGADA" && <TarjetaAgregada c={cita} />}
-      <footer className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-ink/10 pt-3 text-[0.7rem] text-tx-3">
+      <footer className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-tinta/10 pt-3 text-[0.7rem] text-tinta-3">
         <span>
           {cita.fuente.conjunto}
           {cita.fuente.cargadoAt ? ` · cargado el ${fecha(cita.fuente.cargadoAt)}` : ""}
@@ -272,7 +272,7 @@ function Fuente({ cita, id, resaltada }: { cita: CitaMedicamento; id: string; re
           href={cita.fuente.enlace}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-tx-2 underline underline-offset-4 hover:text-tx"
+          className="inline-flex items-center gap-1 text-tinta-2 underline underline-offset-4 hover:text-tinta"
         >
           Ver fuente
           <ExternalLink className="size-3" aria-hidden />
@@ -282,11 +282,11 @@ function Fuente({ cita, id, resaltada }: { cita: CitaMedicamento; id: string; re
   );
 }
 
-const ESTADO_TONO: Record<CitaRegistro["conjunto"], "ok" | "ambar" | "coral" | "neutro"> = {
+const ESTADO_TONO: Record<CitaRegistro["conjunto"], "ok" | "aviso" | "peligro" | "neutro"> = {
   VIGENTE: "ok",
-  RENOVACION: "ambar",
+  RENOVACION: "aviso",
   OTROS: "neutro",
-  VENCIDO: "coral",
+  VENCIDO: "peligro",
 };
 
 function TarjetaRegistro({ c }: { c: CitaRegistro }) {

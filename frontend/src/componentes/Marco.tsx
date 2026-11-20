@@ -1,9 +1,10 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ChevronsUpDown, FolderOpen, LogOut, Pill, ShieldCheck } from "lucide-react";
+import { ChevronsUpDown, FolderOpen, LogOut, Moon, Pill, ShieldCheck, Sun } from "lucide-react";
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { Toaster } from "sonner";
 import { cn } from "../lib/cn";
+import { useTema } from "../lib/tema";
 import { useSesion } from "../sesion";
 import { Marca } from "./Marca";
 
@@ -27,7 +28,7 @@ function Avatar({ nombre, className }: { nombre?: string; className?: string }) 
   return (
     <span
       className={cn(
-        "grid size-10 shrink-0 place-items-center rounded-full bg-obsidiana font-display text-sm font-[480] text-tx",
+        "grid size-10 shrink-0 place-items-center rounded-md bg-folio font-display text-sm font-semibold text-tinta",
         className,
       )}
       aria-hidden
@@ -39,12 +40,13 @@ function Avatar({ nombre, className }: { nombre?: string; className?: string }) 
 
 function MenuUsuario({ compacto = false }: { compacto?: boolean }) {
   const { usuario, salir } = useSesion();
+  const { tema, alternar } = useTema();
   return (
     <Menu.Root>
       <Menu.Trigger
         className={cn(
-          "group flex w-full items-center gap-3 rounded-full bg-obsidiana p-2 text-left text-tx transition-colors hover:bg-ink/[0.12]",
-          compacto && "w-auto border-0 bg-transparent p-1 text-tx",
+          "group flex w-full items-center gap-3 rounded-md bg-carpeta-osc/45 p-2 text-left text-tinta transition-colors hover:bg-carpeta-osc/70",
+          compacto && "w-auto border-0 bg-transparent p-1 text-tinta",
         )}
         aria-label="Menú de usuario"
       >
@@ -53,9 +55,9 @@ function MenuUsuario({ compacto = false }: { compacto?: boolean }) {
           <>
             <span className="min-w-0 flex-1 leading-tight">
               <span className="block truncate text-sm font-semibold">{usuario?.nombre_completo ?? "…"}</span>
-              <span className="block truncate text-xs text-tx-2">{usuario ? ROLES[usuario.rol_global] : ""}</span>
+              <span className="block truncate text-xs text-tinta-2">{usuario ? ROLES[usuario.rol_global] : ""}</span>
             </span>
-            <ChevronsUpDown className="size-4 text-tx-3 transition-colors group-hover:text-tx" aria-hidden />
+            <ChevronsUpDown className="size-4 text-tinta-3 transition-colors group-hover:text-tinta" aria-hidden />
           </>
         )}
       </Menu.Trigger>
@@ -64,16 +66,23 @@ function MenuUsuario({ compacto = false }: { compacto?: boolean }) {
           side={compacto ? "bottom" : "top"}
           align={compacto ? "end" : "start"}
           sideOffset={8}
-          className="vidrio-solido z-50 w-60 rounded-2xl p-1.5 text-sm data-[state=open]:animate-[aparecer_220ms_var(--ease-salida)]"
+          className="folio z-50 w-60 rounded-md p-1.5 text-sm data-[state=open]:animate-[aparecer_220ms_var(--ease-salida)]"
         >
           <div className="px-3 py-2.5">
             <p className="truncate font-semibold">{usuario?.nombre_completo}</p>
-            <p className="truncate text-xs text-tx-3">{usuario?.email}</p>
+            <p className="truncate text-xs text-tinta-3">{usuario?.email}</p>
           </div>
-          <Menu.Separator className="my-1 h-px bg-ink/10" />
+          <Menu.Separator className="my-1 h-px bg-tinta/10" />
+          <Menu.Item
+            onSelect={alternar}
+            className="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-2.5 text-tinta-2 outline-none transition-colors data-[highlighted]:bg-tinta/8 data-[highlighted]:text-tinta"
+          >
+            {tema === "papel" ? <Moon className="size-4" aria-hidden /> : <Sun className="size-4" aria-hidden />}
+            {tema === "papel" ? "Tema nocturno" : "Tema papel"}
+          </Menu.Item>
           <Menu.Item
             onSelect={salir}
-            className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-tx-2 outline-none transition-colors data-[highlighted]:bg-ink/8 data-[highlighted]:text-tx"
+            className="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-2.5 text-tinta-2 outline-none transition-colors data-[highlighted]:bg-tinta/8 data-[highlighted]:text-tinta"
           >
             <LogOut className="size-4" aria-hidden />
             Cerrar sesión
@@ -86,15 +95,16 @@ function MenuUsuario({ compacto = false }: { compacto?: boolean }) {
 
 const enlaceNav = ({ isActive }: { isActive: boolean }) =>
   cn(
-    "flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-normal transition-colors",
-    isActive ? "bg-obsidiana text-tx" : "text-tx-2 hover:bg-ink/[0.06] hover:text-tx",
+    "flex items-center gap-3 rounded-md px-3.5 py-2.5 text-sm font-medium transition-colors",
+    isActive ? "bg-folio text-tinta shadow-folio" : "text-tinta/80 hover:bg-tinta/[0.08] hover:text-tinta",
   );
 
 export function Marco({ children }: { children: ReactNode }) {
+  const { tema } = useTema();
   return (
     <div className="relative min-h-screen lg:pl-72">
       {/* Barra lateral (escritorio) */}
-      <aside className="fixed inset-y-3 left-3 z-30 hidden w-64 flex-col rounded-xl bg-panel p-4 text-tx lg:flex">
+      <aside className="fixed inset-y-3 left-3 z-30 hidden w-64 flex-col rounded-md bg-carpeta p-4 text-tinta lg:flex">
         <NavLink to="/" className="px-2 pb-5 pt-2" aria-label="MedTender, inicio">
           <Marca />
         </NavLink>
@@ -108,19 +118,19 @@ export function Marco({ children }: { children: ReactNode }) {
             Medicamentos
           </NavLink>
         </nav>
-        <div className="mb-3 rounded-xl bg-obsidiana p-3.5 text-[0.8rem] leading-relaxed text-tx-2">
-          <ShieldCheck className="mb-1.5 size-5 text-tx-2" aria-hidden />
+        <div className="mb-3 rounded-md bg-carpeta-osc/45 p-3.5 text-[0.8rem] leading-relaxed text-tinta">
+          <ShieldCheck className="mb-1.5 size-5" aria-hidden />
           Tus PDF se eliminan del servidor al indexarlos. Los originales se abren desde tu equipo.
         </div>
         <MenuUsuario />
       </aside>
 
       {/* Barra superior (móvil y tableta) */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-ink/10 bg-sala px-4 py-2.5 lg:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-tinta/15 bg-carpeta px-4 py-2.5 lg:hidden">
         <NavLink to="/" aria-label="MedTender, inicio">
           <Marca />
         </NavLink>
-        <NavLink to="/medicamentos" className="ml-auto mr-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-tx-2 hover:bg-ink/10 hover:text-tx">
+        <NavLink to="/medicamentos" className="ml-auto mr-2 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-tinta-2 hover:bg-tinta/10 hover:text-tinta">
           <Pill className="size-4" aria-hidden />
           Medicamentos
         </NavLink>
@@ -129,12 +139,12 @@ export function Marco({ children }: { children: ReactNode }) {
 
       <main className="mx-auto max-w-[1400px] px-4 py-7 sm:px-8 lg:py-10">{children}</main>
       <Toaster
-        theme="dark"
+        theme={tema === "nocturno" ? "dark" : "light"}
         position="bottom-right"
         toastOptions={{
           classNames: {
-            toast: "!border-0 !bg-obsidiana !text-tx !shadow-none !rounded-xl",
-            description: "!text-tx-2",
+            toast: "!border-0 !bg-folio !text-tinta !shadow-folio !rounded-md",
+            description: "!text-tinta-2",
           },
         }}
       />
