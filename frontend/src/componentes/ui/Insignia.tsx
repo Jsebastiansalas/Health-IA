@@ -2,17 +2,18 @@ import { cva, type VariantProps } from "class-variance-authority";
 import type { HTMLAttributes } from "react";
 import { cn } from "../../lib/cn";
 
+/** Sello de estado: rótulo rectangular de borde fino, como los que se estampan en un folio. */
 const insignia = cva(
-  "inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-[0.72rem] font-normal leading-5",
+  "inline-flex items-center gap-1.5 rounded-[3px] border px-2 py-0.5 text-[0.72rem] font-medium leading-5",
   {
     variants: {
       tono: {
-        neutro: "border-ink/15 bg-ink/[0.05] text-tx-2",
-        hema: "border-hema/30 bg-hema/10 text-hema",
-        eosina: "border-eosina/35 bg-eosina/10 text-eosina",
-        ok: "border-ok/30 bg-ok/10 text-ok",
-        ambar: "border-ambar/35 bg-ambar/10 text-ambar",
-        coral: "border-coral/35 bg-coral/8 text-coral",
+        neutro: "border-tinta/20 bg-tinta/[0.04] text-tinta-2",
+        accion: "border-accion/40 bg-accion/10 text-accion",
+        marca: "border-transparent bg-marca text-marca-tx",
+        ok: "border-ok/40 bg-ok/10 text-ok",
+        aviso: "border-aviso/45 bg-aviso/10 text-aviso",
+        peligro: "border-peligro/45 bg-peligro/10 text-peligro",
       },
     },
     defaultVariants: { tono: "neutro" },

@@ -26,7 +26,7 @@ Organización multi-tenant: cada organización ve solo lo suyo; un expediente aj
 - Por decisión del dueño, la bienvenida puede incluir cifras y testimonios de EJEMPLO, siempre marcados como ficticios y a reemplazar antes de publicar.
 
 ## Brand Commitments
-Nombre: MedTender. Logotipo propio por diseñar. Decisión del dueño (vinculante): estilo clínico-moderno OSCURO (azul noche con turquesa/menta), con decoración original hecha en código (ilustración, fondo animado ligero), no solo color; página de bienvenida antes del ingreso.
+Nombre: MedTender. Logotipo: un folio con la esquina doblada, una «M» a tinta y el resaltador por debajo (rediseñado en el sprint 18). Decisión del dueño (20-nov-2026, reemplaza el estilo oscuro azul-turquesa anterior): dirección «Expediente / folio», con DOS temas, papel (día, por defecto) y nocturno, que siguen el sistema operativo y se pueden fijar a mano. Decoración original hecha en código, nunca imágenes de stock; página de bienvenida antes del ingreso.
 
 ## Evidence on Hand
 Ninguna real: sin clientes, casos, prensa ni métricas. Existe un PDF de prueba sintético (`Pliego_E2E.pdf`) y cuentas de demostración en desarrollo. Todo contenido de demostración debe etiquetarse como ejemplo.

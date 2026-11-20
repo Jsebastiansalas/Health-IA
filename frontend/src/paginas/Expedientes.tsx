@@ -6,7 +6,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { api, post } from "../api/cliente";
 import type { Expediente, TipoExpediente } from "../api/tipos";
-import { PlacaVacia } from "../arte/Placa";
 import { Boton } from "../componentes/ui/Boton";
 import { Campo } from "../componentes/ui/Campo";
 import { Dialogo } from "../componentes/ui/Dialogo";
@@ -66,7 +65,7 @@ export function PaginaExpedientes() {
       <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
         <div>
           <h1 className="text-4xl font-semibold sm:text-5xl">Expedientes</h1>
-          <p className="mt-2 text-tx-2">
+          <p className="mt-2 text-tinta-2">
             {usuario ? `Hola, ${usuario.nombre_completo.split(" ")[0]}. ` : ""}
             Elige un expediente para subir documentos o consultarlo.
           </p>
@@ -80,8 +79,8 @@ export function PaginaExpedientes() {
       </div>
 
       <div className="mb-8 flex flex-wrap items-center gap-3">
-        <div className="group flex h-11 w-full items-center gap-2.5 rounded-full border border-ink/45 bg-transparent px-5 transition-[border-color] focus-within:border-ink sm:w-80">
-          <Search className="size-4 text-tx-3 group-focus-within:text-hema" aria-hidden />
+        <div className="group flex h-11 w-full items-center gap-2.5 rounded-md border border-tinta/35 bg-folio px-5 transition-[border-color] focus-within:border-tinta sm:w-80">
+          <Search className="size-4 text-tinta-3 group-focus-within:text-accion" aria-hidden />
           <input
             ref={buscador}
             value={filtro}
@@ -90,7 +89,7 @@ export function PaginaExpedientes() {
             aria-label="Buscar expedientes"
             className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none"
           />
-          <kbd className="hidden rounded-md border border-ink/12 px-1.5 font-mono text-[0.7rem] text-tx-3 sm:block" aria-hidden>
+          <kbd className="hidden rounded-md border border-tinta/12 px-1.5 font-mono text-[0.7rem] text-tinta-3 sm:block" aria-hidden>
             /
           </kbd>
         </div>
@@ -101,10 +100,10 @@ export function PaginaExpedientes() {
               onClick={() => setEstado(valor)}
               aria-pressed={estado === valor}
               className={cn(
-                "rounded-full border px-3.5 py-1.5 text-[0.82rem] font-semibold transition-colors",
+                "rounded-md border px-3.5 py-1.5 text-[0.82rem] font-semibold transition-colors",
                 estado === valor
-                  ? "border-hema/40 bg-hema/14 text-hema"
-                  : "border-ink/10 text-tx-2 hover:border-ink/25 hover:text-tx",
+                  ? "border-accion/40 bg-accion/14 text-accion"
+                  : "border-tinta/10 text-tinta-2 hover:border-tinta/25 hover:text-tinta",
               )}
             >
               {texto}
@@ -123,10 +122,10 @@ export function PaginaExpedientes() {
 
       {error && (
         <div role="alert" className="vidrio flex max-w-xl items-start gap-4 rounded-2xl p-6">
-          <AlertTriangle className="mt-0.5 size-6 shrink-0 text-coral" aria-hidden />
+          <AlertTriangle className="mt-0.5 size-6 shrink-0 text-peligro" aria-hidden />
           <div>
             <p className="font-semibold">No pudimos cargar tus expedientes</p>
-            <p className="mt-1 text-sm text-tx-2">{(error as Error).message}</p>
+            <p className="mt-1 text-sm text-tinta-2">{(error as Error).message}</p>
             <Boton className="mt-4" tamano="sm" onClick={() => refetch()}>
               Reintentar
             </Boton>
@@ -136,9 +135,8 @@ export function PaginaExpedientes() {
 
       {expedientes?.length === 0 && (
         <div className="vidrio relative max-w-2xl overflow-hidden rounded-2xl p-9">
-          <PlacaVacia className="absolute -top-3 right-8 w-32 rotate-6 opacity-80" />
           <h2 className="relative max-w-sm text-3xl font-semibold">Aún no hay expedientes.</h2>
-          <p className="relative mt-3 max-w-md text-tx-2">
+          <p className="relative mt-3 max-w-md text-tinta-2">
             {puedeCrear
               ? "Abre el primero para empezar a indexar pliegos y adendas, y luego pregúntale lo que necesites."
               : "Todavía no te han dado acceso a ningún expediente. Pide a tu administrador que te asigne uno."}
@@ -153,7 +151,7 @@ export function PaginaExpedientes() {
       )}
 
       {expedientes && expedientes.length > 0 && visibles.length === 0 && (
-        <p className="py-10 text-tx-2">
+        <p className="py-10 text-tinta-2">
           Ningún expediente coincide con «{filtro}»
           {estado !== "TODOS" ? ` en estado ${estado.toLowerCase()}` : ""}.
         </p>
@@ -171,20 +169,20 @@ export function PaginaExpedientes() {
             >
               <Link
                 to={`/expedientes/${e.id}`}
-                className="vidrio group relative flex h-full flex-col overflow-hidden rounded-2xl p-6 transition-[transform,border-color,box-shadow] duration-300 ease-[var(--ease-salida)] hover:bg-obsidiana "
+                className="vidrio group relative flex h-full flex-col overflow-hidden rounded-2xl p-6 transition-[transform,border-color,box-shadow] duration-300 ease-[var(--ease-salida)] hover:bg-folio-2 "
               >
                 <div className="flex items-start justify-between gap-3">
-                  <span className="grid size-12 place-items-center rounded-2xl border border-hema/25 bg-hema/10 text-hema">
+                  <span className="grid size-12 place-items-center rounded-2xl border border-accion/25 bg-accion/10 text-accion">
                     <Icono className="size-6" strokeWidth={1.6} aria-hidden />
                   </span>
-                  <Insignia tono={e.estado === "ABIERTO" ? "hema" : "neutro"}>{e.estado}</Insignia>
+                  <Insignia tono={e.estado === "ABIERTO" ? "accion" : "neutro"}>{e.estado}</Insignia>
                 </div>
-                <p className="mt-5 font-mono text-[0.78rem] text-hema">{e.codigo_expediente}</p>
+                <p className="mt-5 font-mono text-[0.78rem] text-accion">{e.codigo_expediente}</p>
                 <h2 className="mt-1 text-[1.35rem] font-semibold leading-tight tracking-tight">{e.titulo}</h2>
-                <p className="mt-2 text-sm text-tx-2">
+                <p className="mt-2 text-sm text-tinta-2">
                   {e.entidad_contratante ?? "Entidad no registrada"} · {TIPOS_EXPEDIENTE[e.tipo_expediente]}
                 </p>
-                <div className="mt-auto flex items-center justify-between gap-3 border-t border-ink/8 pt-4 text-[0.78rem] text-tx-3">
+                <div className="mt-auto flex items-center justify-between gap-3 border-t border-tinta/8 pt-4 text-[0.78rem] text-tinta-3">
                   <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="inline-flex items-center gap-1.5">
                       <CalendarDays className="size-3.5" aria-hidden />
@@ -195,7 +193,7 @@ export function PaginaExpedientes() {
                       <span className="font-mono">{e.embedding_model_activo}</span>
                     </span>
                   </span>
-                  <span className="inline-flex items-center gap-1 font-semibold text-tx-2 transition-colors group-hover:text-hema">
+                  <span className="inline-flex items-center gap-1 font-semibold text-tinta-2 transition-colors group-hover:text-accion">
                     {e.mi_permiso ? PERMISO[e.mi_permiso] : ""}
                     <ArrowUpRight className="size-4" aria-hidden />
                   </span>
@@ -251,17 +249,17 @@ function NuevoExpediente({ alCrear }: { alCrear: () => void }) {
       <Campo etiqueta="Título" required maxLength={250} placeholder="Suministro de medicamentos oncológicos"
         value={datos.titulo} onChange={cambiar("titulo")} />
       <div>
-        <label htmlFor="tipo-expediente" className="mb-1.5 block text-[0.8rem] font-medium text-tx-2">
+        <label htmlFor="tipo-expediente" className="mb-1.5 block text-[0.8rem] font-medium text-tinta-2">
           Tipo de expediente
         </label>
         <select
           id="tipo-expediente"
           value={datos.tipo_expediente}
           onChange={cambiar("tipo_expediente")}
-          className="h-12 w-full rounded-full border border-ink/45 bg-transparent px-5 text-[0.95rem] outline-none transition-[border-color,box-shadow] focus:border-ink"
+          className="h-12 w-full rounded-md border border-tinta/35 bg-folio px-5 text-[0.95rem] outline-none transition-[border-color,box-shadow] focus:border-tinta"
         >
           {Object.entries(TIPOS_EXPEDIENTE).map(([v, t]) => (
-            <option key={v} value={v} className="bg-panel">
+            <option key={v} value={v} className="bg-folio">
               {t}
             </option>
           ))}
@@ -270,7 +268,7 @@ function NuevoExpediente({ alCrear }: { alCrear: () => void }) {
       <Campo etiqueta="Entidad contratante" maxLength={200} placeholder="Hospital Universitario"
         value={datos.entidad_contratante} onChange={cambiar("entidad_contratante")} />
       {crear.error && (
-        <p role="alert" className="rounded-xl border border-coral/35 bg-coral/10 px-3.5 py-3 text-sm text-coral">
+        <p role="alert" className="rounded-xl border border-peligro/35 bg-peligro/10 px-3.5 py-3 text-sm text-peligro">
           {(crear.error as Error).message}
         </p>
       )}

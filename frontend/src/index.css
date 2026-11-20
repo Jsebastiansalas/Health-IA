@@ -1,123 +1,169 @@
 @import "tailwindcss";
-@import "@fontsource-variable/inter";
-@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource-variable/source-serif-4/opsz.css";
+@import "@fontsource-variable/atkinson-hyperlegible-next";
 @import "@fontsource-variable/geist-mono";
 
-/* Mundo: hora azul alpina. Lienzo casi negro, superficies de grafito un paso más claras, texto marfil
-   y un único cobalto reservado a la acción principal. Sin sombras: la elevación es solo contraste de valor.
-   Referencia de estilo: DESIGN.md de Mercury (carpeta Descargas). */
+/* Mundo: el expediente físico. En Colombia un expediente es una carpeta de cartulina manila con
+   folios foliados dentro. La carpeta (manila) es la estructura; el folio (papel) es donde se lee;
+   la tinta es azul-negra; la marca de evidencia es el resaltador sobre el texto citado.
+   Dos temas del mismo objeto: «papel» (día, por defecto) y «nocturno» (luz baja, mismo orden).
+   Elevación: un folio apoyado en la mesa proyecta sombra real (desplazada y difusa); el resto es plano. */
+
+/* ---------- Valores por tema ---------- */
+:root,
+:root[data-tema="papel"] {
+  --mesa: #e6e5df; /* la mesa donde están las carpetas */
+  --folio: #fcfcfa; /* hoja: tarjetas y zonas de lectura */
+  --folio-2: #efeee8; /* controles secundarios, hover, pozos */
+  --carpeta: #dcc185; /* cartulina manila: barra lateral y pestañas */
+  --carpeta-osc: #c9a95e;
+  --tinta: #151c33;
+  --tinta-2: #404863;
+  --tinta-3: #596079;
+  --accion: #2336a6; /* tinta azul sellada: la acción principal */
+  --accion-osc: #1a2a86;
+  --accion-tx: #ffffff;
+  --marca: #ffe566; /* resaltador: lo citado */
+  --marca-tx: #151c33;
+  --ok: #1d6b47;
+  --aviso: #8a4f00;
+  --peligro: #b3261e;
+  --sombra-folio: 0 1px 1px rgb(21 28 51 / 0.1), 0 10px 22px -12px rgb(21 28 51 / 0.32);
+  color-scheme: light;
+}
+
+:root[data-tema="nocturno"] {
+  --mesa: #0f121a;
+  --folio: #181d2a;
+  --folio-2: #222a3c;
+  --carpeta: #3a3225; /* manila a media luz */
+  --carpeta-osc: #4a402f;
+  --tinta: #ebe8dd;
+  --tinta-2: #bdbbb2;
+  --tinta-3: #9795a0;
+  --accion: #93a5ff;
+  --accion-osc: #b0bdff;
+  --accion-tx: #0f1430;
+  --marca: #f5d94a;
+  --marca-tx: #151c33;
+  --ok: #76d7a5;
+  --aviso: #e8b866;
+  --peligro: #ff8f86;
+  --sombra-folio: 0 1px 1px rgb(0 0 0 / 0.35), 0 12px 24px -12px rgb(0 0 0 / 0.7);
+  color-scheme: dark;
+}
+
+/* ---------- Tokens de Tailwind (apuntan a los valores del tema activo) ---------- */
+@theme inline {
+  --color-mesa: var(--mesa);
+  --color-folio: var(--folio);
+  --color-folio-2: var(--folio-2);
+  --color-carpeta: var(--carpeta);
+  --color-carpeta-osc: var(--carpeta-osc);
+  --color-tinta: var(--tinta);
+  --color-tinta-2: var(--tinta-2);
+  --color-tinta-3: var(--tinta-3);
+  --color-accion: var(--accion);
+  --color-accion-osc: var(--accion-osc);
+  --color-accion-tx: var(--accion-tx);
+  --color-marca: var(--marca);
+  --color-marca-tx: var(--marca-tx);
+  --color-ok: var(--ok);
+  --color-aviso: var(--aviso);
+  --color-peligro: var(--peligro);
+  --shadow-folio: var(--sombra-folio);
+}
+
 @theme {
-  --color-sala: #171721; /* lienzo */
-  --color-panel: #1e1e2a; /* tarjeta de grafito */
-  --color-obsidiana: #272735; /* controles secundarios */
-
-  /* Nombres heredados por los componentes de la app: aquí pasan a la paleta monocroma. */
-  --color-lila-50: #1e1e2a;
-  --color-lila-100: #222230;
-  --color-lila-200: #272735;
-  --color-lila-300: #3a3a4b;
-
-  --color-ink: #ededf3; /* marfil: bordes y velos translúcidos usan ink/N */
-  --color-tx: #ededf3;
-  --color-tx-2: #c3c3cc;
-  --color-tx-3: #9d9dab;
-
-  --color-cobalto: #5266eb; /* la única nota cromática: acción principal */
-  --color-cobalto-osc: #6477f2;
-  --color-hema: #ededf3; /* estado activo: marfil, no color */
-  --color-hema-osc: #ffffff;
-  --color-hema-pro: #171721;
-  --color-eosina: #ededf3; /* marcas de cita */
-  --color-eosina-osc: #ffffff;
-  --color-eosina-clara: #c3c3cc;
-  /* Estados funcionales (no decorativos), apagados para no romper el monocromo. */
-  --color-ok: #7fd8c1;
-  --color-ambar: #e8c27a;
-  --color-coral: #f08c98;
-
-  --font-display: "Archivo Variable", "Segoe UI", sans-serif;
-  --font-sans: "Inter Variable", "Segoe UI", sans-serif;
+  /* Titulares con gravedad de documento legal; interfaz en una sans de lectura larga y alta
+     legibilidad; monoespaciada solo para huellas, códigos y cifras. */
+  --font-display: "Source Serif 4 Variable", Georgia, serif;
+  --font-sans: "Atkinson Hyperlegible Next Variable", "Segoe UI", sans-serif;
   --font-mono: "Geist Mono Variable", Consolas, monospace;
 
-  /* Tarjetas de 12px; los controles se redondean a pastilla a mano. */
-  --radius-xl: 12px;
-  --radius-2xl: 12px;
-  --radius-3xl: 12px;
+  /* Un folio tiene esquinas casi rectas; los controles, apenas suavizadas. Nada de pastillas. */
+  --radius-xl: 6px;
+  --radius-2xl: 6px;
+  --radius-3xl: 6px;
 
   --ease-salida: cubic-bezier(0.16, 1, 0.3, 1);
 
-  --animate-aparecer: aparecer 700ms var(--ease-salida) both;
+  --animate-aparecer: aparecer 520ms var(--ease-salida) both;
   --animate-brillo: brillo 1.8s ease-in-out infinite;
-  --animate-deriva: deriva 24s ease-in-out infinite;
 
   @keyframes aparecer {
-    0% { opacity: 0; transform: translateY(14px); }
+    0% { opacity: 0; transform: translateY(8px); }
     100% { opacity: 1; transform: translateY(0); }
   }
   @keyframes brillo {
     0% { background-position: 150% 0; }
     100% { background-position: -50% 0; }
   }
-  @keyframes deriva {
-    0%, 100% { transform: translate3d(0, 0, 0); }
-    50% { transform: translate3d(-3%, 0, 0); }
-  }
 }
 
 @layer base {
   html {
-    background-color: var(--color-sala);
-    color: var(--color-tx);
+    background-color: var(--mesa);
+    color: var(--tinta);
     font-family: var(--font-sans);
     font-size: 16px;
-    line-height: 1.5;
-    letter-spacing: 0.005em;
+    line-height: 1.55;
     -webkit-font-smoothing: antialiased;
-    color-scheme: dark;
     scroll-behavior: smooth;
   }
   body { min-height: 100vh; }
-  ::selection { background: var(--color-cobalto); color: #fff; }
-  :focus-visible { outline: 2px solid var(--color-ink); outline-offset: 3px; border-radius: 6px; }
-  * { scrollbar-width: thin; scrollbar-color: var(--color-lila-300) transparent; }
+  ::selection { background: var(--marca); color: var(--marca-tx); }
+  :focus-visible { outline: 2px solid var(--accion); outline-offset: 3px; border-radius: 4px; }
+  * { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--tinta) 30%, transparent) transparent; }
   *::-webkit-scrollbar { width: 10px; height: 10px; }
-  *::-webkit-scrollbar-thumb { background: var(--color-lila-300); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
-  input, textarea, select { caret-color: var(--color-ink); color-scheme: dark; }
-  ::placeholder { color: var(--color-tx-3); opacity: 1; }
+  *::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--tinta) 30%, transparent); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
+  input, textarea, select { caret-color: var(--accion); }
+  ::placeholder { color: var(--tinta-3); opacity: 1; }
   .num { font-variant-numeric: tabular-nums; }
   p { text-wrap: pretty; }
 }
 
-/* Titulares: Archivo expandida en peso intermedio (480), tracking positivo. Sin capa para ganar a las utilidades de peso. */
+/* Titulares: serif con tamaño óptico. Sin capa para ganar a las utilidades de peso. */
 h1, h2, h3 {
   font-family: var(--font-display);
-  font-weight: 480;
-  font-stretch: 112%;
-  letter-spacing: 0.012em;
+  font-weight: 600;
+  font-optical-sizing: auto;
+  letter-spacing: -0.012em;
   text-wrap: balance;
 }
 h1 { line-height: 1.08; }
-h2, h3 { line-height: 1.15; }
+h2, h3 { line-height: 1.18; }
 
 @layer components {
-  /* Superficies planas: el contraste de valor separa, no la sombra. */
-  .vidrio,
-  .vidrio-solido {
-    background: var(--color-panel);
+  /* El folio: una hoja apoyada en la mesa. */
+  .folio {
+    background: var(--folio);
+    box-shadow: var(--sombra-folio);
+    border-radius: 4px;
   }
-  .vidrio-solido { box-shadow: 0 0 0 1px rgb(237 237 243 / 0.08); }
-  .linea { border-color: rgb(237 237 243 / 0.12); }
+  /* Compatibilidad con las pantallas aún no migradas (sprints 19-22). */
+  .vidrio,
+  .vidrio-solido { background: var(--folio); box-shadow: var(--sombra-folio); }
+  .linea { border-color: color-mix(in oklab, var(--tinta) 16%, transparent); }
   .etiqueta {
     font-family: var(--font-mono);
     font-size: 0.72rem;
     letter-spacing: 0.02em;
-    color: var(--color-tx-3);
+    color: var(--tinta-3);
+  }
+  /* Texto citado: resaltador sobre la línea, como en un folio revisado a mano. */
+  .resaltado {
+    background: linear-gradient(transparent 12%, var(--marca) 12%, var(--marca) 92%, transparent 92%);
+    color: var(--marca-tx);
+    padding: 0 0.15em;
+    border-radius: 2px;
+    box-decoration-break: clone;
   }
   .esqueleto {
-    background: linear-gradient(100deg, rgb(237 237 243 / 0.04) 30%, rgb(237 237 243 / 0.1) 50%, rgb(237 237 243 / 0.04) 70%);
+    background: linear-gradient(100deg, color-mix(in oklab, var(--tinta) 5%, transparent) 30%, color-mix(in oklab, var(--tinta) 12%, transparent) 50%, color-mix(in oklab, var(--tinta) 5%, transparent) 70%);
     background-size: 200% 100%;
     animation: var(--animate-brillo);
-    border-radius: 12px;
+    border-radius: 6px;
   }
 }
 

@@ -6,7 +6,6 @@ import { createPortal } from "react-dom";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/cliente";
 import type { Cita, Documento, Expediente } from "../api/tipos";
-import { PlacaVacia } from "../arte/Placa";
 import { ConsolaRag } from "../componentes/ConsolaRag";
 import { PanelDocumentos } from "../componentes/PanelDocumentos";
 import { boton } from "../componentes/ui/Boton";
@@ -21,11 +20,11 @@ const PERMISO: Record<string, string> = { ADMIN: "Administras", EDITOR: "Editas"
 
 function Dato({ icono: Icono, etiqueta, valor }: { icono: typeof Cpu; etiqueta: string; valor: string | number }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-ink/10 bg-sala px-4 py-3">
-      <Icono className="size-5 shrink-0 text-hema" strokeWidth={1.6} aria-hidden />
+    <div className="flex items-center gap-3 rounded-xl border border-tinta/10 bg-mesa px-4 py-3">
+      <Icono className="size-5 shrink-0 text-accion" strokeWidth={1.6} aria-hidden />
       <div className="min-w-0 leading-tight">
         <p className="num truncate text-[1.05rem] font-semibold">{valor}</p>
-        <p className="truncate text-[0.74rem] text-tx-3">{etiqueta}</p>
+        <p className="truncate text-[0.74rem] text-tinta-3">{etiqueta}</p>
       </div>
     </div>
   );
@@ -47,10 +46,10 @@ export function PaginaExpediente() {
   if (error) {
     return (
       <div role="alert" className="vidrio flex max-w-xl items-start gap-4 rounded-2xl p-7">
-        <AlertTriangle className="mt-1 size-6 shrink-0 text-coral" aria-hidden />
+        <AlertTriangle className="mt-1 size-6 shrink-0 text-peligro" aria-hidden />
         <div>
           <h1 className="text-2xl font-semibold">Expediente no disponible</h1>
-          <p className="mt-2 text-tx-2">{(error as Error).message}</p>
+          <p className="mt-2 text-tinta-2">{(error as Error).message}</p>
           <Link to="/" className={boton({ tamano: "md" }) + " mt-5"}>
             <ArrowLeft className="size-4" aria-hidden />
             Volver a expedientes
@@ -79,19 +78,18 @@ export function PaginaExpediente() {
 
   return (
     <div className="animate-aparecer">
-      <nav aria-label="Ruta" className="mb-5 flex items-center gap-1.5 text-sm text-tx-3">
-        <Link to="/" className="rounded-md transition-colors hover:text-hema">
+      <nav aria-label="Ruta" className="mb-5 flex items-center gap-1.5 text-sm text-tinta-3">
+        <Link to="/" className="rounded-md transition-colors hover:text-accion">
           Expedientes
         </Link>
         <ChevronRight className="size-4" aria-hidden />
-        <span className="font-mono text-tx-2">{expediente.codigo_expediente}</span>
+        <span className="font-mono text-tinta-2">{expediente.codigo_expediente}</span>
       </nav>
 
       <header className="vidrio relative mb-8 overflow-hidden rounded-2xl p-6 sm:p-8">
-        <PlacaVacia className="absolute -top-4 right-6 hidden w-28 rotate-6 opacity-70 md:block" />
         <div className="relative flex flex-wrap items-center gap-2">
-          <Insignia tono={expediente.estado === "ABIERTO" ? "hema" : "neutro"}>{expediente.estado}</Insignia>
-          <Insignia tono="hema">
+          <Insignia tono={expediente.estado === "ABIERTO" ? "accion" : "neutro"}>{expediente.estado}</Insignia>
+          <Insignia tono="accion">
             <UserRound className="size-3.5" aria-hidden />
             {expediente.mi_permiso ? PERMISO[expediente.mi_permiso] : "Sin permiso"}
           </Insignia>
@@ -99,8 +97,8 @@ export function PaginaExpediente() {
         <h1 className="relative mt-4 max-w-4xl text-3xl font-semibold leading-[1.08] sm:text-[2.6rem]">
           {expediente.titulo}
         </h1>
-        <p className="relative mt-2 text-tx-2">
-          <span className="font-mono text-hema">{expediente.codigo_expediente}</span> ·{" "}
+        <p className="relative mt-2 text-tinta-2">
+          <span className="font-mono text-accion">{expediente.codigo_expediente}</span> ·{" "}
           {expediente.entidad_contratante ?? "Entidad no registrada"} · {TIPOS_EXPEDIENTE[expediente.tipo_expediente]}
         </p>
         <div className="relative mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -122,7 +120,7 @@ export function PaginaExpediente() {
               <Tabs.Trigger
                 key={valor as string}
                 value={valor as string}
-                className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-tx-2 transition-colors data-[state=active]:bg-hema/14 data-[state=active]:text-hema"
+                className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-tinta-2 transition-colors data-[state=active]:bg-accion/14 data-[state=active]:text-accion"
               >
                 <I className="size-4" aria-hidden />
                 {texto as string}

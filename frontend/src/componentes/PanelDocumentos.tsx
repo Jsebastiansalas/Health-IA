@@ -48,7 +48,7 @@ export function PanelDocumentos({ expedienteId, puedeSubir }: { expedienteId: st
         <h2 id="titulo-folios" className="text-2xl font-semibold">
           Documentos
         </h2>
-        <span className="num text-sm text-tx-3">{documentos?.length ?? 0} cargados</span>
+        <span className="num text-sm text-tinta-3">{documentos?.length ?? 0} cargados</span>
       </div>
       {puedeSubir && <FormularioSubida expedienteId={expedienteId} />}
       <ul className="mt-5 space-y-4">
@@ -59,7 +59,7 @@ export function PanelDocumentos({ expedienteId, puedeSubir }: { expedienteId: st
         )}
         {documentos?.map((d) => <FilaDocumento key={d.id} doc={d} />)}
         {documentos?.length === 0 && (
-          <li className="rounded-3xl border border-dashed border-ink/14 p-6 text-sm leading-relaxed text-tx-2">
+          <li className="rounded-3xl border border-dashed border-tinta/14 p-6 text-sm leading-relaxed text-tinta-2">
             Aún no hay documentos. Sube el pliego y sus adendas desde tu equipo: el original no queda guardado en el
             servidor.
           </li>
@@ -108,10 +108,10 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
         className={cn(
           "relative block cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed p-6 text-center transition-[border-color,background-color,transform] duration-300",
           arrastrando
-            ? "scale-[1.01] border-hema bg-hema/12"
+            ? "scale-[1.01] border-accion bg-accion/12"
             : archivo
-              ? "border-hema/60 bg-hema/[0.07]"
-              : "border-ink/16 bg-sala hover:border-hema/50 hover:bg-hema/[0.05]",
+              ? "border-accion/60 bg-accion/[0.07]"
+              : "border-tinta/16 bg-mesa hover:border-accion/50 hover:bg-accion/[0.05]",
         )}
         onDragOver={(e) => {
           e.preventDefault();
@@ -134,7 +134,7 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
         />
         {archivo ? (
           <span className="flex items-center justify-center gap-3 text-left">
-            <span className="grid size-11 place-items-center rounded-xl bg-hema/15 text-hema">
+            <span className="grid size-11 place-items-center rounded-xl bg-accion/15 text-accion">
               <FileText className="size-6" strokeWidth={1.6} aria-hidden />
             </span>
             <span className="min-w-0">
@@ -145,31 +145,31 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
         ) : (
           <span className="block">
             <UploadCloud
-              className={cn("mx-auto size-9 text-hema transition-transform", arrastrando && "-translate-y-1")}
+              className={cn("mx-auto size-9 text-accion transition-transform", arrastrando && "-translate-y-1")}
               strokeWidth={1.5}
               aria-hidden
             />
             <span className="mt-2 block font-medium">
               {arrastrando ? "Suelta el PDF aquí" : "Arrastra un PDF o elígelo en tu equipo"}
             </span>
-            <span className="mt-1 block text-xs text-tx-3">Se valida, se indexa y el original se elimina del servidor</span>
+            <span className="mt-1 block text-xs text-tinta-3">Se valida, se indexa y el original se elimina del servidor</span>
           </span>
         )}
       </label>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[11rem] flex-1">
-          <label htmlFor="tipo-doc" className="mb-1.5 block text-[0.8rem] font-medium text-tx-2">
+          <label htmlFor="tipo-doc" className="mb-1.5 block text-[0.8rem] font-medium text-tinta-2">
             Tipo de documento
           </label>
           <select
             id="tipo-doc"
             value={tipo}
             onChange={(e) => setTipo(e.target.value as TipoDocumento)}
-            className="h-11 w-full rounded-full border border-ink/45 bg-transparent px-5 text-sm outline-none transition-[border-color,box-shadow] focus:border-ink"
+            className="h-11 w-full rounded-md border border-tinta/35 bg-folio px-5 text-sm outline-none transition-[border-color,box-shadow] focus:border-tinta"
           >
             {Object.entries(TIPOS_DOCUMENTO).map(([v, t]) => (
-              <option key={v} value={v} className="bg-panel">
+              <option key={v} value={v} className="bg-folio">
                 {t}
               </option>
             ))}
@@ -177,7 +177,7 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
         </div>
         {tipo === "ADENDA" && (
           <div className="w-24">
-            <label htmlFor="n-adenda" className="mb-1.5 block text-[0.8rem] font-medium text-tx-2">
+            <label htmlFor="n-adenda" className="mb-1.5 block text-[0.8rem] font-medium text-tinta-2">
               N° adenda
             </label>
             <input
@@ -187,7 +187,7 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
               max={999}
               value={numero}
               onChange={(e) => setNumero(Number(e.target.value))}
-              className="num h-11 w-full rounded-full border border-ink/45 bg-transparent px-5 text-sm outline-none focus:border-ink"
+              className="num h-11 w-full rounded-md border border-tinta/35 bg-folio px-5 text-sm outline-none focus:border-tinta"
             />
           </div>
         )}
@@ -198,7 +198,7 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
 
       {subiendo && (
         <div
-          className="h-2 overflow-hidden rounded-full bg-ink/10"
+          className="h-2 overflow-hidden rounded-full bg-tinta/10"
           role="progressbar"
           aria-label="Progreso de carga"
           aria-valuemin={0}
@@ -206,14 +206,14 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
           aria-valuenow={Math.round(progreso * 100)}
         >
           <div
-            className="h-full rounded-full bg-hema transition-[width] duration-200"
+            className="h-full rounded-full bg-accion transition-[width] duration-200"
             style={{ width: `${progreso * 100}%` }}
           />
         </div>
       )}
       {error && (
-        <p role="alert" className="flex items-start gap-2 rounded-xl border border-coral/35 bg-coral/10 px-3.5 py-3 text-sm text-coral">
-          <AlertOctagon className="mt-0.5 size-4 shrink-0 text-coral" aria-hidden />
+        <p role="alert" className="flex items-start gap-2 rounded-xl border border-peligro/35 bg-peligro/10 px-3.5 py-3 text-sm text-peligro">
+          <AlertOctagon className="mt-0.5 size-4 shrink-0 text-peligro" aria-hidden />
           {error}
         </p>
       )}
@@ -231,19 +231,19 @@ function FilaDocumento({ doc }: { doc: Documento }) {
         <span
           className={cn(
             "grid size-11 shrink-0 place-items-center rounded-xl border",
-            error ? "border-coral/30 bg-coral/10 text-coral" : "border-hema/25 bg-hema/10 text-hema",
+            error ? "border-peligro/30 bg-peligro/10 text-peligro" : "border-accion/25 bg-accion/10 text-accion",
           )}
         >
           <FileText className="size-5" strokeWidth={1.6} aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[0.78rem] font-medium text-hema/90">
+          <p className="text-[0.78rem] font-medium text-accion/90">
             {etiquetaDocumento(doc.tipo_documento, doc.numero_adenda)}
           </p>
           <p className="truncate font-semibold" title={doc.nombre_archivo_original}>
             {doc.nombre_archivo_original}
           </p>
-          <p className="num mt-0.5 text-xs text-tx-3" title={`SHA-256 ${doc.sha256_original}`}>
+          <p className="num mt-0.5 text-xs text-tinta-3" title={`SHA-256 ${doc.sha256_original}`}>
             {tamano(doc.tamano_bytes)}
             {doc.total_paginas ? ` · ${doc.total_paginas} págs.` : ""}
             {doc.total_chunks_esperados ? ` · ${doc.total_chunks_esperados} fragmentos` : ""} ·{" "}
@@ -251,18 +251,18 @@ function FilaDocumento({ doc }: { doc: Documento }) {
           </p>
         </div>
         {listo && (
-          <span className="animate-sello inline-flex shrink-0 items-center gap-1.5 rounded-xl border-2 border-hema/70 px-2.5 py-1 font-display text-[0.7rem] font-bold uppercase tracking-wider text-hema">
+          <span className="animate-sello inline-flex shrink-0 items-center gap-1.5 rounded-xl border-2 border-accion/70 px-2.5 py-1 font-display text-[0.7rem] font-bold uppercase tracking-wider text-accion">
             <Trash2 className="size-3.5" aria-hidden />
             PDF eliminado
           </span>
         )}
         {error && (
-          <Insignia tono="coral" className="shrink-0">
+          <Insignia tono="peligro" className="shrink-0">
             Rechazado
           </Insignia>
         )}
         {pendientePurga && (
-          <Insignia tono="ambar" className="shrink-0">
+          <Insignia tono="aviso" className="shrink-0">
             <Clock className="size-3.5" aria-hidden />
             Purga pendiente
           </Insignia>
@@ -270,8 +270,8 @@ function FilaDocumento({ doc }: { doc: Documento }) {
       </div>
 
       {error ? (
-        <p className="mt-4 flex items-start gap-2.5 rounded-xl border border-coral/30 bg-coral/10 px-3.5 py-3 text-sm text-coral">
-          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-coral" aria-hidden />
+        <p className="mt-4 flex items-start gap-2.5 rounded-xl border border-peligro/30 bg-peligro/10 px-3.5 py-3 text-sm text-peligro">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-peligro" aria-hidden />
           {doc.motivo_error}
         </p>
       ) : (
@@ -279,18 +279,18 @@ function FilaDocumento({ doc }: { doc: Documento }) {
       )}
 
       {doc.purged_at && !error && (
-        <p className="mt-3 flex items-center gap-2 text-xs text-tx-2">
-          <CheckCheck className="size-4 text-hema" aria-hidden />
+        <p className="mt-3 flex items-center gap-2 text-xs text-tinta-2">
+          <CheckCheck className="size-4 text-accion" aria-hidden />
           Copia temporal destruida el {fecha(doc.purged_at)}. El original permanece en tu equipo.
         </p>
       )}
       {pendientePurga && doc.purga_programada_at && (
-        <p className="mt-3 text-xs text-ambar">
+        <p className="mt-3 text-xs text-aviso">
           Indexado. La copia temporal se destruirá el {fecha(doc.purga_programada_at)}.
         </p>
       )}
       {doc.aviso_ocr_desactualizado && (
-        <p className="mt-3 rounded-xl border border-ambar/30 bg-ambar/10 px-3.5 py-2.5 text-xs leading-relaxed text-ambar">
+        <p className="mt-3 rounded-xl border border-aviso/30 bg-aviso/10 px-3.5 py-2.5 text-xs leading-relaxed text-aviso">
           Este documento se leyó con un OCR anterior ({doc.ocr_version}). Vuelve a cargarlo desde tu equipo para mejorar
           la extracción de sus {doc.paginas_ocr} página(s) escaneadas.
         </p>
@@ -313,7 +313,7 @@ function Pipeline({ estado, progreso }: { estado: EstadoIndexacion; progreso: nu
               <span
                 className={cn(
                   "absolute left-1/2 top-[1.15rem] -z-0 h-0.5 w-full",
-                  siguienteHecho ? "bg-hema/70" : e === "hecho" ? "bg-hema/40" : "bg-ink/10",
+                  siguienteHecho ? "bg-accion/70" : e === "hecho" ? "bg-accion/40" : "bg-tinta/10",
                 )}
                 aria-hidden
               />
@@ -321,9 +321,9 @@ function Pipeline({ estado, progreso }: { estado: EstadoIndexacion; progreso: nu
             <span
               className={cn(
                 "relative z-10 grid size-9 place-items-center rounded-full border transition-colors duration-500",
-                e === "hecho" && "border-hema bg-hema text-[#06121a]",
-                e === "actual" && "border-hema bg-sala text-hema ",
-                e === "pendiente" && "border-ink/14 bg-sala text-tx-3",
+                e === "hecho" && "border-accion bg-accion text-accion-tx",
+                e === "actual" && "border-accion bg-mesa text-accion ",
+                e === "pendiente" && "border-tinta/14 bg-mesa text-tinta-3",
               )}
             >
               {e === "hecho" ? (
@@ -337,11 +337,11 @@ function Pipeline({ estado, progreso }: { estado: EstadoIndexacion; progreso: nu
             <span
               className={cn(
                 "mt-2 w-full truncate px-0.5 text-[0.72rem] leading-tight",
-                e === "pendiente" ? "text-tx-3" : "font-semibold text-tx",
+                e === "pendiente" ? "text-tinta-3" : "font-semibold text-tinta",
               )}
             >
               {paso.etiqueta}
-              {paso.estado === "VECTORIZANDO" && e === "actual" && <span className="num block text-hema">{progreso}%</span>}
+              {paso.estado === "VECTORIZANDO" && e === "actual" && <span className="num block text-accion">{progreso}%</span>}
             </span>
           </li>
         );
