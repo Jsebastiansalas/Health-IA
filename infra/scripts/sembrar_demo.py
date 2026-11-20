@@ -9,6 +9,9 @@ Requiere httpx.
 """
 
 import argparse
+import sys
+from urllib.parse import urlparse
+
 import httpx
 
 # Contraseña de demostración, fija y conocida (solo desarrollo local).
@@ -23,7 +26,15 @@ USUARIOS = [
 ]
 
 
+def _es_local(api: str) -> bool:
+    host = urlparse(api).hostname or ""
+    return host in ("localhost", "127.0.0.1", "::1") or host.endswith((".localhost", ".test"))
+
+
 def main(api: str) -> None:
+    # La contraseña de demostración es pública: jamás debe crearse en un servidor real.
+    if not _es_local(api):
+        sys.exit(f"Rechazado: {api} no es un entorno local. Esta contraseña es pública; solo para desarrollo.")
     base = f"{api}/api/v1"
     with httpx.Client(timeout=30) as c:
         admin = f"admin@{DOMINIO}"
