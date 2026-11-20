@@ -52,6 +52,13 @@ Frontend con recarga en caliente: `cd frontend && npm install && npm run dev` (h
 
 Sin Docker para la API Java: `cd infra; docker compose up -d postgres redis clamav` y luego `cd api-java; mvn spring-boot:run` (variables en `application.yml`: `JWT_SECRET`, `AGENTE_URL`, `AGENTE_TOKEN`, `DATABASE_URL`...).
 
+## Evidencia probatoria y calidad de OCR
+Cada cita indica **por qué** conviene mirar el PDF original (`tiposEvidencia`): `FIRMA_O_SELLO`, `TABLA`, `IMAGEN`, `OCR_BAJA_CONFIANZA` u `OCR`. La interfaz los muestra como etiquetas junto al motivo.
+
+- **OCR con reintento:** si la confianza de la primera lectura queda bajo el umbral (`UMBRAL_CONFIANZA_OCR`, 85 %), se detecta la rotación con OSD de Tesseract y se binariza la página (contraste automático + umbral de Otsu). Se conserva siempre el mejor resultado: el reintento nunca empeora la lectura.
+- **Pruebas de regresión:** páginas rotadas (90°, 180°, 270°), escaneos de bajo contraste y fidelidad celda a celda de las tablas. Las que usan Tesseract real se omiten si no está instalado y corren en la imagen Docker del agente (que ahora incluye `tesseract-ocr-osd`).
+- **Límite que sigue vigente:** las firmas y los sellos se *detectan* (imágenes pequeñas o vocabulario), no se leen; la fidelidad de una tabla escaneada depende del OCR. Para valor probatorio, el original sigue siendo indispensable.
+
 ## Rotación de secretos (producción)
 Genere cada valor nuevo con `python -c "import secrets; print(secrets.token_hex(32))"`, edite `infra/.env.prod` y reinicie solo lo indicado.
 

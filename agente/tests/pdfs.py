@@ -146,3 +146,43 @@ def texto_largo(n_oraciones: int, tema: str = "suministro") -> str:
     return " ".join(
         plantillas[i % len(plantillas)].format(i=i + 1, t=tema) for i in range(n_oraciones)
     )
+
+
+def _pdf_de_imagen(imagen, dpi: int = 200) -> bytes:
+    """Una página del tamaño exacto de la imagen (sin deformarla), como un escáner real."""
+    from reportlab.lib.utils import ImageReader
+    from reportlab.pdfgen import canvas
+
+    ancho, alto = imagen.width * 72 / dpi, imagen.height * 72 / dpi
+    png = io.BytesIO()
+    imagen.save(png, format="PNG")
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=(ancho, alto))
+    c.drawImage(ImageReader(io.BytesIO(png.getvalue())), 0, 0, width=ancho, height=alto)
+    c.showPage()
+    c.save()
+    return buf.getvalue()
+
+
+def _imagen_de_texto(texto: str, dpi: int = 200):
+    import pypdfium2 as pdfium
+
+    original = pdfium.PdfDocument(pdf_texto([texto], fuente_pt=14))
+    try:
+        return original[0].render(scale=dpi / 72).to_pil()
+    finally:
+        original.close()
+
+
+def pdf_escaneado_rotado(texto: str, grados: int = 90) -> bytes:
+    """Escaneo con la página girada (como sale de un escáner mal alimentado)."""
+    return _pdf_de_imagen(_imagen_de_texto(texto).rotate(grados, expand=True))
+
+
+def pdf_escaneado_bajo_contraste(texto: str) -> bytes:
+    """Escaneo tenue: texto gris claro sobre fondo gris, típico de una fotocopia gastada."""
+    from PIL import ImageOps
+
+    gris = ImageOps.grayscale(_imagen_de_texto(texto))
+    tenue = gris.point(lambda v: 150 + (v * 70) // 255)  # rango 150..220: poco contraste
+    return _pdf_de_imagen(tenue.convert("RGB"))

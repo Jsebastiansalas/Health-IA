@@ -100,7 +100,11 @@ export interface Cita {
   confianzaOcr: number | null;
   requiereVerificacionVisualOriginal: boolean;
   motivoVerificacionVisual: string | null;
+  /** Qué tiene el fragmento que el texto extraído no garantiza. Ausente en consultas guardadas antes del sprint 16. */
+  tiposEvidencia?: TipoEvidencia[];
 }
+
+export type TipoEvidencia = "FIRMA_O_SELLO" | "TABLA" | "IMAGEN" | "OCR" | "OCR_BAJA_CONFIANZA";
 
 export interface RespuestaConsulta {
   consultaId: string;

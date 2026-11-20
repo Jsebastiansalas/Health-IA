@@ -60,7 +60,7 @@ React ──HTTPS──> Caddy ──> API Java (Spring Boot :8080)
 | 13 | Orden del repositorio y documentación | ✅ |
 | 14 | Aislamiento de tenants en la base (RLS, `V8`) | ✅ |
 | 15 | Dimensión de vectores y verificación de modelos al arrancar | ⏳ |
-| 16 | Calidad de tablas, OCR y evidencia probatoria | ⏳ |
+| 16 | Calidad de tablas, OCR y evidencia probatoria | ✅ |
 | 17 | Endurecimiento de despliegue | ✅ |
 
 Historias principales: aislamiento de tenants y permisos (1, 7, 8), PDF efímero con purga verificada (2, 8, 9), OCR y fragmentación 500–1000 tokens con 15 % de solape (3), embeddings por modelo del expediente (4), búsqueda híbrida RRF + citas con extractos literales + visor local con SHA-256 (5), observabilidad y auditoría (6, 7).

@@ -456,6 +456,7 @@ async def test_consulta_de_punta_a_punta(client, org_a, cola, router_falso, llm)
         "confianzaOcr",
         "requiereVerificacionVisualOriginal",
         "motivoVerificacionVisual",
+        "tiposEvidencia",
     }
     assert cita["documentoId"] == str(doc_id)
     assert cita["nombreArchivo"] == "Pliego_Hospital.pdf" and len(cita["sha256Original"]) == 64
@@ -534,3 +535,39 @@ async def test_embeddings_caidos_responde_503(client, app, org_a, cola, llm):
     expediente = await org_a.crear_expediente(org_a.admin)
     r = await _consultar(client, org_a, expediente, "¿Garantías?")
     assert r.status_code == 503
+
+
+def test_tipos_de_evidencia_son_codigos_estables():
+    t = generacion.tipos_evidencia
+    assert t({"extraction_method": "NATIVE"}, 0.85) == []
+    assert t({"has_tables": True}, 0.85) == ["TABLA"]
+    assert t({"has_signatures_or_stamps": True, "has_visual_elements": True}, 0.85) == [
+        "FIRMA_O_SELLO"
+    ]  # no se duplica como IMAGEN
+    assert t({"has_visual_elements": True}, 0.85) == ["IMAGEN"]
+    assert t({"extraction_method": "OCR", "ocr_confidence": 0.9}, 0.85) == ["OCR"]
+    assert t({"extraction_method": "OCR", "ocr_confidence": 0.5}, 0.85) == ["OCR_BAJA_CONFIANZA"]
+    # Varios a la vez, en orden fijo.
+    assert t(
+        {
+            "has_tables": True,
+            "has_signatures_or_stamps": True,
+            "extraction_method": "MIXED",
+            "ocr_confidence": 0.4,
+        },
+        0.85,
+    ) == ["FIRMA_O_SELLO", "TABLA", "OCR_BAJA_CONFIANZA"]
+
+
+def test_la_cita_final_lleva_los_tipos_de_evidencia():
+    e = _evidencia("Garantía de seriedad del 10 % del presupuesto oficial.")
+    e.metadata = {"has_tables": True, "extraction_method": "OCR", "ocr_confidence": 0.5}
+    salida = {
+        "respuesta": "10 %",
+        "hay_evidencia": True,
+        "citas": [{"fragmento": "F1", "extracto_literal": "Garantía de seriedad del 10 %"}],
+        "alertas": [],
+    }
+    r = generacion.ensamblar(salida, [e], 0.85)
+    assert r.citas[0].tipos_evidencia == ["TABLA", "OCR_BAJA_CONFIANZA"]
+    assert r.citas[0].requiere_verificacion

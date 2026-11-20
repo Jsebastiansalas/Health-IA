@@ -122,11 +122,92 @@ def _partes_con_tablas(pagina_plumber) -> list[Parte] | None:
 
 
 # ---------- OCR ----------
+_ROTACION = re.compile(r"Rotate:\s*(\d+)")
+
+
+def grados_de_rotacion(osd: str) -> int:
+    """Grados a girar la página (sentido horario) según la salida OSD de Tesseract."""
+    m = _ROTACION.search(osd or "")
+    grados = int(m.group(1)) if m else 0
+    return grados if grados in (90, 180, 270) else 0
+
+
+def preprocesar(imagen):
+    """Escala de grises, contraste automático y binarización: rescata escaneos tenues o grises."""
+    from PIL import ImageOps
+
+    gris = ImageOps.autocontrast(ImageOps.grayscale(imagen), cutoff=1)
+    corte = _umbral_otsu(gris.histogram())
+    return gris.point(lambda v: 255 if v > corte else 0)
+
+
+def _umbral_otsu(histograma: list[int]) -> int:
+    total = sum(histograma)
+    suma = sum(i * n for i, n in enumerate(histograma))
+    suma_fondo = peso_fondo = 0
+    mejor, umbral = -1.0, 127
+    for i, n in enumerate(histograma):
+        peso_fondo += n
+        if peso_fondo == 0 or peso_fondo == total:
+            continue
+        suma_fondo += i * n
+        media_fondo = suma_fondo / peso_fondo
+        media_frente = (suma - suma_fondo) / (total - peso_fondo)
+        varianza = peso_fondo * (total - peso_fondo) * (media_fondo - media_frente) ** 2
+        if varianza > mejor:
+            mejor, umbral = varianza, i
+    return umbral
+
+
+def _rotar(imagen, grados: int):
+    # Tesseract informa cuánto girar en sentido horario; PIL rota en antihorario.
+    return imagen.rotate(-grados, expand=True) if grados else imagen
+
+
 def _ocr(pagina: pdfium.PdfPage, cfg: ConfigExtraccion) -> tuple[str, float | None]:
+    """OCR de una página. Si la confianza es baja se reintenta (rotación detectada por OSD y
+    binarización) y se conserva el mejor resultado: un texto leído mal nunca debe ganarle a uno
+    leído bien."""
+    imagen = pagina.render(scale=cfg.ocr_dpi / 72).to_pil()
+    mejor = _leer(imagen, cfg)
+    if mejor[1] is not None and mejor[1] >= cfg.ocr_umbral_reintento:
+        return mejor
+    for variante in _variantes(imagen, cfg):
+        candidato = _leer(variante, cfg)
+        if _confianza(candidato) > _confianza(mejor):
+            mejor = candidato
+        if _confianza(mejor) >= cfg.ocr_umbral_reintento:
+            break
+    return mejor
+
+
+def _confianza(resultado: tuple[str, float | None]) -> float:
+    texto, conf = resultado
+    return conf if (conf is not None and texto) else -1.0
+
+
+def _variantes(imagen, cfg: ConfigExtraccion):
+    """Versiones alternativas de la página, de la más barata a la más costosa."""
+    grados = _rotacion_detectada(imagen, cfg)
+    girada = _rotar(imagen, grados)
+    if grados:
+        yield girada
+    yield preprocesar(girada)
+
+
+def _rotacion_detectada(imagen, cfg: ConfigExtraccion) -> int:
+    import pytesseract
+
+    try:
+        return grados_de_rotacion(pytesseract.image_to_osd(imagen))
+    except Exception:  # sin datos OSD o página sin texto suficiente: se asume derecha
+        return 0
+
+
+def _leer(imagen, cfg: ConfigExtraccion) -> tuple[str, float | None]:
     import pytesseract
     from pytesseract import Output
 
-    imagen = pagina.render(scale=cfg.ocr_dpi / 72).to_pil()
     datos = pytesseract.image_to_data(imagen, lang=cfg.ocr_idioma, output_type=Output.DICT)
 
     lineas: list[str] = []

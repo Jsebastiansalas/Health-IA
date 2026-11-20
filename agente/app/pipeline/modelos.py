@@ -43,6 +43,8 @@ class ConfigExtraccion:
     umbral_texto_nativo: int = 60
     ocr_dpi: int = 300
     ocr_idioma: str = "spa"
+    # Si la confianza del primer OCR queda por debajo, se reintenta rotando y binarizando la página.
+    ocr_umbral_reintento: float = 0.85
     imagen_relevante_min_area: float = 0.01
     imagen_escaneo_min_area: float = 0.30
     imagen_sello_max_area: float = 0.15

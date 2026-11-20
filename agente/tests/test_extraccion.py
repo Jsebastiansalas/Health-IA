@@ -5,7 +5,16 @@ import pytest
 from app.pipeline import extraccion, secciones, tablas
 from app.pipeline.extraccion import clasificar_pagina, extraer_documento, tesseract_disponible
 from app.pipeline.modelos import ConfigExtraccion, MetodoExtraccion
-from tests.pdfs import pdf, pdf_con_sello, pdf_escaneado, pdf_tabla, pdf_texto, unir
+from tests.pdfs import (
+    pdf,
+    pdf_con_sello,
+    pdf_escaneado,
+    pdf_escaneado_bajo_contraste,
+    pdf_escaneado_rotado,
+    pdf_tabla,
+    pdf_texto,
+    unir,
+)
 
 CFG = ConfigExtraccion()
 
@@ -151,3 +160,127 @@ def test_ocr_real_en_espanol(extraer):
     assert p.metodo == MetodoExtraccion.OCR
     assert "INVIMA" in p.texto and "Paclitaxel" in p.texto
     assert p.ocr_confidence is not None and p.ocr_confidence > 0.6
+
+
+# ---------- Sprint 16: OCR con reintento, rotación y bajo contraste ----------
+def test_grados_de_rotacion_desde_osd():
+    osd = "Page number: 0\nOrientation in degrees: 90\nRotate: 270\nOrientation confidence: 4.1"
+    assert extraccion.grados_de_rotacion(osd) == 270
+    assert extraccion.grados_de_rotacion("Rotate: 0") == 0
+    assert extraccion.grados_de_rotacion("Rotate: 45") == 0  # valor no válido: se ignora
+    assert extraccion.grados_de_rotacion("") == 0
+
+
+def test_preprocesar_binariza_un_escaneo_tenue():
+    from PIL import Image
+
+    tenue = Image.new("L", (40, 40), 200)
+    for x in range(10, 30):
+        tenue.putpixel((x, 20), 150)  # trazo gris sobre fondo gris
+    binaria = extraccion.preprocesar(tenue.convert("RGB"))
+    valores = set(binaria.tobytes())
+    assert valores <= {0, 255} and valores == {0, 255}  # solo blanco y negro, trazo conservado
+
+
+def _pagina_falsa(monkeypatch, imagen):
+    class Render:
+        def to_pil(self):
+            return imagen
+
+    class Pagina:
+        def render(self, scale):
+            return Render()
+
+    return Pagina()
+
+
+def test_ocr_no_reintenta_si_la_confianza_es_buena(monkeypatch):
+    from PIL import Image
+
+    lecturas = []
+    monkeypatch.setattr(
+        extraccion, "_leer", lambda img, cfg: (lecturas.append(1), ("texto claro", 0.93))[1]
+    )
+    pagina = _pagina_falsa(monkeypatch, Image.new("RGB", (10, 10), "white"))
+    assert extraccion._ocr(pagina, CFG) == ("texto claro", 0.93)
+    assert len(lecturas) == 1
+
+
+def test_ocr_reintenta_con_rotacion_y_conserva_el_mejor(monkeypatch):
+    from PIL import Image
+
+    base = Image.new("RGB", (30, 10), "white")  # ancha: al girar 90° queda alta (10x30)
+
+    def leer(img, cfg):
+        return ("ilegible", 0.31) if img.size == (30, 10) else ("texto bien leído", 0.9)
+
+    monkeypatch.setattr(extraccion, "_leer", leer)
+    monkeypatch.setattr(extraccion, "_rotacion_detectada", lambda img, cfg: 90)
+    assert extraccion._ocr(_pagina_falsa(monkeypatch, base), CFG) == ("texto bien leído", 0.9)
+
+
+def test_ocr_nunca_empeora_con_el_reintento(monkeypatch):
+    from PIL import Image
+
+    respuestas = iter([("lectura original", 0.60), ("peor", 0.40), ("peor aún", 0.20)])
+    monkeypatch.setattr(extraccion, "_leer", lambda img, cfg: next(respuestas))
+    monkeypatch.setattr(extraccion, "_rotacion_detectada", lambda img, cfg: 180)
+    pagina = _pagina_falsa(monkeypatch, Image.new("RGB", (10, 10), "white"))
+    assert extraccion._ocr(pagina, CFG) == ("lectura original", 0.60)
+
+
+def test_ocr_sin_texto_no_gana_a_uno_con_texto(monkeypatch):
+    from PIL import Image
+
+    respuestas = iter([("", None), ("algo legible", 0.55), ("algo legible", 0.55)])
+    monkeypatch.setattr(extraccion, "_leer", lambda img, cfg: next(respuestas))
+    monkeypatch.setattr(extraccion, "_rotacion_detectada", lambda img, cfg: 0)
+    pagina = _pagina_falsa(monkeypatch, Image.new("RGB", (10, 10), "white"))
+    assert extraccion._ocr(pagina, CFG)[0] == "algo legible"
+
+
+def test_paginas_rotadas_y_tenues_se_clasifican_como_escaneadas(extraer, monkeypatch):
+    monkeypatch.setattr(extraccion, "_ocr", lambda pagina, cfg: ("texto", 0.8))
+    monkeypatch.setattr(extraccion, "version_tesseract", lambda: "tesseract-5.3-v1")
+    for contenido in (
+        pdf_escaneado_rotado("REGISTRO SANITARIO INVIMA", 90),
+        pdf_escaneado_rotado("REGISTRO SANITARIO INVIMA", 180),
+        pdf_escaneado_bajo_contraste("REGISTRO SANITARIO INVIMA"),
+    ):
+        assert extraer(contenido).paginas[0].metodo == MetodoExtraccion.OCR
+
+
+@pytest.mark.skipif(not tesseract_disponible(), reason="Tesseract no instalado (corre en Docker)")
+@pytest.mark.parametrize("grados", [90, 180, 270])
+def test_ocr_real_lee_paginas_rotadas(extraer, grados):
+    r = extraer(pdf_escaneado_rotado("REGISTRO SANITARIO INVIMA 2024M-0001234\n\nPaclitaxel", grados))
+    assert "INVIMA" in r.paginas[0].texto
+
+
+@pytest.mark.skipif(not tesseract_disponible(), reason="Tesseract no instalado (corre en Docker)")
+def test_ocr_real_lee_escaneo_de_bajo_contraste(extraer):
+    r = extraer(pdf_escaneado_bajo_contraste("REGISTRO SANITARIO INVIMA 2024M-0001234"))
+    assert "INVIMA" in r.paginas[0].texto
+
+
+# ---------- Fidelidad de tablas ----------
+@pytest.mark.parametrize(
+    "filas",
+    [
+        [["Código", "Producto", "Cantidad"], ["1", "Paclitaxel 6 mg/ml", "120"], ["2", "Cisplatino", "45"]],
+        [["CUM", "Descripción", "Precio", "IVA"], *[[f"{i}-1", f"Ítem {i}", f"$ {i * 1000}", "0 %"] for i in range(1, 12)]],
+        [["Ref", "Observación"], ["A", "Texto con barra | vertical"], ["B", "Acción: «urgente»"]],
+    ],
+)
+def test_tabla_conserva_todas_las_celdas(extraer, filas):
+    r = extraer(pdf_tabla("CUADRO DE PRUEBA", filas))
+    tabla = next(p.texto for p in r.paginas[0].partes if p.es_tabla)
+    esperadas = tablas.filas_limpias(filas)
+    obtenidas = [
+        [c.strip() for c in linea.strip("|").split(" | ")]
+        for linea in tabla.splitlines()
+        if not linea.startswith("| ---")
+    ]
+    assert len(obtenidas) == len(esperadas)  # ninguna fila perdida ni duplicada
+    for fila_obtenida, fila_esperada in zip(obtenidas, esperadas, strict=True):
+        assert fila_obtenida == fila_esperada  # `|` escapado como `\|` en ambos lados
