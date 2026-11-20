@@ -166,7 +166,7 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
             id="tipo-doc"
             value={tipo}
             onChange={(e) => setTipo(e.target.value as TipoDocumento)}
-            className="h-11 w-full rounded-xl border border-ink/12 bg-sala px-3 text-sm outline-none transition-[border-color,box-shadow] focus:border-hema/70 focus:shadow-[0_0_0_3px_rgb(124_212_230/0.2)]"
+            className="h-11 w-full rounded-full border border-ink/45 bg-transparent px-5 text-sm outline-none transition-[border-color,box-shadow] focus:border-ink"
           >
             {Object.entries(TIPOS_DOCUMENTO).map(([v, t]) => (
               <option key={v} value={v} className="bg-panel">
@@ -187,7 +187,7 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
               max={999}
               value={numero}
               onChange={(e) => setNumero(Number(e.target.value))}
-              className="num h-11 w-full rounded-xl border border-ink/12 bg-sala px-3 text-sm outline-none focus:border-hema/70"
+              className="num h-11 w-full rounded-full border border-ink/45 bg-transparent px-5 text-sm outline-none focus:border-ink"
             />
           </div>
         )}
@@ -322,7 +322,7 @@ function Pipeline({ estado, progreso }: { estado: EstadoIndexacion; progreso: nu
               className={cn(
                 "relative z-10 grid size-9 place-items-center rounded-full border transition-colors duration-500",
                 e === "hecho" && "border-hema bg-hema text-[#06121a]",
-                e === "actual" && "border-hema bg-sala text-hema shadow-[0_0_0_3px_rgb(124_212_230/0.25)]",
+                e === "actual" && "border-hema bg-sala text-hema ",
                 e === "pendiente" && "border-ink/14 bg-sala text-tx-3",
               )}
             >

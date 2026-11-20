@@ -94,7 +94,7 @@ export function ConsolaRag({
                       setPregunta(s);
                       campo.current?.focus();
                     }}
-                    className="rounded-full border border-ink/14 bg-ink/[0.04] px-3.5 py-2 text-left text-[0.84rem] text-tx-2 transition-colors hover:border-hema/50 hover:bg-hema/10 hover:text-tx"
+                    className="rounded-full border border-ink/25 px-3.5 py-2 text-left text-[0.84rem] text-tx-2 transition-colors hover:border-hema/50 hover:bg-hema/10 hover:text-tx"
                   >
                     {s}
                   </button>
@@ -135,7 +135,7 @@ export function ConsolaRag({
 
       <form
         onSubmit={enviar}
-        className="vidrio sticky bottom-4 z-10 rounded-2xl p-2.5 shadow-[0_-18px_30px_-20px_rgb(0_0_0/0.8)]"
+        className="vidrio sticky bottom-4 z-10 rounded-2xl p-2.5 "
       >
         <div className="flex items-end gap-2.5">
           <textarea
@@ -188,7 +188,7 @@ function AvatarIA() {
 function Burbuja({ texto }: { texto: string }) {
   return (
     <div className="flex justify-end">
-      <p className="max-w-[85%] rounded-2xl rounded-tr-md bg-luz px-5 py-3 text-[0.97rem] leading-relaxed text-[#07101c]">
+      <p className="max-w-[85%] rounded-2xl rounded-tr-md bg-obsidiana px-5 py-3 text-[0.97rem] leading-relaxed text-tx">
         {texto}
       </p>
     </div>

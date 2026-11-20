@@ -18,13 +18,13 @@ export const Campo = forwardRef<HTMLInputElement, Props>(function Campo(
   const idCampo = id ?? generado;
   return (
     <div className={className}>
-      <label htmlFor={idCampo} className="mb-1.5 block text-[0.8rem] font-medium text-tx-2">
+      <label htmlFor={idCampo} className="mb-1.5 block pl-5 text-[0.8rem] font-normal text-tx-2">
         {etiqueta}
       </label>
       <div
         className={cn(
-          "group flex h-12 items-center gap-2.5 rounded-xl border border-ink/20 bg-sala px-3.5 transition-[border-color,box-shadow] duration-200",
-          "focus-within:border-hema focus-within:shadow-[0_0_0_3px_rgb(124_212_230/0.22)]",
+          "group flex h-12 items-center gap-2.5 rounded-full border border-ink/45 bg-transparent px-5 transition-[border-color,box-shadow] duration-200",
+          "focus-within:border-ink",
         )}
       >
         {Icono && (

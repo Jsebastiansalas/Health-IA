@@ -27,7 +27,7 @@ export function TarjetaCita({ cita, numero, alAbrir, resaltada = false, id }: Pr
       id={id}
       className={cn(
         "vidrio-solido relative flex flex-col rounded-xl p-4 transition-[box-shadow,border-color] duration-500",
-        resaltada && "border-eosina shadow-[0_0_0_2px_rgb(255_194_71/0.55),0_24px_40px_-24px_rgb(0_0_0/0.9)]",
+        resaltada && "ring-1 ring-ink/70",
       )}
     >
       <header className="flex items-start gap-3">
@@ -50,7 +50,7 @@ export function TarjetaCita({ cita, numero, alAbrir, resaltada = false, id }: Pr
         </div>
       </header>
 
-      <blockquote className="mt-3.5 rounded-lg bg-luz px-3.5 py-3 font-display text-[1.02rem] leading-snug text-[#0a1322]">
+      <blockquote className="mt-3.5 rounded-lg bg-obsidiana px-3.5 py-3 font-display text-[1.02rem] leading-snug text-tx">
         «{cita.extractoLiteral}»
       </blockquote>
 

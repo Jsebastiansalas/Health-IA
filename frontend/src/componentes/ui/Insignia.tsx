@@ -3,7 +3,7 @@ import type { HTMLAttributes } from "react";
 import { cn } from "../../lib/cn";
 
 const insignia = cva(
-  "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 text-[0.72rem] font-semibold leading-5",
+  "inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-[0.72rem] font-normal leading-5",
   {
     variants: {
       tono: {

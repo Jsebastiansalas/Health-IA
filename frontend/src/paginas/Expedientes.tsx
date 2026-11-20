@@ -80,7 +80,7 @@ export function PaginaExpedientes() {
       </div>
 
       <div className="mb-8 flex flex-wrap items-center gap-3">
-        <div className="group flex h-11 w-full items-center gap-2.5 rounded-xl border border-ink/12 bg-sala px-3.5 transition-[border-color,box-shadow] focus-within:border-hema/70 focus-within:shadow-[0_0_0_3px_rgb(124_212_230/0.2)] sm:w-80">
+        <div className="group flex h-11 w-full items-center gap-2.5 rounded-full border border-ink/45 bg-transparent px-5 transition-[border-color] focus-within:border-ink sm:w-80">
           <Search className="size-4 text-tx-3 group-focus-within:text-hema" aria-hidden />
           <input
             ref={buscador}
@@ -171,7 +171,7 @@ export function PaginaExpedientes() {
             >
               <Link
                 to={`/expedientes/${e.id}`}
-                className="vidrio group relative flex h-full flex-col overflow-hidden rounded-2xl p-6 transition-[transform,border-color,box-shadow] duration-300 ease-[var(--ease-salida)] hover:-translate-y-1 hover:border-hema/35 hover:shadow-[0_26px_40px_-26px_rgb(0_0_0/0.9)]"
+                className="vidrio group relative flex h-full flex-col overflow-hidden rounded-2xl p-6 transition-[transform,border-color,box-shadow] duration-300 ease-[var(--ease-salida)] hover:bg-obsidiana "
               >
                 <div className="flex items-start justify-between gap-3">
                   <span className="grid size-12 place-items-center rounded-2xl border border-hema/25 bg-hema/10 text-hema">
@@ -258,7 +258,7 @@ function NuevoExpediente({ alCrear }: { alCrear: () => void }) {
           id="tipo-expediente"
           value={datos.tipo_expediente}
           onChange={cambiar("tipo_expediente")}
-          className="h-12 w-full rounded-xl border border-ink/12 bg-sala px-3.5 text-[0.95rem] outline-none transition-[border-color,box-shadow] focus:border-hema/70 focus:shadow-[0_0_0_3px_rgb(124_212_230/0.2)]"
+          className="h-12 w-full rounded-full border border-ink/45 bg-transparent px-5 text-[0.95rem] outline-none transition-[border-color,box-shadow] focus:border-ink"
         >
           {Object.entries(TIPOS_EXPEDIENTE).map(([v, t]) => (
             <option key={v} value={v} className="bg-panel">

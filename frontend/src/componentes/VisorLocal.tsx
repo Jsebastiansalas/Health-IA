@@ -476,7 +476,7 @@ function LectorPdf({ pdf, cita }: { pdf: PdfLocal; cita: Cita }) {
               <Esqueleto className="aspect-[1/1.3] w-full rounded-lg" />
             </div>
           ) : (
-            <canvas ref={lienzo} className="mx-auto block rounded-md bg-white shadow-[0_24px_60px_-20px_rgb(0_0_0/0.8)]" />
+            <canvas ref={lienzo} className="mx-auto block rounded-md bg-white " />
           )}
         </div>
       </div>

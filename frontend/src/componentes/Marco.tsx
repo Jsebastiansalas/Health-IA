@@ -27,7 +27,7 @@ function Avatar({ nombre, className }: { nombre?: string; className?: string }) 
   return (
     <span
       className={cn(
-        "grid size-10 shrink-0 place-items-center rounded-lg bg-luz font-display text-sm font-bold text-[#07101c]",
+        "grid size-10 shrink-0 place-items-center rounded-full bg-obsidiana font-display text-sm font-[480] text-tx",
         className,
       )}
       aria-hidden
@@ -43,7 +43,7 @@ function MenuUsuario({ compacto = false }: { compacto?: boolean }) {
     <Menu.Root>
       <Menu.Trigger
         className={cn(
-          "group flex w-full items-center gap-3 rounded-xl border border-ink/15 bg-ink/[0.05] p-2.5 text-left text-tx transition-colors hover:bg-ink/[0.1]",
+          "group flex w-full items-center gap-3 rounded-full bg-obsidiana p-2 text-left text-tx transition-colors hover:bg-ink/[0.12]",
           compacto && "w-auto border-0 bg-transparent p-1 text-tx",
         )}
         aria-label="Menú de usuario"
@@ -73,7 +73,7 @@ function MenuUsuario({ compacto = false }: { compacto?: boolean }) {
           <Menu.Separator className="my-1 h-px bg-ink/10" />
           <Menu.Item
             onSelect={salir}
-            className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-tx-2 outline-none transition-colors data-[highlighted]:bg-ink/8 data-[highlighted]:text-tx"
+            className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-tx-2 outline-none transition-colors data-[highlighted]:bg-ink/8 data-[highlighted]:text-tx"
           >
             <LogOut className="size-4" aria-hidden />
             Cerrar sesión
@@ -86,15 +86,15 @@ function MenuUsuario({ compacto = false }: { compacto?: boolean }) {
 
 const enlaceNav = ({ isActive }: { isActive: boolean }) =>
   cn(
-    "flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors",
-    isActive ? "bg-luz text-[#07101c]" : "text-tx-2 hover:bg-ink/[0.08] hover:text-tx",
+    "flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-normal transition-colors",
+    isActive ? "bg-obsidiana text-tx" : "text-tx-2 hover:bg-ink/[0.06] hover:text-tx",
   );
 
 export function Marco({ children }: { children: ReactNode }) {
   return (
     <div className="relative min-h-screen lg:pl-72">
       {/* Barra lateral (escritorio) */}
-      <aside className="fixed inset-y-3 left-3 z-30 hidden w-64 flex-col rounded-2xl border border-ink/10 bg-hema-pro p-4 text-tx lg:flex">
+      <aside className="fixed inset-y-3 left-3 z-30 hidden w-64 flex-col rounded-xl bg-panel p-4 text-tx lg:flex">
         <NavLink to="/" className="px-2 pb-5 pt-2" aria-label="MedTender, inicio">
           <Marca />
         </NavLink>
@@ -104,8 +104,8 @@ export function Marco({ children }: { children: ReactNode }) {
             Expedientes
           </NavLink>
         </nav>
-        <div className="mb-3 rounded-xl border border-ink/12 p-3.5 text-[0.8rem] leading-relaxed text-tx-2">
-          <ShieldCheck className="mb-1.5 size-5 text-eosina" aria-hidden />
+        <div className="mb-3 rounded-xl bg-obsidiana p-3.5 text-[0.8rem] leading-relaxed text-tx-2">
+          <ShieldCheck className="mb-1.5 size-5 text-tx-2" aria-hidden />
           Tus PDF se eliminan del servidor al indexarlos. Los originales se abren desde tu equipo.
         </div>
         <MenuUsuario />
@@ -125,7 +125,7 @@ export function Marco({ children }: { children: ReactNode }) {
         position="bottom-right"
         toastOptions={{
           classNames: {
-            toast: "!border !border-ink/15 !bg-panel !text-tx !shadow-2xl !rounded-xl",
+            toast: "!border-0 !bg-obsidiana !text-tx !shadow-none !rounded-xl",
             description: "!text-tx-2",
           },
         }}
