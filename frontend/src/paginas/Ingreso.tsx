@@ -1,8 +1,7 @@
-import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, LockKeyhole, Mail, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Sello } from "../arte/Folios";
 import { Marca } from "../componentes/Marca";
 import { Boton } from "../componentes/ui/Boton";
 import { Campo } from "../componentes/ui/Campo";
@@ -38,12 +37,12 @@ export function PaginaIngreso() {
           <Marca />
         </Link>
         <div className="max-w-lg">
-          <h1 className="text-[clamp(2.2rem,3.2vw,3.2rem)]">Tu expediente, con la fuente a un clic.</h1>
+          <h1 className="text-[clamp(2.2rem,3.2vw,3.2rem)]">Tus expedientes de salud, con la fuente a un clic.</h1>
           <ul className="mt-8 space-y-3.5 text-[1.02rem]">
             {[
-              "Respuestas con extracto literal, página y huella del archivo.",
-              "El PDF se elimina del servidor tras indexarlo.",
-              "Lo abres desde tu equipo, sin subirlo de nuevo.",
+              "Licitaciones médicas, historias clínicas y auditorías en un solo lugar.",
+              "Cada respuesta cita el documento, la página y el texto exacto.",
+              "Si los documentos no la respaldan, te lo dice.",
             ].map((t) => (
               <li key={t} className="flex gap-3">
                 <Check className="mt-0.5 size-5 shrink-0" strokeWidth={2.5} aria-hidden />
@@ -52,10 +51,7 @@ export function PaginaIngreso() {
             ))}
           </ul>
         </div>
-        <Sello className="w-fit bg-folio">
-          <Trash2 className="size-3.5" aria-hidden />
-          PDF eliminado
-        </Sello>
+        <span aria-hidden />
       </section>
 
       {/* Formulario */}
