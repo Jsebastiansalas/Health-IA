@@ -29,18 +29,23 @@ type Props = {
   id?: string;
 };
 
+/**
+ * La cita es la pieza central del producto: un fragmento del folio original con el texto citado
+ * resaltado, su procedencia exacta (documento, página, sección) y lo que el texto extraído no puede
+ * garantizar. El número es el mismo marcador amarillo que lleva la referencia [n] en la respuesta.
+ */
 export function TarjetaCita({ cita, numero, alAbrir, resaltada = false, id }: Props) {
   const adenda = cita.tipoDocumento === "ADENDA";
   return (
     <article
       id={id}
-      className={cn(
-        "vidrio-solido relative flex flex-col rounded-xl p-4 transition-[box-shadow,border-color] duration-500",
-        resaltada && "ring-1 ring-tinta/70",
-      )}
+      className={cn("folio relative flex flex-col p-4 transition-shadow duration-500", resaltada && "ring-2 ring-marca")}
     >
       <header className="flex items-start gap-3">
-        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accion/14 font-display text-[0.95rem] font-bold text-accion">
+        <span
+          className="grid size-6 shrink-0 place-items-center rounded-[3px] bg-marca text-[0.72rem] font-bold text-marca-tx"
+          aria-label={`Cita ${numero}`}
+        >
           {numero}
         </span>
         <div className="min-w-0 flex-1">
@@ -53,32 +58,32 @@ export function TarjetaCita({ cita, numero, alAbrir, resaltada = false, id }: Pr
           <p className="truncate font-semibold" title={cita.nombreArchivo}>
             {cita.nombreArchivo}
           </p>
-          <p className="truncate text-xs text-tinta-3" title={cita.seccion}>
-            {cita.seccion}
-          </p>
         </div>
       </header>
 
-      <blockquote className="mt-3.5 rounded-lg bg-folio-2 px-3.5 py-3 font-display text-[1.02rem] leading-snug text-tinta">
-        «{cita.extractoLiteral}»
+      <blockquote className="mt-3 font-display text-[1.05rem] leading-[1.75] text-tinta">
+        <span className="resaltado">«{cita.extractoLiteral}»</span>
       </blockquote>
+      <p className="mt-1.5 truncate text-xs text-tinta-3" title={cita.seccion}>
+        {cita.seccion}
+      </p>
 
       {cita.requiereVerificacionVisualOriginal && (
-        <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-peligro/30 bg-peligro/10 px-3 py-2.5">
-          <Eye className="mt-0.5 size-4 shrink-0 text-peligro" aria-hidden />
-          <div className="min-w-0 text-xs leading-relaxed text-peligro">
-            <div className="mb-1.5 flex flex-wrap gap-1.5">
-              <Insignia tono="peligro" title={cita.motivoVerificacionVisual ?? undefined}>
-                Verificar original
+        <div className="mt-3 border-t border-tinta/12 pt-3">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Insignia tono="peligro" title={cita.motivoVerificacionVisual ?? undefined}>
+              <Eye className="size-3.5" aria-hidden />
+              Verificar original
+            </Insignia>
+            {(cita.tiposEvidencia ?? []).map((t) => (
+              <Insignia key={t} tono={EVIDENCIA[t].tono}>
+                {EVIDENCIA[t].etiqueta}
               </Insignia>
-              {(cita.tiposEvidencia ?? []).map((t) => (
-                <Insignia key={t} tono={EVIDENCIA[t].tono}>
-                  {EVIDENCIA[t].etiqueta}
-                </Insignia>
-              ))}
-            </div>
-            {cita.motivoVerificacionVisual && <p>{cita.motivoVerificacionVisual}</p>}
+            ))}
           </div>
+          {cita.motivoVerificacionVisual && (
+            <p className="mt-2 text-xs leading-relaxed text-tinta-2">{cita.motivoVerificacionVisual}</p>
+          )}
         </div>
       )}
 
@@ -87,6 +92,9 @@ export function TarjetaCita({ cita, numero, alAbrir, resaltada = false, id }: Pr
           {METODO[cita.metodoExtraccion]}
           {cita.confianzaOcr !== null && ` · confianza ${Math.round(cita.confianzaOcr * 100)} %`}
           {cita.extractoAjustado && " · extracto ajustado al texto real"}
+          <span className="block" title={`SHA-256 ${cita.sha256Original}`}>
+            sha256 {cita.sha256Original.slice(0, 10)}…
+          </span>
         </span>
         <Boton tamano="sm" variante="secundario" onClick={() => alAbrir(cita)}>
           <BookOpenCheck className="size-4 text-accion" aria-hidden />

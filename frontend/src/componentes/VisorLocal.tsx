@@ -52,8 +52,27 @@ type Estado =
  * servidor y lo muestra en la página citada. Todo ocurre en memoria del navegador: el archivo
  * no se sube a ningún lado.
  */
-export function VisorLocal({ cita, alCerrar }: { cita: Cita; alCerrar: () => void }) {
+export function VisorLocal({
+  cita,
+  alCerrar,
+  acoplado = false,
+}: {
+  cita: Cita;
+  alCerrar: () => void;
+  /** En pantallas anchas se muestra como panel junto a la conversación en vez de ventana modal. */
+  acoplado?: boolean;
+}) {
   const [estado, setEstado] = useState<Estado>({ fase: "preparando" });
+  const panel = useRef<HTMLElement>(null);
+
+  // Acoplado no es modal: Escape cierra el panel y el foco pasa a él al abrirse.
+  useEffect(() => {
+    if (!acoplado) return;
+    panel.current?.focus();
+    const alTeclear = (e: KeyboardEvent) => e.key === "Escape" && alCerrar();
+    window.addEventListener("keydown", alTeclear);
+    return () => window.removeEventListener("keydown", alTeclear);
+  }, [acoplado, alCerrar]);
 
   const buscar = useCallback(
     async (carpeta: FileSystemDirectoryHandle) => {
@@ -112,64 +131,84 @@ export function VisorLocal({ cita, alCerrar }: { cita: Cita; alCerrar: () => voi
     );
   }
 
+  const Titulo = acoplado ? "h2" : Dialog.Title;
+  const botonCerrar = (
+    <Boton variante="secundario" tamano="icono" aria-label="Cerrar visor" onClick={acoplado ? alCerrar : undefined}>
+      <X className="size-5" aria-hidden />
+    </Boton>
+  );
+
+  const contenido = (
+    <>
+      <header className="flex items-start justify-between gap-4 border-b border-tinta/12 px-5 py-4">
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 text-[0.78rem] font-medium text-accion">
+            <FolderOpen className="size-3.5" aria-hidden />
+            Original en tu equipo · {etiquetaDocumento(cita.tipoDocumento, cita.numeroAdenda)} ·{" "}
+            {paginas(cita.paginaInicio, cita.paginaFin)}
+          </p>
+          <Titulo className="mt-0.5 truncate font-display text-xl font-semibold">{cita.nombreArchivo}</Titulo>
+          <p className="mt-1 truncate font-mono text-[0.7rem] text-tinta-3" title={cita.sha256Original}>
+            SHA-256 registrado {cita.sha256Original}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {estado.fase === "listo" && (
+            <Insignia tono="ok" className="hidden animate-sello sm:inline-flex">
+              <BadgeCheck className="size-3.5" aria-hidden />
+              SHA-256 coincide
+            </Insignia>
+          )}
+          {estado.fase === "distinto" && (
+            <Insignia tono="peligro" className="hidden animate-sello sm:inline-flex">
+              <ShieldAlert className="size-3.5" aria-hidden />
+              No coincide
+            </Insignia>
+          )}
+          {acoplado ? botonCerrar : <Dialog.Close asChild>{botonCerrar}</Dialog.Close>}
+        </div>
+      </header>
+
+      <div className="min-h-0 flex-1">
+        {estado.fase === "listo" ? (
+          <LectorPdf pdf={estado.pdf} cita={cita} />
+        ) : (
+          <div className="grid h-full place-items-center overflow-auto px-6 py-10">
+            <Indicaciones
+              estado={estado}
+              cita={cita}
+              alVincular={vincular}
+              alReactivar={reactivar}
+              alElegirArchivo={elegirArchivo}
+            />
+          </div>
+        )}
+      </div>
+    </>
+  );
+
+  // Pantalla ancha: el original queda AL LADO de la conversación, sin tapar la respuesta que se está verificando.
+  if (acoplado) {
+    return (
+      <section
+        ref={panel}
+        tabIndex={-1}
+        aria-label="Original en tu equipo"
+        className="folio flex h-full min-h-0 flex-col outline-none animate-aparecer"
+      >
+        {contenido}
+      </section>
+    );
+  }
   return (
     <Dialog.Root open onOpenChange={(abierto) => !abierto && alCerrar()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 " />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-tinta/55" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="vidrio-solido fixed inset-y-0 right-0 z-50 flex w-full max-w-5xl flex-col outline-none data-[state=open]:animate-[aparecer_350ms_var(--ease-salida)] sm:inset-y-3 sm:right-3 sm:rounded-3xl"
+          className="folio fixed inset-y-0 right-0 z-50 flex w-full max-w-5xl flex-col outline-none data-[state=open]:animate-[aparecer_350ms_var(--ease-salida)] sm:inset-y-3 sm:right-3"
         >
-          <header className="flex items-start justify-between gap-4 border-b border-tinta/8 px-5 py-4 sm:px-6">
-            <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-[0.78rem] font-medium text-accion">
-                <FolderOpen className="size-3.5" aria-hidden />
-                Original en tu equipo · {etiquetaDocumento(cita.tipoDocumento, cita.numeroAdenda)} ·{" "}
-                {paginas(cita.paginaInicio, cita.paginaFin)}
-              </p>
-              <Dialog.Title className="mt-0.5 truncate font-display text-2xl font-semibold">
-                {cita.nombreArchivo}
-              </Dialog.Title>
-              <p className="mt-1 truncate font-mono text-[0.7rem] text-tinta-3" title={cita.sha256Original}>
-                SHA-256 registrado {cita.sha256Original}
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              {estado.fase === "listo" && (
-                <Insignia tono="accion" className="hidden animate-sello sm:inline-flex">
-                  <BadgeCheck className="size-3.5" aria-hidden />
-                  SHA-256 coincide
-                </Insignia>
-              )}
-              {estado.fase === "distinto" && (
-                <Insignia tono="peligro" className="hidden animate-sello sm:inline-flex">
-                  <ShieldAlert className="size-3.5" aria-hidden />
-                  No coincide
-                </Insignia>
-              )}
-              <Dialog.Close asChild>
-                <Boton variante="secundario" tamano="icono" aria-label="Cerrar visor">
-                  <X className="size-5" aria-hidden />
-                </Boton>
-              </Dialog.Close>
-            </div>
-          </header>
-
-          <div className="min-h-0 flex-1">
-            {estado.fase === "listo" ? (
-              <LectorPdf pdf={estado.pdf} cita={cita} />
-            ) : (
-              <div className="grid h-full place-items-center overflow-auto px-6 py-10">
-                <Indicaciones
-                  estado={estado}
-                  cita={cita}
-                  alVincular={vincular}
-                  alReactivar={reactivar}
-                  alElegirArchivo={elegirArchivo}
-                />
-              </div>
-            )}
-          </div>
+          {contenido}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -468,8 +507,9 @@ function LectorPdf({ pdf, cita }: { pdf: PdfLocal; cita: Cita }) {
       <div className="flex min-h-0 flex-1">
         {documento && total > 1 && <Miniaturas documento={documento} actual={pagina} alElegir={irA} />}
         <div ref={contenedor} className="min-w-0 flex-1 overflow-auto px-6 py-5">
-          <blockquote className="mx-auto mb-4 max-w-3xl rounded-xl border border-accion/25 bg-accion/[0.07] px-4 py-3 font-display text-[0.95rem] leading-snug">
-            <span className="mb-1 block text-[0.72rem] font-medium text-accion">Extracto citado</span>«{cita.extractoLiteral}»
+          <blockquote className="mx-auto mb-4 max-w-3xl font-display text-[1rem] leading-[1.75]">
+            <span className="mb-1 block text-[0.72rem] font-medium text-tinta-3">Extracto citado</span>
+            <span className="resaltado">«{cita.extractoLiteral}»</span>
           </blockquote>
           {!documento ? (
             <div className="mx-auto max-w-3xl" aria-busy aria-label="Abriendo el PDF">
