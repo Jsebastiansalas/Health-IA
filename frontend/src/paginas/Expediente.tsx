@@ -11,7 +11,9 @@ import { PanelDocumentos } from "../componentes/PanelDocumentos";
 import { boton } from "../componentes/ui/Boton";
 import { Esqueleto } from "../componentes/ui/Esqueleto";
 import { Insignia } from "../componentes/ui/Insignia";
+import { cn } from "../lib/cn";
 import { esConsultable, TIPOS_EXPEDIENTE } from "../lib/formato";
+import { useMediaQuery } from "../lib/useMediaQuery";
 
 // PDF.js (~1,3 MB con su worker) solo se descarga cuando se abre una cita.
 const VisorLocal = lazy(() => import("../componentes/VisorLocal").then((m) => ({ default: m.VisorLocal })));
@@ -31,6 +33,8 @@ export function PaginaExpediente() {
   const { id = "" } = useParams();
   const [citaAbierta, setCitaAbierta] = useState<Cita | null>(null);
   const [pestana, setPestana] = useState("folios");
+  // Con ancho de sobra, el original se abre junto a la consulta; si no, como ventana encima.
+  const ancha = useMediaQuery("(min-width: 1280px)");
   const { data: expediente, error } = useQuery({
     queryKey: ["expediente", id],
     queryFn: () => api<Expediente>(`/expedientes/${id}`),
@@ -75,6 +79,7 @@ export function PaginaExpediente() {
     );
   }
 
+  const acoplada = ancha && citaAbierta !== null;
   const puedeSubir = expediente.mi_permiso === "ADMIN" || expediente.mi_permiso === "EDITOR";
   const hayIndice = (documentos ?? []).some((d) => esConsultable(d.estado_indexacion));
   const indexados = (documentos ?? []).filter((d) => esConsultable(d.estado_indexacion));
@@ -131,19 +136,26 @@ export function PaginaExpediente() {
           })}
         </Tabs.List>
 
-        <div className="grid gap-8 xl:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
-          <Tabs.Content value="folios" forceMount className="data-[state=inactive]:hidden xl:sticky xl:top-6 xl:!block xl:max-h-[calc(100vh-3rem)] xl:self-start xl:overflow-y-auto xl:pr-1">
+        <div className={cn("grid gap-8", acoplada ? "xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]" : "xl:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]")}>
+          <Tabs.Content value="folios" forceMount className={cn("data-[state=inactive]:hidden xl:sticky xl:top-6 xl:!block xl:max-h-[calc(100vh-3rem)] xl:self-start xl:overflow-y-auto xl:pr-1", acoplada && "xl:!hidden")}>
             <PanelDocumentos expedienteId={id} puedeSubir={puedeSubir && expediente.estado === "ABIERTO"} />
           </Tabs.Content>
           <Tabs.Content value="consulta" forceMount className="data-[state=inactive]:hidden xl:!block">
             <ConsolaRag expedienteId={id} hayIndice={hayIndice} alAbrirCita={setCitaAbierta} />
           </Tabs.Content>
+          {acoplada && citaAbierta && (
+            <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] xl:block">
+              <Suspense fallback={<div className="folio grid h-full place-items-center text-tinta-2">Abriendo visor…</div>}>
+                <VisorLocal cita={citaAbierta} alCerrar={() => setCitaAbierta(null)} acoplado />
+              </Suspense>
+            </aside>
+          )}
         </div>
       </Tabs.Root>
 
       {/* Portal: la página tiene una animación con transform, que convertiría el `fixed` del
           visor en relativo a ese contenedor. */}
-      {citaAbierta &&
+      {citaAbierta && !acoplada &&
         createPortal(
           <Suspense
             fallback={

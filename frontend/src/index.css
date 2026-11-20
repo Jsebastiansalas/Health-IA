@@ -90,10 +90,16 @@
 
   --animate-aparecer: aparecer 520ms var(--ease-salida) both;
   --animate-brillo: brillo 1.8s ease-in-out infinite;
+  --animate-sello: sello 420ms var(--ease-salida) both;
 
   @keyframes aparecer {
     0% { opacity: 0; transform: translateY(8px); }
     100% { opacity: 1; transform: translateY(0); }
+  }
+  /* El sello se estampa: llega algo más grande y se asienta. Solo escala y opacidad, para no pisar rotaciones. */
+  @keyframes sello {
+    0% { opacity: 0; scale: 1.35; }
+    100% { opacity: 1; scale: 1; }
   }
   @keyframes brillo {
     0% { background-position: 150% 0; }
