@@ -3,7 +3,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,23 +18,15 @@ class Settings(BaseSettings):
     db_max_overflow: int = 15
     db_pool_timeout_s: float = 10.0
 
-    jwt_secret: str = Field(min_length=32)
-    jwt_algorithm: str = "HS256"
-    access_token_minutes: int = 30
-    refresh_token_days: int = 7
+    # ---------- Servicio interno ----------
+    # Este servicio NO autentica usuarios: la API pública (Spring Boot) lo hace y le habla por la
+    # red interna con este secreto compartido en la cabecera X-Internal-Token. Sin él, todos los
+    # endpoints /internal responden 503.
+    internal_token: str = ""
 
-    allow_tenant_signup: bool = True
-    cors_origins: list[str] = ["http://localhost:5173"]
-
-    # ---------- Ingesta efímera (Sprint 2) ----------
-    max_upload_mb: int = 300
+    # Directorio compartido con la API Java: ella escribe el PDF, este servicio lo procesa y lo
+    # borra (Acta de Purga).
     ephemeral_dir: Path = Path(tempfile.gettempdir()) / "medtender-ephemeral"
-
-    # "noop" solo para desarrollo: no escanea y lo registra en el log.
-    antivirus_backend: Literal["clamav", "noop"] = "clamav"
-    clamav_host: str = "localhost"
-    clamav_port: int = 3310
-    clamav_timeout_s: float = 120.0
 
     # Política DIFERIDO_1H: minutos que se conserva el temporal tras indexar.
     purga_diferida_minutos: int = 60
@@ -74,7 +65,7 @@ class Settings(BaseSettings):
     ocr_version_actual: str = "tesseract-5.5-v1"
 
     # ---------- Embeddings (Sprint 4) ----------
-    # Modelo con el que nace cada expediente nuevo.
+    # Modelo con el que nacen los expedientes nuevos (lo aplica la API Java).
     embedding_model_default: str = "gemini-embedding-001"
     embedding_lote: int = 100  # textos por llamada al proveedor
     embedding_reintentos: int = 6
@@ -107,58 +98,29 @@ class Settings(BaseSettings):
     # ---------- Operación y endurecimiento (Sprint 6) ----------
     entorno: Literal["desarrollo", "produccion"] = "desarrollo"
     log_json: bool = False  # en producción siempre JSON
-    # Detrás de Caddy, la IP real del cliente es la última entrada de X-Forwarded-For.
+    # Detrás de un proxy, la IP real del cliente es la última entrada de X-Forwarded-For.
     confiar_proxy: bool = False
     # /metrics: con token requiere `Authorization: Bearer <token>`; sin token y en producción
     # el endpoint no existe.
     metrics_token: str = ""
 
-    rate_limit_habilitado: bool = True
-    rate_limit_backend: Literal["redis", "memoria"] = "redis"
-    rl_general_ip_min: int = 600  # todas las rutas, por IP
-    rl_login_ip_min: int = 20  # intentos de login por IP
-    rl_login_fallos_par: int = 5  # fallos por (IP, correo) antes de bloquear
-    rl_login_fallos_ventana_s: int = 900
-    rl_registro_ip_hora: int = 5
-    rl_refresh_ip_min: int = 60
-    rl_consulta_usuario_min: int = 20  # cada pregunta cuesta una llamada al LLM
-    rl_consulta_usuario_dia: int = 500
-    rl_subida_usuario_hora: int = 60
-    rl_reindex_usuario_hora: int = 6
-
     def problemas_produccion(self) -> tuple[list[str], list[str]]:
         """(fatales, advertencias) de una configuración destinada a producción."""
         fatales: list[str] = []
         avisos: list[str] = []
-        if "cambia-esto" in self.jwt_secret or len(set(self.jwt_secret)) < 10:
-            fatales.append("JWT_SECRET es el valor de ejemplo o demasiado simple")
-        if self.antivirus_backend == "noop":
-            fatales.append("ANTIVIRUS_BACKEND=noop: en producción todo PDF debe escanearse")
+        if len(self.internal_token) < 32 or len(set(self.internal_token)) < 10:
+            fatales.append("INTERNAL_TOKEN debe tener al menos 32 caracteres y no ser trivial")
         if "medtender:medtender@" in self.database_url:
             fatales.append("DATABASE_URL usa la contraseña de desarrollo 'medtender'")
         if self.cola_backend != "arq":
             fatales.append("COLA_BACKEND debe ser 'arq' para que los documentos se procesen")
-        if self.rate_limit_habilitado and self.rate_limit_backend == "memoria":
-            avisos.append("RATE_LIMIT_BACKEND=memoria no se comparte entre procesos")
-        if not self.rate_limit_habilitado:
-            avisos.append("RATE_LIMIT_HABILITADO=false: sin protección contra fuerza bruta")
-        if self.allow_tenant_signup:
-            avisos.append("ALLOW_TENANT_SIGNUP=true: cualquiera puede crear una organización")
-        if any("localhost" in o or "127.0.0.1" in o for o in self.cors_origins):
-            avisos.append("CORS_ORIGINS incluye localhost")
-        if not self.confiar_proxy:
-            avisos.append("CONFIAR_PROXY=false: el límite por IP verá la IP del proxy")
         if not self.gemini_api_key and not self.openai_api_key:
             avisos.append("Sin API key de embeddings: no se podrán vectorizar documentos")
         if not self.metrics_token:
             avisos.append("METRICS_TOKEN vacío: /metrics queda deshabilitado")
         return fatales, avisos
 
-    @property
-    def max_upload_bytes(self) -> int:
-        return self.max_upload_mb * 1024 * 1024
-
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()  # type: ignore[call-arg]
+    return Settings()

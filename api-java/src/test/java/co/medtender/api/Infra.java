@@ -140,20 +140,33 @@ public final class Infra {
     }
 
     // ------------------------------------------------------------------------------------------
-    /** Agente de IA de mentira: registra las entregas y responde con el codigo configurado. */
+    /** Agente de IA de mentira: registra las llamadas y responde con lo configurado. */
     public static final class AgenteFalso {
-        public record Llamada(String ruta, String token) {}
+        public record Llamada(String metodo, String ruta, String consulta, String token, String cuerpo) {}
+
+        private record Respuesta(int estado, String cuerpo) {}
 
         private HttpServer servidor;
-        private final AtomicInteger respuesta = new AtomicInteger(202);
+        private final AtomicInteger respuestaProcesar = new AtomicInteger(202);
         private final List<Llamada> llamadas = new CopyOnWriteArrayList<>();
+        private final java.util.Map<String, Respuesta> respuestas = new java.util.concurrent.ConcurrentHashMap<>();
 
         void iniciar() throws IOException {
             servidor = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-            servidor.createContext("/internal/v1/documentos/", ex -> {
-                llamadas.add(new Llamada(ex.getRequestURI().getPath(), ex.getRequestHeaders().getFirst("X-Internal-Token")));
-                ex.getRequestBody().readAllBytes();
-                ex.sendResponseHeaders(respuesta.get(), -1);
+            servidor.createContext("/internal/v1/", ex -> {
+                String ruta = ex.getRequestURI().getPath();
+                String cuerpo = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                llamadas.add(new Llamada(ex.getRequestMethod(), ruta, ex.getRequestURI().getRawQuery(),
+                        ex.getRequestHeaders().getFirst("X-Internal-Token"), cuerpo));
+                Respuesta r = ruta.startsWith("/internal/v1/documentos/")
+                        ? new Respuesta(respuestaProcesar.get(), "")
+                        : respuestas.getOrDefault(ex.getRequestMethod() + " " + ruta, new Respuesta(404, "{\"detail\":\"sin configurar\"}"));
+                byte[] bytes = r.cuerpo().getBytes(StandardCharsets.UTF_8);
+                ex.getResponseHeaders().add("Content-Type", "application/json");
+                ex.sendResponseHeaders(r.estado(), bytes.length == 0 ? -1 : bytes.length);
+                if (bytes.length > 0) {
+                    ex.getResponseBody().write(bytes);
+                }
                 ex.close();
             });
             servidor.start();
@@ -163,8 +176,14 @@ public final class Infra {
             return servidor.getAddress().getPort();
         }
 
+        /** Codigo con el que responde a la entrega de documentos. */
         public void responderCon(int codigo) {
-            respuesta.set(codigo);
+            respuestaProcesar.set(codigo);
+        }
+
+        /** Respuesta fija para "METODO /ruta". */
+        public void responder(String metodoYRuta, int estado, String cuerpoJson) {
+            respuestas.put(metodoYRuta, new Respuesta(estado, cuerpoJson));
         }
 
         public List<Llamada> llamadas() {
@@ -172,8 +191,9 @@ public final class Infra {
         }
 
         public void reiniciar() {
-            respuesta.set(202);
+            respuestaProcesar.set(202);
             llamadas.clear();
+            respuestas.clear();
         }
     }
 }

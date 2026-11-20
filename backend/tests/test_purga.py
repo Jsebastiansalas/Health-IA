@@ -32,7 +32,7 @@ def test_transiciones_validas_e_invalidas():
 # ---------- Utilidades ----------
 async def _documento_vectorizado(client, org_a, expediente, n_fragmentos: int, esperados: int):
     """Sube un PDF y simula lo que harán los Sprints 3-4: estados y fragmentos con embedding."""
-    doc = (await subir(client, org_a.admin, expediente["id"], pdf())).json()
+    doc = (await subir(expediente["id"], pdf())).json()
     doc_id = uuid.UUID(doc["id"])
     async with get_sessionmaker()() as s:
         d = await s.get(Documento, doc_id)
@@ -77,7 +77,7 @@ async def _estado(doc_id) -> tuple[Documento, list[ActaPurga], int]:
 
 
 @pytest.fixture
-async def expediente(org_a, scanner, cola):
+async def expediente(org_a, cola):
     return await org_a.crear_expediente(org_a.admin)
 
 
@@ -122,9 +122,7 @@ async def test_cero_fragmentos_esperados_es_error(client, org_a, expediente, eph
 
 # ---------- Política DIFERIDO_1H ----------
 async def test_purga_diferida(client, org_a, expediente, ephemeral_dir):
-    await client.patch(
-        "/api/v1/tenant", headers=org_a.admin, json={"politica_borrado": "DIFERIDO_1H"}
-    )
+    org_a.politica_de_borrado("DIFERIDO_1H")
     doc_id = await _documento_vectorizado(client, org_a, expediente, n_fragmentos=1, esperados=1)
     await _finalizar(doc_id)
 
@@ -148,7 +146,7 @@ async def test_purga_diferida(client, org_a, expediente, ephemeral_dir):
 
 # ---------- Barrido de documentos atascados y huérfanos ----------
 async def test_documento_atascado_se_purga_por_timeout(client, org_a, expediente, ephemeral_dir):
-    doc = (await subir(client, org_a.admin, expediente["id"], pdf())).json()
+    doc = (await subir(expediente["id"], pdf())).json()
     doc_id = uuid.UUID(doc["id"])
 
     assert (await barrer(get_sessionmaker())).timeouts == 0
@@ -174,7 +172,7 @@ def _envejecer(ruta, minutos: int) -> None:
 
 
 async def test_archivos_huerfanos(client, org_a, expediente, ephemeral_dir):
-    activo = (await subir(client, org_a.admin, expediente["id"], pdf())).json()
+    activo = (await subir(expediente["id"], pdf())).json()
     ruta_activo = ephemeral_dir / f"{activo['id']}.pdf"
     huerfano_viejo = ephemeral_dir / f"{uuid.uuid4()}.part"
     huerfano_nuevo = ephemeral_dir / f"{uuid.uuid4()}.part"  # subida en curso

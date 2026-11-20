@@ -9,14 +9,9 @@ from app.main import validar_configuracion
 
 SEGURO = dict(
     entorno="produccion",
-    jwt_secret="Xk9#mQ2$vL7@nR4&tB8!wZ3^pY6*cF1%",
+    internal_token="Xk9mQ2vL7nR4tB8wZ3pY6cF1hJ5dS0gA",
     database_url="postgresql+asyncpg://medtender:Cl4ve-L4rg4-Y-Unica@postgres:5432/medtender",
-    antivirus_backend="clamav",
     cola_backend="arq",
-    rate_limit_backend="redis",
-    allow_tenant_signup=False,
-    cors_origins=["https://expedientes.hospital.co"],
-    confiar_proxy=True,
     gemini_api_key="k",
     metrics_token="t",
 )
@@ -33,12 +28,9 @@ def test_configuracion_segura_no_tiene_problemas():
 @pytest.mark.parametrize(
     ("cambio", "texto"),
     [
-        (
-            {"jwt_secret": "cambia-esto-por-un-secreto-aleatorio-de-al-menos-32-caracteres"},
-            "JWT_SECRET",
-        ),
-        ({"jwt_secret": "a" * 40}, "JWT_SECRET"),
-        ({"antivirus_backend": "noop"}, "ANTIVIRUS_BACKEND"),
+        ({"internal_token": ""}, "INTERNAL_TOKEN"),
+        ({"internal_token": "corto"}, "INTERNAL_TOKEN"),
+        ({"internal_token": "a" * 40}, "INTERNAL_TOKEN"),
         (
             {"database_url": "postgresql+asyncpg://medtender:medtender@postgres/medtender"},
             "DATABASE_URL",
@@ -53,38 +45,27 @@ def test_problemas_fatales(cambio, texto):
 
 def test_advertencias_no_bloquean():
     fatales, avisos = ajustes(
-        allow_tenant_signup=True,
-        cors_origins=["http://localhost:5173"],
-        confiar_proxy=False,
         gemini_api_key="",
         openai_api_key="",  # el entorno de pruebas define una key falsa
         metrics_token="",
-        rate_limit_habilitado=False,
     ).problemas_produccion()
     assert fatales == []
     texto = " ".join(avisos)
-    for esperado in (
-        "ALLOW_TENANT_SIGNUP",
-        "CORS_ORIGINS",
-        "CONFIAR_PROXY",
-        "API key",
-        "METRICS_TOKEN",
-        "RATE_LIMIT_HABILITADO",
-    ):
+    for esperado in ("API key", "METRICS_TOKEN"):
         assert esperado in texto
 
 
 def test_arranque_en_produccion_con_configuracion_insegura_falla(monkeypatch):
     from app.core import config
 
-    inseguro = ajustes(antivirus_backend="noop")
+    inseguro = ajustes(internal_token="")
     monkeypatch.setattr("app.main.get_settings", lambda: inseguro)
-    with pytest.raises(RuntimeError, match="ANTIVIRUS_BACKEND"):
+    with pytest.raises(RuntimeError, match="INTERNAL_TOKEN"):
         validar_configuracion()
     # En desarrollo la misma configuración se tolera.
     monkeypatch.setattr(
         "app.main.get_settings",
-        lambda: Settings(**{**SEGURO, "entorno": "desarrollo", "antivirus_backend": "noop"}),
+        lambda: Settings(**{**SEGURO, "entorno": "desarrollo", "internal_token": ""}),
     )
     validar_configuracion()
     assert config.get_settings().entorno == "desarrollo"

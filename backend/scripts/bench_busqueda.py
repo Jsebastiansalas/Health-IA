@@ -21,7 +21,6 @@ import math
 import os
 import random
 import statistics
-import subprocess
 import sys
 import time
 import uuid
@@ -46,18 +45,12 @@ def preparar_base(admin_url: str, nombre: str) -> str:
         c.execute(f'CREATE DATABASE "{nombre}"')
     base, _, _ = admin_url.rpartition("/")
     url = f"{base}/{nombre}"
-    env = {
-        **os.environ,
-        "DATABASE_URL": url.replace("postgresql://", "postgresql+asyncpg://"),
-        "JWT_SECRET": "x" * 40,
-    }
-    subprocess.run(
-        [sys.executable, "-m", "alembic", "upgrade", "head"],
-        cwd=BACKEND,
-        env=env,
-        check=True,
-        capture_output=True,
-    )
+    # El esquema es el de Flyway (api-java): los mismos V1..V6 que usa la aplicación.
+    migraciones = BACKEND.parent / "api-java" / "src" / "main" / "resources" / "db" / "migration"
+    scripts = sorted(migraciones.glob("V*__*.sql"), key=lambda p: int(p.name[1:].split("__")[0]))
+    with psycopg.connect(url, autocommit=True) as c:
+        for script in scripts:
+            c.execute(script.read_text(encoding="utf-8"))
     return url
 
 
@@ -204,7 +197,6 @@ def pct(datos: list[float], p: float) -> float:
 
 async def medir(url: str, ids: dict, repeticiones: int, concurrencia: int) -> None:
     os.environ["DATABASE_URL"] = url.replace("postgresql://", "postgresql+asyncpg://")
-    os.environ["JWT_SECRET"] = "x" * 40
     from sqlalchemy import text as sqltext
     from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 

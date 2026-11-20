@@ -34,7 +34,7 @@ def ejecutor():
 
 
 @pytest.fixture
-async def expediente(org_a, scanner, cola):
+async def expediente(org_a, cola):
     return await org_a.crear_expediente(org_a.admin)
 
 
@@ -57,7 +57,7 @@ def pliego() -> bytes:
 
 
 async def _subir(client, org_a, expediente, contenido: bytes) -> uuid.UUID:
-    r = await subir(client, org_a.admin, expediente["id"], contenido)
+    r = await subir(expediente["id"], contenido)
     assert r.status_code == 202, r.text
     return uuid.UUID(r.json()["id"])
 
@@ -234,8 +234,6 @@ async def test_reintento_tras_caida_del_worker(client, org_a, expediente, ejecut
 
 async def test_numero_de_adenda_en_metadata(client, org_a, expediente, ejecutor):
     r = await subir(
-        client,
-        org_a.admin,
         expediente["id"],
         pdf_texto(["ADENDA No. 2\n\n" + texto_largo(10)]),
         tipo="ADENDA",

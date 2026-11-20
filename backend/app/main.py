@@ -4,18 +4,8 @@ import logging
 from collections.abc import AsyncIterator
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import sistema
-from app.api.v1 import (
-    auditoria,
-    auth,
-    consultas,
-    documentos,
-    expedientes,
-    reindexacion,
-    tenant_usuarios,
-)
+from app.api import interno, sistema
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
 from app.core.logs import configurar_logging
@@ -57,7 +47,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     tarea = None
     if settings.barrido_habilitado:
         tarea = asyncio.create_task(_bucle_barrido(settings.barrido_intervalo_s))
-    log.info("MedTender API lista (entorno=%s)", settings.entorno)
+    log.info("Agente MedTender listo (entorno=%s)", settings.entorno)
     yield
     if tarea:
         tarea.cancel()
@@ -71,37 +61,19 @@ def create_app() -> FastAPI:
     produccion = settings.entorno == "produccion"
     configurar_logging(settings.log_json or produccion)
     app = FastAPI(
-        title=settings.app_name,
-        version="1.0.0",
+        title=f"{settings.app_name} - agente interno",
+        version="2.0.0",
         lifespan=lifespan,
-        # La documentación interactiva expone el contrato completo: solo en desarrollo.
+        # La documentación interactiva expone el contrato interno: solo en desarrollo.
         docs_url=None if produccion else "/docs",
         redoc_url=None,
         openapi_url=None if produccion else "/openapi.json",
     )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-        expose_headers=["X-Request-ID", "Retry-After"],
-    )
-    # El último en añadirse es el más externo: contexto, límite general y métricas cubren todo.
+    # Sin CORS: nada del navegador llega aquí; solo la API Java por la red interna.
     app.add_middleware(MiddlewareSolicitud)
 
     app.include_router(sistema.router)
-    for router in (
-        auth.router,
-        tenant_usuarios.router,
-        expedientes.router,
-        documentos.router,
-        reindexacion.router,
-        consultas.router,
-        auditoria.router,
-    ):
-        app.include_router(router, prefix="/api/v1")
-
+    app.include_router(interno.router)
     return app
 
 

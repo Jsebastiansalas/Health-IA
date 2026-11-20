@@ -1,7 +1,7 @@
 """Métricas Prometheus.
 
 Dos tipos:
-- Contadores e histogramas del proceso de la API (HTTP, consultas, límites de peticiones).
+- Contadores e histogramas del proceso de la API (HTTP y consultas).
 - Medidores del estado del negocio, calculados desde PostgreSQL en cada scrape. Así reflejan lo
   que hace también el worker, que es otro proceso con su propia memoria.
 
@@ -30,17 +30,6 @@ HTTP_DURACION = Histogram(
     buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 120),
     registry=REGISTRO,
 )
-LIMITE_RECHAZOS = Counter(
-    "medtender_rate_limit_rechazos_total",
-    "Solicitudes rechazadas con 429 por superar un límite",
-    ["regla"],
-    registry=REGISTRO,
-)
-LIMITE_FALLOS = Counter(
-    "medtender_rate_limit_backend_errores_total",
-    "Fallos del almacén de límites (se permite la solicitud)",
-    registry=REGISTRO,
-)
 CONSULTAS = Counter(
     "medtender_consultas_total",
     "Consultas RAG",
@@ -57,11 +46,6 @@ LLM_RESPUESTAS = Counter(
     "medtender_llm_respuestas_total",
     "Respuestas del modelo generativo por modelo",
     ["modelo"],
-    registry=REGISTRO,
-)
-AUDITORIA_FALLOS = Counter(
-    "medtender_auditoria_fallos_total",
-    "Eventos de auditoría que no pudieron guardarse",
     registry=REGISTRO,
 )
 

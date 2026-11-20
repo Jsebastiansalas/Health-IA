@@ -3,25 +3,6 @@
 import uuid
 from pathlib import Path
 
-from httpx import AsyncClient
-
-from app.services.antivirus import AntivirusNoDisponible, ResultadoEscaneo
-from tests.pdfs import MARCADOR_VIRUS
-
-
-class ScannerFalso:
-    def __init__(self, caido: bool = False):
-        self.caido = caido
-        self.escaneados: list[str] = []
-
-    async def escanear(self, ruta: Path) -> ResultadoEscaneo:
-        self.escaneados.append(ruta.name)
-        if self.caido:
-            raise AntivirusNoDisponible("conexión rechazada")
-        if MARCADOR_VIRUS in ruta.read_bytes():
-            return ResultadoEscaneo(limpio=False, firma="Test.Marcador")
-        return ResultadoEscaneo(limpio=True)
-
 
 class ColaFalsa:
     def __init__(self, falla: bool = False):
@@ -63,23 +44,61 @@ class EmbeddingsFalsos:
         return vectores
 
 
+class Respuesta:
+    """Lo mínimo de una respuesta HTTP que consumen las pruebas."""
+
+    def __init__(self, status_code: int, cuerpo: dict):
+        self.status_code = status_code
+        self._cuerpo = cuerpo
+
+    def json(self) -> dict:
+        return self._cuerpo
+
+
 async def subir(
-    client: AsyncClient,
-    headers: dict,
     expediente_id: str,
     contenido: bytes,
     tipo: str = "PLIEGO",
     numero_adenda: int | None = None,
     nombre: str = "Pliego_Hospital.pdf",
-):
-    data = {"tipo_documento": tipo}
-    if numero_adenda is not None:
-        data["numero_adenda"] = str(numero_adenda)
-    return await client.post(
-        f"/api/v1/expedientes/{expediente_id}/documentos",
-        headers=headers,
-        data=data,
-        files={"archivo": (nombre, contenido, "application/pdf")},
+) -> Respuesta:
+    """Hace lo que la API Java deja listo antes de entregar un documento al agente: el PDF en el
+    directorio efímero como {id}.pdf y la fila del documento en estado EN_COLA."""
+    import hashlib
+    import io
+    import os
+
+    import psycopg
+    from pypdf import PdfReader
+
+    doc_id = uuid.uuid4()
+    try:
+        paginas = len(PdfReader(io.BytesIO(contenido)).pages)
+    except Exception:
+        paginas = None
+    url = os.environ["DATABASE_URL"].replace("postgresql+asyncpg://", "postgresql://")
+    with psycopg.connect(url) as conn:
+        fila = conn.execute(
+            "INSERT INTO documentos (id, tenant_id, expediente_id, nombre_archivo_original, "
+            "tipo_documento, numero_adenda, sha256_original, tamano_bytes, total_paginas, "
+            "estado_indexacion, embedding_model) "
+            "SELECT %s, e.tenant_id, e.id, %s, %s, %s, %s, %s, %s, 'EN_COLA', "
+            "e.embedding_model_activo FROM expedientes e WHERE e.id = %s RETURNING tenant_id",
+            (
+                doc_id,
+                nombre,
+                tipo,
+                numero_adenda or 0,
+                hashlib.sha256(contenido).hexdigest(),
+                len(contenido),
+                paginas,
+                uuid.UUID(expediente_id),
+            ),
+        ).fetchone()
+    assert fila is not None, "expediente inexistente"
+    (Path(os.environ["EPHEMERAL_DIR"]) / f"{doc_id}.pdf").write_bytes(contenido)
+    return Respuesta(
+        202, {"id": str(doc_id), "estado_indexacion": "EN_COLA", "tenant_id": str(fila[0])}
     )
 
 

@@ -98,12 +98,12 @@ async def buscar(exp: Expediente, vector, texto, top_k=20, modelo=MODELO):
 
 
 @pytest.fixture
-async def exp_a(org_a, scanner, cola):
+async def exp_a(org_a, cola):
     return await _expediente(await org_a.crear_expediente(org_a.admin, "A-1"))
 
 
 @pytest.fixture
-async def exp_b(org_b, scanner, cola):
+async def exp_b(org_b, cola):
     return await _expediente(await org_b.crear_expediente(org_b.admin, "B-1"))
 
 
@@ -410,20 +410,30 @@ def llm(app):
 
 async def _indexar(client, org, expediente, router):
     contenido = pdf_texto(["CLÁUSULA 5 GARANTÍAS\n\n" + texto_largo(30, "garantías")])
-    doc_id = uuid.UUID((await subir(client, org.admin, expediente["id"], contenido)).json()["id"])
+    doc_id = uuid.UUID((await subir(expediente["id"], contenido)).json()["id"])
     with ThreadPoolExecutor(max_workers=1) as ex:
         await procesar_documento(get_sessionmaker(), doc_id, ex, VectorizadorEmbeddings(router))
     return doc_id
 
 
-async def test_consulta_de_punta_a_punta(client, org_a, scanner, cola, router_falso, llm):
+async def _consultar(client, org, expediente, pregunta, headers=None):
+    return await client.post(
+        "/internal/v1/consultas",
+        headers=org.admin if headers is None else headers,
+        json={
+            "tenant_id": str(org.tenant_id),
+            "expediente_id": expediente["id"],
+            "usuario_id": str(org.admin_id),
+            "pregunta": pregunta,
+        },
+    )
+
+
+async def test_consulta_de_punta_a_punta(client, org_a, cola, router_falso, llm):
     expediente = await org_a.crear_expediente(org_a.admin)
     doc_id = await _indexar(client, org_a, expediente, router_falso)
-    url = f"/api/v1/expedientes/{expediente['id']}/consultas"
 
-    r = await client.post(
-        url, headers=org_a.admin, json={"pregunta": "¿Cuál es la vigencia de las garantías?"}
-    )
+    r = await _consultar(client, org_a, expediente, "¿Cuál es la vigencia de las garantías?")
     assert r.status_code == 200, r.text
     cuerpo = r.json()
     assert cuerpo["respuestaAnalitica"] == "La garantía es de doce meses."
@@ -461,70 +471,66 @@ async def test_consulta_de_punta_a_punta(client, org_a, scanner, cola, router_fa
         guardada = await s.scalar(select(Consulta))
     assert guardada.pregunta == "¿Cuál es la vigencia de las garantías?"
     assert guardada.respuesta["consultaId"] == cuerpo["consultaId"]
-    historial = (await client.get(url, headers=org_a.admin)).json()
+    historial = (
+        await client.get(
+            "/internal/v1/consultas",
+            headers=org_a.admin,
+            params={
+                "tenant_id": str(org_a.tenant_id),
+                "expediente_id": expediente["id"],
+                "usuario_id": str(org_a.admin_id),
+            },
+        )
+    ).json()
     assert [h["consultaId"] for h in historial] == [cuerpo["consultaId"]]
 
 
-async def test_lector_consulta_y_otro_tenant_no(
-    client, org_a, org_b, scanner, cola, router_falso, llm
+async def test_otro_tenant_no_consulta_y_el_token_es_obligatorio(
+    client, org_a, org_b, cola, router_falso, llm
 ):
     expediente = await org_a.crear_expediente(org_a.admin)
     await _indexar(client, org_a, expediente, router_falso)
-    uid, lector = await org_a.crear_usuario("lector@hospital-a.co", "LECTOR")
-    await client.put(
-        f"/api/v1/expedientes/{expediente['id']}/permisos/{uid}",
-        headers=org_a.admin,
-        json={"permiso": "LECTOR"},
-    )
-    url = f"/api/v1/expedientes/{expediente['id']}/consultas"
+    assert (await _consultar(client, org_a, expediente, "¿Garantías?")).status_code == 200
+    # El tenant viaja en la solicitud: un expediente de otro tenant no existe para el agente.
+    assert (await _consultar(client, org_b, expediente, "¿Garantías?")).status_code == 404
+    # Sin token o con uno incorrecto: ni se mira la solicitud.
     assert (
-        await client.post(url, headers=lector, json={"pregunta": "¿Garantías?"})
-    ).status_code == 200
+        await _consultar(client, org_a, expediente, "¿Garantías?", headers={})
+    ).status_code == 401
+    mal = {"X-Internal-Token": "otro"}
     assert (
-        await client.post(url, headers=org_b.admin, json={"pregunta": "¿Garantías?"})
-    ).status_code == 404
-    assert (await client.post(url, json={"pregunta": "¿Garantías?"})).status_code == 401
+        await _consultar(client, org_a, expediente, "¿Garantías?", headers=mal)
+    ).status_code == 401
+    assert llm.prompts != [] and len(llm.prompts) == 1  # solo la primera llegó al modelo
 
 
 async def test_expediente_vacio_se_abstiene_sin_llamar_al_modelo(
-    client, org_a, scanner, cola, router_falso, llm
+    client, org_a, cola, router_falso, llm
 ):
     expediente = await org_a.crear_expediente(org_a.admin)
-    r = await client.post(
-        f"/api/v1/expedientes/{expediente['id']}/consultas",
-        headers=org_a.admin,
-        json={"pregunta": "¿Cuál es el presupuesto?"},
-    )
+    r = await _consultar(client, org_a, expediente, "¿Cuál es el presupuesto?")
     assert r.status_code == 200
     assert r.json()["sinEvidencia"] is True and r.json()["citas"] == []
     assert llm.prompts == []
 
 
-async def test_proveedor_caido_responde_503(client, app, org_a, scanner, cola, router_falso):
+async def test_proveedor_caido_responde_503(client, app, org_a, cola, router_falso):
     from app.ia.llm import ErrorLLM
 
     expediente = await org_a.crear_expediente(org_a.admin)
     await _indexar(client, org_a, expediente, router_falso)
     app.dependency_overrides[get_llm] = lambda: LLMFalso(error=ErrorLLM("HTTP 503"))
-    r = await client.post(
-        f"/api/v1/expedientes/{expediente['id']}/consultas",
-        headers=org_a.admin,
-        json={"pregunta": "¿Garantías?"},
-    )
+    r = await _consultar(client, org_a, expediente, "¿Garantías?")
     assert r.status_code == 503
     assert "HTTP 503" not in r.text  # no se filtran detalles internos
 
 
-async def test_embeddings_caidos_responde_503(client, app, org_a, scanner, cola, llm):
+async def test_embeddings_caidos_responde_503(client, app, org_a, cola, llm):
     class RouterRoto(EmbeddingRouter):
         async def embeber_consulta(self, modelo, texto):
             raise ErrorEmbeddings("HTTP 429")
 
     app.dependency_overrides[get_router] = lambda: RouterRoto({})
     expediente = await org_a.crear_expediente(org_a.admin)
-    r = await client.post(
-        f"/api/v1/expedientes/{expediente['id']}/consultas",
-        headers=org_a.admin,
-        json={"pregunta": "¿Garantías?"},
-    )
+    r = await _consultar(client, org_a, expediente, "¿Garantías?")
     assert r.status_code == 503
