@@ -2,7 +2,7 @@ import { ArrowRight, ScrollText, SearchX } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ActaPurga, EscenaExpediente, VisorDocumento } from "../arte/Folios";
+import { EscenaExpediente, VisorDocumento } from "../arte/Folios";
 import { Marca } from "../componentes/Marca";
 import { boton } from "../componentes/ui/Boton";
 import { Insignia } from "../componentes/ui/Insignia";
@@ -29,10 +29,11 @@ export function PaginaBienvenida() {
     <div className="relative overflow-x-clip bg-mesa">
       <Navegacion />
       <Heroe />
+      <Casos />
       <Prueba />
       <ComoFunciona />
       <Honestidad />
-      <Seguridad />
+      <Cuidado />
       <Cierre />
     </div>
   );
@@ -56,9 +57,9 @@ function Navegacion() {
           <Marca />
         </Link>
         <nav className="hidden items-center md:flex" aria-label="Secciones">
+          <a href="#casos" className={enlace}>Qué resuelve</a>
           <a href="#como-funciona" className={enlace}>Cómo funciona</a>
-          <a href="#honestidad" className={enlace}>Qué responde</a>
-          <a href="#seguridad" className={enlace}>Seguridad</a>
+          <a href="#cuidado" className={enlace}>Seguridad</a>
         </nav>
         <Link to="/ingreso" className={boton({ variante: "secundario", tamano: "md" })}>
           Ingresar
@@ -75,15 +76,15 @@ function Heroe() {
     <section className="mx-auto grid min-h-[100svh] max-w-[1200px] items-center gap-12 px-5 pb-20 pt-28 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14">
       <div>
         <Revelar>
-          <h1 className="text-[clamp(2.4rem,5vw,4rem)]">
-            Pregunta a tu expediente.
-            <span className="block">El PDF no se queda.</span>
+          <h1 className="text-[clamp(2.2rem,4.3vw,3.5rem)]">
+            Pregunta a tus expedientes de salud.
+            <span className="block">Con la fuente a la vista.</span>
           </h1>
         </Revelar>
         <Revelar retraso={0.08}>
-          <p className="mt-6 max-w-[32rem] text-[1.1rem] leading-[1.55] text-tinta-2">
-            Cada respuesta llega con el extracto literal, la página y la huella del archivo. Tus originales se indexan, se eliminan del
-            servidor y se abren solo desde tu equipo.
+          <p className="mt-6 max-w-[33rem] text-[1.1rem] leading-[1.55] text-tinta-2">
+            El asistente para clínicas, hospitales y aseguradoras: consulta licitaciones médicas, historias clínicas y auditorías, y cada
+            respuesta llega con el documento, la página y el texto exacto.
           </p>
         </Revelar>
         <Revelar retraso={0.16} className="mt-9 flex flex-wrap items-center gap-3">
@@ -91,13 +92,13 @@ function Heroe() {
             Ingresar
             <ArrowRight className="size-[1.1rem]" aria-hidden />
           </Link>
-          <a href="#como-funciona" className={boton({ variante: "secundario", tamano: "lg" })}>
-            Ver cómo funciona
+          <a href="#casos" className={boton({ variante: "secundario", tamano: "lg" })}>
+            Ver qué resuelve
           </a>
         </Revelar>
         <Revelar retraso={0.24}>
           <p className="mt-8 max-w-[30rem] text-[0.88rem] leading-relaxed text-tinta-3">
-            Para auditores médicos, ingenieros biomédicos y abogados de entidades de salud que revisan pliegos, adendas y fichas técnicas.
+            Para auditores médicos, ingenieros biomédicos y abogados de entidades de salud.
           </p>
         </Revelar>
       </div>
@@ -110,6 +111,51 @@ function Titular({ children, className }: { children: ReactNode; className?: str
   return <h2 className={cn("text-[clamp(1.8rem,3.2vw,2.5rem)]", className)}>{children}</h2>;
 }
 
+/* ------------------------------------------------------------------- casos */
+
+const CASOS: { titulo: string; texto: string; pregunta: string }[] = [
+  {
+    titulo: "Licitaciones médicas",
+    texto:
+      "Pliegos, adendas, fichas técnicas y registros sanitarios en un solo expediente. Pregunta por plazos, garantías o requisitos habilitantes y mira qué adenda modifica el pliego.",
+    pregunta: "¿Qué garantías y pólizas exige esta licitación?",
+  },
+  {
+    titulo: "Historias clínicas y auditoría",
+    texto:
+      "Revisa historias clínicas, glosas y soportes con la cita exacta de cada folio, para auditar sin leer cientos de páginas a mano.",
+    pregunta: "¿Qué soporte hay en la historia clínica para esta glosa?",
+  },
+  {
+    titulo: "Medicamentos de Colombia",
+    texto:
+      "Registro sanitario, titular, vigencia, presentaciones y precio máximo regulado, con los datos abiertos de INVIMA. No da dosis ni indicaciones: te remite a la ficha técnica.",
+    pregunta: "¿Está vigente el registro de la losartán de Genfar?",
+  },
+];
+
+function Casos() {
+  return (
+    <section id="casos" className="mx-auto max-w-[1200px] scroll-mt-16 border-t border-tinta/15 px-5 py-20 sm:px-8 sm:py-28">
+      <Revelar className="max-w-2xl">
+        <Titular>Hecho para el trabajo diario de la salud.</Titular>
+      </Revelar>
+      <ul className="mt-12 grid gap-x-10 gap-y-12 lg:grid-cols-3">
+        {CASOS.map((c, i) => (
+          <li key={c.titulo}>
+            <Revelar retraso={i * 0.07}>
+              <h3 className="text-[1.4rem]">{c.titulo}</h3>
+              <p className="mt-3 leading-relaxed text-tinta-2">{c.texto}</p>
+              <p className="mt-5 border-t border-tinta/12 pt-3 font-display text-[1rem] leading-snug text-tinta">«{c.pregunta}»</p>
+              <p className="etiqueta mt-1.5">Pregunta de ejemplo</p>
+            </Revelar>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /* ------------------------------------------------------------------ prueba */
 
 function Prueba() {
@@ -120,15 +166,16 @@ function Prueba() {
           <Titular>Cada respuesta llega con su prueba.</Titular>
           <ul className="mt-7 max-w-[30rem] space-y-4 text-[1.02rem] leading-relaxed text-tinta-2">
             <li>
-              <b className="font-semibold text-tinta">Documento, página y extracto literal.</b> El modelo solo elige qué fragmentos usar; el
-              texto que ves es el del documento.
+              <b className="font-semibold text-tinta">Documento, página y texto exacto.</b> El modelo solo elige qué fragmentos usar; lo que ves
+              es lo que dice el documento.
             </li>
             <li>
-              <b className="font-semibold text-tinta">La huella se compara en tu navegador.</b> Abres el original desde tu carpeta y
-              comparamos su SHA-256 con el que registramos al indexarlo.
+              <b className="font-semibold text-tinta">Abres el original y lo compruebas.</b> Desde tu carpeta, comparamos su huella SHA-256 con
+              la registrada. Funciona en Chrome y Edge.
             </li>
             <li>
-              <b className="font-semibold text-tinta">El archivo no sale de tu equipo.</b> Funciona en Chrome y Edge.
+              <b className="font-semibold text-tinta">Te avisa cuando conviene mirar el original.</b> Sellos, tablas y escaneos dudosos quedan
+              señalados en la propia cita.
             </li>
           </ul>
         </Revelar>
@@ -143,19 +190,19 @@ function Prueba() {
 /* ------------------------------------------------------------ cómo funciona */
 
 const PASOS: [string, string][] = [
-  ["Subes el pliego", "Arrastras los PDF del expediente. Revisamos que sean válidos, sin virus y sin contraseña de apertura antes de seguir."],
+  ["Reúnes el expediente", "Subes la licitación, las historias clínicas o las fichas técnicas. Revisamos que los archivos sean válidos y estén libres de virus."],
   [
-    "Lo indexamos y lo borramos",
-    "Extraemos el texto (con OCR solo donde hace falta), lo partimos en fragmentos y lo convertimos en vectores. Con el índice verificado, el PDF se elimina y queda un acta de purga.",
+    "Preguntas en tus palabras",
+    "Leemos los documentos (con OCR en las páginas escaneadas) y buscamos por significado y por términos exactos, como un código CUM, un registro INVIMA o un número de adenda.",
   ],
-  ["Preguntas y compruebas", "Obtienes la respuesta con la cita exacta y la huella del archivo. Si no hay evidencia, te lo dice en lugar de conjeturar."],
+  ["Compruebas la fuente", "Obtienes la respuesta con la cita exacta. Si los documentos no la respaldan, te lo dice en lugar de conjeturar."],
 ];
 
 function ComoFunciona() {
   return (
     <section id="como-funciona" className="mx-auto max-w-[1200px] scroll-mt-16 border-t border-tinta/15 px-5 py-20 sm:px-8 sm:py-28">
       <Revelar className="max-w-2xl">
-        <Titular>Tres pasos, y tu archivo nunca se queda.</Titular>
+        <Titular>De la pila de documentos a la respuesta, en tres pasos.</Titular>
       </Revelar>
       <ol className="mt-12 grid gap-x-10 gap-y-10 lg:grid-cols-3">
         {PASOS.map(([titulo, texto], i) => (
@@ -182,7 +229,7 @@ function Honestidad() {
       <Revelar className="max-w-2xl">
         <Titular>Las adendas pesan más. Y cuando no sabe, lo dice.</Titular>
         <p className="mt-5 text-[1.05rem] leading-relaxed text-tinta-2">
-          Una herramienta de trabajo diario: honesta cuando no hay soporte y con la fuente siempre a un clic. Ejemplos ilustrativos.
+          En salud, una respuesta inventada es peor que ninguna. Ejemplos ilustrativos.
         </p>
       </Revelar>
       <div className="mt-12 grid gap-6 lg:grid-cols-2">
@@ -224,39 +271,32 @@ function Honestidad() {
   );
 }
 
-/* --------------------------------------------------------------- seguridad */
+/* ------------------------------------------------------------------ cuidado */
 
 const GARANTIAS: [string, string][] = [
-  ["El PDF se elimina.", "Tras indexar y verificar que todos los fragmentos tienen su vector, el archivo se borra y queda un acta con su huella."],
-  ["Solo lo tuyo.", "Cada consulta se filtra por organización y por expediente, también dentro de la base de datos. Lo ajeno responde «no encontrado»."],
+  ["Tus originales no se quedan en el servidor.", "Se procesan, se verifica el índice y se eliminan; tú conservas los archivos en tu equipo."],
+  ["Solo lo de tu organización.", "Cada consulta se filtra por organización y por expediente, también dentro de la base de datos. Lo ajeno responde «no encontrado»."],
   ["Auditoría de solo anexado.", "Accesos, denegaciones y consultas quedan registrados sin guardar el texto de tus preguntas."],
   ["Conexión cifrada.", "Todo viaja por HTTPS, con una política de seguridad estricta y sin servicios de terceros en la página."],
 ];
 
-function Seguridad() {
+function Cuidado() {
   return (
-    <section id="seguridad" className="mx-auto max-w-[1200px] scroll-mt-16 border-t border-tinta/15 px-5 py-20 sm:px-8 sm:py-28">
-      <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-16">
-        <div>
-          <Revelar>
-            <Titular>Tus documentos son confidenciales. El diseño también.</Titular>
-          </Revelar>
-          <ul className="mt-8 space-y-5">
-            {GARANTIAS.map(([titulo, texto], i) => (
-              <li key={titulo}>
-                <Revelar retraso={i * 0.05}>
-                  <p className="leading-relaxed text-tinta-2">
-                    <b className="font-semibold text-tinta">{titulo}</b> {texto}
-                  </p>
-                </Revelar>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <Revelar retraso={0.1}>
-          <ActaPurga />
-        </Revelar>
-      </div>
+    <section id="cuidado" className="mx-auto max-w-[1200px] scroll-mt-16 border-t border-tinta/15 px-5 py-20 sm:px-8 sm:py-28">
+      <Revelar className="max-w-2xl">
+        <Titular>Información de salud, tratada con cuidado.</Titular>
+      </Revelar>
+      <ul className="mt-10 grid gap-x-12 gap-y-7 md:grid-cols-2">
+        {GARANTIAS.map(([titulo, texto], i) => (
+          <li key={titulo}>
+            <Revelar retraso={i * 0.05}>
+              <p className="leading-relaxed text-tinta-2">
+                <b className="font-semibold text-tinta">{titulo}</b> {texto}
+              </p>
+            </Revelar>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -267,7 +307,7 @@ function Cierre() {
   return (
     <section className="border-t border-tinta/15 bg-carpeta px-5 py-24 sm:py-28">
       <Revelar className="mx-auto max-w-3xl text-center">
-        <h2 className="text-[clamp(2rem,4.4vw,3.2rem)]">El próximo pliego, con la fuente a un clic.</h2>
+        <h2 className="text-[clamp(2rem,4.4vw,3.2rem)]">Tu próxima licitación o auditoría, con la fuente a un clic.</h2>
         <p className="mx-auto mt-4 max-w-xl text-[1.05rem] text-tinta">Ingresa con tu organización y abre tu primer expediente.</p>
         <div className="mt-9 flex justify-center">
           <Link to="/ingreso" className={boton({ variante: "primario", tamano: "lg" })}>
@@ -278,7 +318,7 @@ function Cierre() {
       </Revelar>
       <footer className="mx-auto mt-24 flex max-w-[1200px] flex-col items-center justify-between gap-3 text-[0.78rem] text-tinta sm:flex-row">
         <Marca />
-        <p>Los documentos y respuestas de esta página son ejemplos ilustrativos.</p>
+        <p>Los documentos, preguntas y respuestas de esta página son ejemplos ilustrativos.</p>
       </footer>
     </section>
   );

@@ -120,7 +120,7 @@ export function Marco({ children }: { children: ReactNode }) {
         </nav>
         <div className="mb-3 rounded-md bg-carpeta-osc/45 p-3.5 text-[0.8rem] leading-relaxed text-tinta">
           <ShieldCheck className="mb-1.5 size-5" aria-hidden />
-          Tus PDF se eliminan del servidor al indexarlos. Los originales se abren desde tu equipo.
+          Licitaciones, historias clínicas y medicamentos. Cada respuesta cita su fuente.
         </div>
         <MenuUsuario />
       </aside>
