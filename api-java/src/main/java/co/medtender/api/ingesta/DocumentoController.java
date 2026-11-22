@@ -92,10 +92,14 @@ public class DocumentoController {
      * (contrasena, PDF corrupto) continuan en segundo plano; el resultado se consulta con
      * GET .../documentos/{id}. Un rechazo deja el documento en ERROR_PURGADO con su motivo y su acta.
      */
+    @org.springframework.beans.factory.annotation.Autowired
+    private co.medtender.api.privacidad.ConsentimientoService consentimiento;
+
     @PostMapping
     public ResponseEntity<DocumentoOut> subir(@PathVariable UUID expedienteId, HttpServletRequest req,
                                               @AuthenticationPrincipal UsuarioActual user) {
         var a = autorizacion.obtener(user, expedienteId, Permiso.EDITOR);
+        consentimiento.exigir(user);
         if (a.expediente().getEstado() != EstadoExpediente.ABIERTO) {
             throw new ApiException(HttpStatus.CONFLICT, "El expediente no está abierto");
         }

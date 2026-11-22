@@ -55,10 +55,14 @@ public class ConsultaController {
      * Respuesta con respuestaAnalitica, citas (documento, pagina, SHA-256, extracto literal,
      * alertas probatorias) y alertas. Requiere permiso LECTOR sobre el expediente.
      */
+    @org.springframework.beans.factory.annotation.Autowired
+    private co.medtender.api.privacidad.ConsentimientoService consentimiento;
+
     @PostMapping
     public JsonNode consultar(@PathVariable UUID expedienteId, @Valid @RequestBody PreguntaIn in,
                               @AuthenticationPrincipal UsuarioActual user) {
         autorizacion.obtener(user, expedienteId, Permiso.LECTOR);
+        consentimiento.exigir(user);
         // Cada pregunta cuesta una llamada de embeddings y otra al modelo generativo.
         var rl = props.rateLimit();
         limitador.exigir("consulta_min", user.id().toString(), rl.consultaUsuarioMin(), 60);

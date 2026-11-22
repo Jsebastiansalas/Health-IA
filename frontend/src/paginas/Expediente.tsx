@@ -7,11 +7,14 @@ import { Link, useParams } from "react-router-dom";
 import { api } from "../api/cliente";
 import type { Cita, Documento, Expediente } from "../api/tipos";
 import { ConsolaRag } from "../componentes/ConsolaRag";
+import { Consentimiento } from "../componentes/Consentimiento";
 import { PanelDocumentos } from "../componentes/PanelDocumentos";
+import { BotonBorrarHistorial } from "../componentes/Privacidad";
 import { boton } from "../componentes/ui/Boton";
 import { Esqueleto } from "../componentes/ui/Esqueleto";
 import { Insignia } from "../componentes/ui/Insignia";
 import { cn } from "../lib/cn";
+import { useConsentimiento } from "../lib/consentimiento";
 import { esConsultable, TIPOS_EXPEDIENTE } from "../lib/formato";
 import { useMediaQuery } from "../lib/useMediaQuery";
 
@@ -33,6 +36,8 @@ export function PaginaExpediente() {
   const { id = "" } = useParams();
   const [citaAbierta, setCitaAbierta] = useState<Cita | null>(null);
   const [pestana, setPestana] = useState("folios");
+  // Las cuentas personales deben aceptar el consentimiento antes de subir documentos o consultar.
+  const consentimiento = useConsentimiento();
   // Con ancho de sobra, el original se abre junto a la consulta; si no, como ventana encima.
   const ancha = useMediaQuery("(min-width: 1280px)");
   const { data: expediente, error } = useQuery({
@@ -114,7 +119,21 @@ export function PaginaExpediente() {
           <Cifra valor={documentos ? fragmentos.toLocaleString("es-CO") : "—"} etiqueta="fragmentos consultables" />
           <Cifra valor={expediente.embedding_model_activo} etiqueta="modelo del índice" />
         </dl>
+        {expediente.mi_permiso === "ADMIN" && (
+          <div className="mt-4 -ml-3">
+            <BotonBorrarHistorial expedienteId={id} />
+          </div>
+        )}
       </header>
+
+      {consentimiento.pendiente && consentimiento.estado && (
+        <Consentimiento
+          version={consentimiento.estado.version}
+          aceptando={consentimiento.aceptar.isPending}
+          error={consentimiento.aceptar.error ? (consentimiento.aceptar.error as Error).message : undefined}
+          alAceptar={() => consentimiento.aceptar.mutate()}
+        />
+      )}
 
       <Tabs.Root value={pestana} onValueChange={setPestana}>
         <Tabs.List className="folio mb-5 grid grid-cols-2 gap-1 rounded-md p-1 xl:hidden" aria-label="Secciones del expediente">
@@ -138,10 +157,10 @@ export function PaginaExpediente() {
 
         <div className={cn("grid gap-8", acoplada ? "xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]" : "xl:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]")}>
           <Tabs.Content value="folios" forceMount className={cn("data-[state=inactive]:hidden xl:sticky xl:top-6 xl:!block xl:max-h-[calc(100vh-3rem)] xl:self-start xl:overflow-y-auto xl:pr-1", acoplada && "xl:!hidden")}>
-            <PanelDocumentos expedienteId={id} puedeSubir={puedeSubir && expediente.estado === "ABIERTO"} />
+            <PanelDocumentos expedienteId={id} puedeSubir={puedeSubir && expediente.estado === "ABIERTO" && !consentimiento.pendiente} />
           </Tabs.Content>
           <Tabs.Content value="consulta" forceMount className="data-[state=inactive]:hidden xl:!block">
-            <ConsolaRag expedienteId={id} hayIndice={hayIndice} alAbrirCita={setCitaAbierta} />
+            <ConsolaRag expedienteId={id} hayIndice={hayIndice} alAbrirCita={setCitaAbierta} bloqueado={consentimiento.pendiente} />
           </Tabs.Content>
           {acoplada && citaAbierta && (
             <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] xl:block">

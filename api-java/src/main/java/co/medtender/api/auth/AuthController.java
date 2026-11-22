@@ -4,6 +4,7 @@ import co.medtender.api.auditoria.Accion;
 import co.medtender.api.auditoria.AuditoriaService;
 import co.medtender.api.auth.Dtos.LoginIn;
 import co.medtender.api.auth.Dtos.RefreshIn;
+import co.medtender.api.auth.Dtos.RegistroPersonalIn;
 import co.medtender.api.auth.Dtos.RegistroTenantIn;
 import co.medtender.api.auth.Dtos.TokensOut;
 import co.medtender.api.auth.Dtos.UsuarioOut;
@@ -42,6 +43,8 @@ public class AuthController {
     private final Limitador limitador;
     private final AuditoriaService auditoria;
     private final MedtenderProperties props;
+    @org.springframework.beans.factory.annotation.Value("${medtender.registro-personal-abierto:true}")
+    private boolean registroPersonalAbierto;
 
     public AuthController(UsuarioRepository usuarios, IdentidadService identidad, PasswordService passwords,
                           JwtService jwt, Limitador limitador, AuditoriaService auditoria,
@@ -88,6 +91,28 @@ public class AuthController {
         var r = identidad.registrarTenant(in.tenantNombre(), in.nit(), in.politicaBorrado(),
                 in.adminEmail().toLowerCase(Locale.ROOT), hash, in.adminNombre());
         auditoria.auditar(Accion.REGISTRO_TENANT, r.tenant().getId(), r.admin().getId(), r.admin().getEmail(),
+                "OK", "tenant", r.tenant().getId(), null);
+        return tokens(r.admin());
+    }
+
+    /** Alta de una cuenta personal (paciente o familiar). Tiene su propio interruptor y su limite de tasa. */
+    @PostMapping("/registro-personal")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TokensOut registrarPersonal(@Valid @RequestBody RegistroPersonalIn in) {
+        return ContextoTenant.comoSistema(() -> registrarPersonalInterno(in));
+    }
+
+    private TokensOut registrarPersonalInterno(RegistroPersonalIn in) {
+        if (!registroPersonalAbierto) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "El registro de cuentas personales está deshabilitado");
+        }
+        limitador.exigir("registro", ip(), props.rateLimit().registroIpHora(), 3600);
+        if (PasswordService.excedeLimite(in.password())) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "La contraseña no puede superar 72 bytes");
+        }
+        String hash = passwords.hash(in.password());
+        var r = identidad.registrarPersonal(in.nombre().trim(), in.email().toLowerCase(Locale.ROOT), hash);
+        auditoria.auditar(Accion.REGISTRO_PERSONAL, r.tenant().getId(), r.admin().getId(), r.admin().getEmail(),
                 "OK", "tenant", r.tenant().getId(), null);
         return tokens(r.admin());
     }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { api, post } from "../api/cliente";
 import type { CitaAgregada, CitaMedicamento, CitaPrecio, CitaRegistro, FuenteCargada, RespuestaMedicamentos } from "../api/tipos";
+import { AvisoSalud, AvisoUrgencia } from "../componentes/AvisoSalud";
 import { Boton } from "../componentes/ui/Boton";
 import { Esqueleto } from "../componentes/ui/Esqueleto";
 import { Insignia } from "../componentes/ui/Insignia";
@@ -83,6 +84,7 @@ export function PaginaMedicamentos() {
         </p>
       </header>
 
+      <AvisoSalud className="mb-6" />
       <div className="flex-1 space-y-8 pb-6" role="log" aria-live="polite" aria-label="Conversación">
         {vacio && (
           <div className="animate-aparecer">
@@ -196,6 +198,7 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
     <article className="animate-aparecer space-y-5">
       <Burbuja texto={pregunta} />
       <div className="folio p-5 sm:p-6">
+        {r.urgencia && <AvisoUrgencia mensaje={r.urgencia.mensaje} />}
         {r.sinEvidencia && (
           <Insignia tono="aviso" className="mb-3.5">
             <SearchX className="size-3.5" aria-hidden />

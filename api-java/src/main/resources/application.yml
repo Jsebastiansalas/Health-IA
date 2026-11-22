@@ -76,6 +76,8 @@ medtender:
     access-minutes: ${ACCESS_TOKEN_MINUTES:30}
     refresh-days: ${REFRESH_TOKEN_DAYS:7}
   allow-tenant-signup: ${ALLOW_TENANT_SIGNUP:true}
+  # Cuentas personales (pacientes y familias): se pueden abrir aunque el alta de organizaciones este cerrada.
+  registro-personal-abierto: ${REGISTRO_PERSONAL_ABIERTO:true}
   cors-origins: ${CORS_ORIGINS:http://localhost:5173}
   metrics-token: ${METRICS_TOKEN:}
   ingesta:

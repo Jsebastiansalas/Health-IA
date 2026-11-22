@@ -7,6 +7,7 @@ interface Sesion {
   usuario: Usuario | undefined;
   autenticado: boolean;
   ingresar: (email: string, password: string) => Promise<void>;
+  registrarPersonal: (nombre: string, email: string, password: string) => Promise<void>;
   salir: () => void;
 }
 
@@ -38,7 +39,14 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     setAutenticado(true);
   }, []);
 
-  return <Contexto.Provider value={{ usuario, autenticado, ingresar, salir }}>{children}</Contexto.Provider>;
+  const registrarPersonal = useCallback(async (nombre: string, email: string, password: string) => {
+    guardarTokens(await post<Tokens>("/auth/registro-personal", { nombre, email, password }));
+    setAutenticado(true);
+  }, []);
+
+  return (
+    <Contexto.Provider value={{ usuario, autenticado, ingresar, registrarPersonal, salir }}>{children}</Contexto.Provider>
+  );
 }
 
 export function useSesion(): Sesion {

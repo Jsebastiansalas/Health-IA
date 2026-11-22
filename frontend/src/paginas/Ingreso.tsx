@@ -114,6 +114,12 @@ export function PaginaIngreso() {
               {enviando ? "Verificando…" : "Ingresar"}
             </Boton>
           </form>
+          <p className="relative mt-6 text-center text-sm text-tinta-2">
+            ¿Eres paciente o familiar?{" "}
+            <Link to="/registro" className="font-semibold text-accion underline underline-offset-4">
+              Crea tu cuenta personal
+            </Link>
+          </p>
         </motion.div>
       </section>
     </div>

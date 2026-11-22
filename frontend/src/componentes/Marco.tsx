@@ -1,12 +1,14 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ChevronsUpDown, FolderOpen, LogOut, Moon, Pill, ShieldCheck, Sun } from "lucide-react";
-import type { ReactNode } from "react";
+import { ChevronsUpDown, FolderOpen, LogOut, Moon, Pill, ShieldCheck, Sun, Trash2 } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { Toaster } from "sonner";
 import { cn } from "../lib/cn";
 import { useTema } from "../lib/tema";
 import { useSesion } from "../sesion";
+import { useConsentimiento } from "../lib/consentimiento";
 import { Marca } from "./Marca";
+import { DialogoEliminarCuenta } from "./Privacidad";
 
 export const ROLES: Record<string, string> = {
   ADMIN_TENANT: "Administración",
@@ -41,7 +43,10 @@ function Avatar({ nombre, className }: { nombre?: string; className?: string }) 
 function MenuUsuario({ compacto = false }: { compacto?: boolean }) {
   const { usuario, salir } = useSesion();
   const { tema, alternar } = useTema();
+  const { esPersonal } = useConsentimiento();
+  const [eliminando, setEliminando] = useState(false);
   return (
+    <>
     <Menu.Root>
       <Menu.Trigger
         className={cn(
@@ -87,9 +92,20 @@ function MenuUsuario({ compacto = false }: { compacto?: boolean }) {
             <LogOut className="size-4" aria-hidden />
             Cerrar sesión
           </Menu.Item>
+          {esPersonal && (
+            <Menu.Item
+              onSelect={() => setEliminando(true)}
+              className="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-2.5 text-peligro outline-none transition-colors data-[highlighted]:bg-peligro/10"
+            >
+              <Trash2 className="size-4" aria-hidden />
+              Eliminar mi cuenta
+            </Menu.Item>
+          )}
         </Menu.Content>
       </Menu.Portal>
     </Menu.Root>
+    {esPersonal && <DialogoEliminarCuenta abierto={eliminando} alCambiar={setEliminando} />}
+    </>
   );
 }
 
