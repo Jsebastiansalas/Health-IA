@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Señales de alarma en la pregunta del usuario.
 
 El asistente explica documentos y cita fuentes; no atiende urgencias. Si la pregunta describe algo
@@ -123,3 +124,88 @@ def con_urgencia(cuerpo: dict, pregunta: str) -> dict:
     cuerpo["urgencia"] = {"codigo": urgencia.codigo, "mensaje": urgencia.mensaje}
     cuerpo["alertas"] = [urgencia.mensaje, *cuerpo.get("alertas", [])]
     return cuerpo
+
+
+# ---------- Lo que el asistente nunca decide: dosis, qué tomar o recetar, diagnóstico ----------
+@dataclass(frozen=True)
+class LimiteClinico:
+    codigo: str
+    mensaje: str
+
+
+_DERIVAR = (
+    " Lo que sí puedo hacer: explicarte qué dicen tus documentos (con cita), contarte los efectos, "
+    "contraindicaciones e interacciones de un medicamento concreto según su ficha técnica o prospecto, "
+    "y ayudarte a preparar las preguntas para tu médico o farmacéutico."
+)
+
+_LIMITES: list[tuple[str, str, re.Pattern[str]]] = [
+    (
+        "dosis",
+        "No puedo indicar dosis ni decirte cuánto o cada cuánto tomar un medicamento: depende de cada "
+        "persona y solo la define tu médico o tu farmacéutico." + _DERIVAR,
+        re.compile(
+            r"\b(que|cual) (es la |seria la )?dosis (me|debo|puedo|tomo|tomar|usar|uso|correcta|"
+            r"adecuada|segura|maxima)|"
+            r"\b(cuanto|cuanta|cuantos|cuantas) \w*\s?(me )?(tomo|tomar|debo tomar|puedo tomar|"
+            r"inyecto|aplico|debo darle|le doy)\b|"
+            r"\b(cada cuanto|cuantas veces al dia) (me |debo |puedo )?(tomo|tomar|tomarlo|inyecto)\b|"
+            r"\bdosis (para|de) (un )?(nino|bebe|nina|adulto mayor)\b"
+        ),
+    ),
+    (
+        "receta",
+        "No puedo decirte qué medicamento tomar, recetarte ni elegir uno según tu caso: esa decisión "
+        "es de tu médico o tu farmacéutico, que conocen tu historia." + _DERIVAR,
+        re.compile(
+            r"\b(que|cual) (pastillas?|medicamentos?|medicinas?|antibioticos?|analgesicos?|remedios?|"
+            r"tabletas?|jarabes?) (me )?(tomo|tomar|debo tomar|puedo tomar|deberia tomar|me conviene|"
+            r"me sirve|me receto|me recetas|se pueden tomar|puedo usar|me puedo tomar)\b|"
+            r"\b(recetame|formulame|recomiendame (un|una|algun|alguna) ?\w*)\b|"
+            r"\bdime que (me )?(tomo|tomar)\b|\bque me tomo\b|\bque me puedo tomar\b"
+        ),
+    ),
+    (
+        "diagnostico",
+        "No puedo diagnosticar ni decirte qué enfermedad tienes: solo un profesional que te valore "
+        "puede hacerlo." + _DERIVAR,
+        re.compile(
+            r"\b(diagnosticame|diagnostico para mi|que enfermedad tengo|que tengo yo|de que estoy enfermo|"
+            r"de que estoy enferma|que me pasa)\b"
+        ),
+    ),
+]
+
+
+_DOSIS_ESTRICTO = re.compile(r"\b(dosis|posologia|dosificacion|miligramos que)\b")
+
+
+def detectar_limite_clinico(pregunta: str, estricto: bool = False) -> LimiteClinico | None:
+    """Si la pregunta le pide al asistente decidir una dosis, un medicamento o un diagnóstico, el
+    límite y su mensaje fijo. Sin modelo: la negativa no depende de que el prompt se respete.
+
+    `estricto` (consulta de medicamentos, donde no hay un documento que contenga la indicación):
+    cualquier mención de dosis o posología se rechaza."""
+    texto = _normalizar(pregunta)
+    for codigo, mensaje, patron in _LIMITES:
+        if patron.search(texto):
+            return LimiteClinico(codigo, mensaje)
+    if estricto and _DOSIS_ESTRICTO.search(texto):
+        return LimiteClinico("dosis", _LIMITES[0][1])
+    return None
+
+
+def cuerpo_de_limite(limite: LimiteClinico, consulta_id, modelo_embeddings: str | None) -> dict:
+    """Respuesta fija con la forma pública de una consulta, sin modelo ni citas."""
+    return {
+        "consultaId": str(consulta_id),
+        "respuestaAnalitica": limite.mensaje,
+        "limiteClinico": {"codigo": limite.codigo},
+        "sinEvidencia": True,
+        "alertas": [],
+        "citas": [],
+        "modeloEmbeddings": modelo_embeddings,
+        "modeloLlm": None,
+        "fragmentosRecuperados": 0,
+        "latenciaMs": 0,
+    }

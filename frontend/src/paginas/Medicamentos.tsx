@@ -199,7 +199,7 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
       <Burbuja texto={pregunta} />
       <div className="folio p-5 sm:p-6">
         {r.urgencia && <AvisoUrgencia mensaje={r.urgencia.mensaje} />}
-        {r.sinEvidencia && (
+        {r.sinEvidencia && !r.limiteClinico && (
           <Insignia tono="aviso" className="mb-3.5">
             <SearchX className="size-3.5" aria-hidden />
             Sin evidencia suficiente

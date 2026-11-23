@@ -110,6 +110,28 @@ async def consultar(
     alertas probatorias) y `alertas`."""
     expediente = await _expediente(session, data.tenant_id, data.expediente_id)
     pregunta = " ".join(data.pregunta.split())
+    limite = seguridad.detectar_limite_clinico(pregunta)
+    if limite:  # dosis, qué tomar o diagnóstico: respuesta fija, sin llamar a ningún modelo
+        consulta_id = uuid.uuid4()
+        cuerpo = seguridad.cuerpo_de_limite(limite, consulta_id, expediente.embedding_model_activo)
+        session.add(
+            Consulta(
+                id=consulta_id,
+                tenant_id=data.tenant_id,
+                expediente_id=data.expediente_id,
+                usuario_id=data.usuario_id,
+                pregunta=pregunta,
+                respuesta=cuerpo,
+                sin_evidencia=True,
+                modelo_embeddings=expediente.embedding_model_activo,
+                modelo_llm=None,
+                fragmentos_recuperados=0,
+                latencia_ms=0,
+            )
+        )
+        await session.commit()
+        CONSULTAS.labels("limite_clinico").inc()
+        return seguridad.con_urgencia(cuerpo, pregunta)
     try:
         r = await motor.responder(session, expediente, pregunta, emb, llm, get_settings())
     except (ErrorEmbeddings, ErrorLLM) as exc:
@@ -245,6 +267,12 @@ async def consultar_medicamentos(
     """Pregunta sobre medicamentos de Colombia respondida solo con la base de INVIMA. No depende de
     un expediente: los datos son públicos; tenant y usuario viajan para trazabilidad."""
     pregunta = " ".join(data.pregunta.split())
+    limite = seguridad.detectar_limite_clinico(pregunta, estricto=True)
+    if limite:
+        CONSULTAS.labels("limite_clinico").inc()
+        cuerpo = seguridad.cuerpo_de_limite(limite, uuid.uuid4(), None)
+        cuerpo["aviso"] = med_consulta.AVISO
+        return seguridad.con_urgencia(cuerpo, pregunta)
     try:
         r = await med_consulta.responder(
             session, pregunta, llm, anonimizar=get_settings().anonimizar_antes_de_nube

@@ -73,7 +73,7 @@ React ──HTTPS──> Caddy ──> API Java (Spring Boot :8080)
 | 26 | Salud: fotos y escaneos de documentos (JPG, PNG, HEIC) | ✅ |
 | 27 | Salud: «Explícame este documento» | ✅ |
 | 28 | Salud: medicamentos, efectos e interacciones con fuente (prospectos y fichas CIMA; cruce con documentos pendiente) | ✅ |
-| 29 | Salud: evaluación de seguridad y cierre | ⏳ |
+| 29 | Salud: evaluación de seguridad y cierre | ✅ |
 
 Historias principales: aislamiento de tenants y permisos (1, 7, 8), PDF efímero con purga verificada (2, 8, 9), OCR y fragmentación 500–1000 tokens con 15 % de solape (3), embeddings por modelo del expediente (4), búsqueda híbrida RRF + citas con extractos literales + visor local con SHA-256 (5), observabilidad y auditoría (6, 7).
 
