@@ -6,6 +6,7 @@ import {
   Clock,
   FileText,
   Loader2,
+  Pill,
   ScrollText,
   Trash2,
   TriangleAlert,
@@ -37,6 +38,14 @@ export function PanelDocumentos({
   /** Expediente clínico o cuenta personal: el tipo por defecto es «Historia clínica», no «Pliego». */
   clinico?: boolean;
 }) {
+  const cliente = useQueryClient();
+  const cruce = useMutation({
+    mutationFn: () => post<RespuestaConsulta>(`/expedientes/${expedienteId}/medicamentos/cruce`, {}),
+    onSuccess: (r) => {
+      cliente.setQueryData<RespuestaConsulta[]>(["consultas", expedienteId], (h) => [r, ...(h ?? [])]);
+      alExplicar?.();
+    },
+  });
   const { data: documentos, isLoading } = useQuery({
     queryKey: ["documentos", expedienteId],
     queryFn: () => api<Documento[]>(`/expedientes/${expedienteId}/documentos`),
@@ -53,6 +62,20 @@ export function PanelDocumentos({
         <span className="num text-sm text-tinta-3">{documentos?.length ?? 0} cargados</span>
       </div>
       {puedeSubir && <FormularioSubida expedienteId={expedienteId} clinico={clinico} />}
+      {documentos?.some((d) => d.estado_indexacion === "INDEXADO_Y_PURGADO" || d.estado_indexacion === "INDEXADO_PENDIENTE_PURGA") && (
+        <div className="mt-4">
+          <Boton variante="secundario" tamano="sm" onClick={() => cruce.mutate()} disabled={!puedeExplicar} cargando={cruce.isPending}>
+            {!cruce.isPending && <Pill className="size-4" aria-hidden />}
+            {cruce.isPending ? "Revisando tus medicamentos…" : "Ver advertencias de mis medicamentos"}
+          </Boton>
+          <p className="mt-1.5 text-[0.76rem] text-tinta-3">Cruza los medicamentos de tus documentos con sus fichas técnicas. No indica qué tomar.</p>
+          {cruce.error && (
+            <p role="alert" className="mt-2 text-sm text-peligro">
+              {(cruce.error as Error).message}
+            </p>
+          )}
+        </div>
+      )}
       <ul className="mt-4 space-y-3">
         {isLoading && (
           <li aria-busy>

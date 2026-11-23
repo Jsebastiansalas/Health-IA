@@ -141,7 +141,7 @@ export interface RespuestaConsulta {
   /** El asistente no decide dosis, qué tomar ni diagnósticos: respuesta fija que remite al médico. */
   limiteClinico?: { codigo: "dosis" | "receta" | "diagnostico" } | null;
   /** «Explícame este documento»: las consultas de ese modo traen además estos campos. */
-  modo?: "explicar";
+  modo?: "explicar" | "cruce";
   documentoId?: string;
   deQueTrata?: string;
   hallazgos?: HallazgoExplicado[];
@@ -149,6 +149,24 @@ export interface RespuestaConsulta {
   senalesDeAlarma?: string[];
   preguntasParaElMedico?: string[];
   avisoGeneral?: string;
+  /** «Advertencias de mis medicamentos» (modo cruce). */
+  medicamentos?: { nombre: string; principio_activo?: string; cita: number; ficha?: boolean }[];
+  diagnosticos?: { texto: string; cita: number }[];
+  alergias?: { texto: string; cita: number }[];
+  advertencias?: AdvertenciaCruzada[];
+  sinFicha?: string[];
+  fichas?: CitaFicha[];
+}
+
+export interface AdvertenciaCruzada {
+  texto: string;
+  medicamento: string;
+  dato: string;
+  /** Citas (desde 1) al documento: la del medicamento y la del dato con el que se compara. */
+  citaMedicamento: number;
+  citaDato: number;
+  /** Número de la ficha citada (desde 1). */
+  ficha: number;
 }
 
 export interface HallazgoExplicado {

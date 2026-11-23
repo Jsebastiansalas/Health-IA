@@ -18,7 +18,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.core.db import fijar_sistema, fijar_tenant, get_session
+from app.core.db import fijar_sistema, fijar_tenant, get_session, get_sessionmaker
 from app.core.enums import EstadoIndexacion as E
 from app.core.metricas import CONSULTA_DURACION, CONSULTAS, LLM_RESPUESTAS
 from app.ia.embeddings import EmbeddingRouter, ErrorEmbeddings, ModeloNoSoportado, get_router
@@ -26,7 +26,7 @@ from app.ia.llm import ErrorLLM, ProveedorLLM, get_llm
 from app.medicamentos import busqueda as med_busqueda
 from app.medicamentos import consulta as med_consulta
 from app.models import Consulta, Documento, Expediente, Reindexacion
-from app.rag import explicar, garantias, motor, seguridad
+from app.rag import cruce, explicar, garantias, motor, seguridad
 from app.schemas import ModeloEmbeddingOut, ReindexacionIn, ReindexacionOut
 from app.services import reindexacion
 from app.services.cola import ColaProcesamiento, get_cola
@@ -248,6 +248,58 @@ async def explicar_documento(
         )
     )
     await session.commit()
+    return cuerpo
+
+
+# ---------- Cruce de medicamentos con fichas
+class CruceIn(BaseModel):
+    tenant_id: uuid.UUID
+    expediente_id: uuid.UUID
+    usuario_id: uuid.UUID
+
+
+@router.post("/cruces")
+async def cruzar_medicamentos(
+    data: CruceIn,
+    session: SessionDep,
+    llm: Annotated[ProveedorLLM, Depends(get_llm)],
+) -> dict:
+    """Medicamentos de los documentos del expediente y lo que advierten sus fichas técnicas frente
+    a los diagnósticos y alergias del propio documento, con cita a ambos lados. Nunca elige,
+    recomienda ni dosifica."""
+    expediente = await _expediente(session, data.tenant_id, data.expediente_id)
+    try:
+        r = await cruce.cruzar(session, expediente, llm, get_settings())
+    except ErrorLLM as exc:
+        CONSULTAS.labels("error_ia").inc()
+        log.error("Cruce fallido expediente=%s: %s", data.expediente_id, exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "El servicio de IA no está disponible en este momento; intente de nuevo.",
+        ) from exc
+    CONSULTAS.labels("sin_evidencia" if r.sin_evidencia else "con_evidencia").inc()
+    consulta_id = uuid.uuid4()
+    cuerpo = garantias.sin_posologia_inventada(
+        cruce.a_json(r, consulta_id, expediente.embedding_model_activo)
+    )
+    async with get_sessionmaker()() as guardar:
+        fijar_tenant(guardar, data.tenant_id)
+        guardar.add(
+            Consulta(
+                id=consulta_id,
+                tenant_id=data.tenant_id,
+                expediente_id=data.expediente_id,
+                usuario_id=data.usuario_id,
+                pregunta="[Cruce de medicamentos]",
+                respuesta=cuerpo,
+                sin_evidencia=r.sin_evidencia,
+                modelo_embeddings=expediente.embedding_model_activo,
+                modelo_llm=r.modelo_llm,
+                fragmentos_recuperados=r.fragmentos,
+                latencia_ms=r.latencia_ms,
+            )
+        )
+        await guardar.commit()
     return cuerpo
 
 
