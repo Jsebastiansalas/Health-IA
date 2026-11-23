@@ -78,6 +78,7 @@ React ──HTTPS──> Caddy ──> API Java (Spring Boot :8080)
 | 31 | Plan B: paráfrasis comprobada, posología en la salida y corpus de límites | ✅ |
 | 32 | Plan B: «¿qué puedo tomar según mi caso?» sin recetar (cruce documentos ↔ fichas) | ✅ |
 | 33 | Plan B: prospectos como fuente de medicamentos (CIMA apagado) y verificación de correo | ✅ |
+| 34 | Plan B: operación (V12 aplicada a la base real) y paquete para la revisión legal | ✅ |
 
 Historias principales: aislamiento de tenants y permisos (1, 7, 8), PDF efímero con purga verificada (2, 8, 9), OCR y fragmentación 500–1000 tokens con 15 % de solape (3), embeddings por modelo del expediente (4), búsqueda híbrida RRF + citas con extractos literales + visor local con SHA-256 (5), observabilidad y auditoría (6, 7).
 
