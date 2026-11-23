@@ -3,7 +3,7 @@ import { AlertOctagon, ArrowUpRight, ExternalLink, SearchX, SendHorizontal, Tria
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { api, post } from "../api/cliente";
-import type { CitaAgregada, CitaFicha, CitaMedicamento, CitaPrecio, CitaRegistro, FuenteCargada, RespuestaMedicamentos } from "../api/tipos";
+import type { CitaAgregada, CitaFicha, CitaMedicamento, CitaPrecio, CitaRegistro, FuenteCargada, FuenteOficial, RespuestaMedicamentos } from "../api/tipos";
 import { AvisoSalud, AvisoUrgencia } from "../componentes/AvisoSalud";
 import { Boton } from "../componentes/ui/Boton";
 import { Esqueleto } from "../componentes/ui/Esqueleto";
@@ -90,8 +90,9 @@ export function PaginaMedicamentos() {
           <div className="animate-aparecer">
             <p className="max-w-xl font-display text-2xl font-semibold leading-tight">Pregunta por un medicamento.</p>
             <p className="mt-2 max-w-lg text-tinta-2">
-              Responde con la base oficial de INVIMA y, cuando hay una ficha técnica cargada, también efectos, contraindicaciones e
-              interacciones con su cita. No indica dosis ni dice qué medicamento tomar: eso lo decide tu médico o farmacéutico.
+              Responde con la base oficial de INVIMA. Para efectos, contraindicaciones e interacciones, sube el prospecto de tu
+              medicamento a tu expediente y pregúntale a la consola o usa «Ver advertencias de mis medicamentos»: se cita tu propio
+              documento. No indica dosis ni dice qué medicamento tomar: eso lo decide tu médico o farmacéutico.
             </p>
             <ul className="mt-5 max-w-2xl divide-y divide-tinta/12 border-y border-tinta/12">
               {SUGERENCIAS.map((q) => (
@@ -238,6 +239,7 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
           </ul>
         )}
         <p className="mt-5 border-t border-tinta/10 pt-3.5 text-[0.74rem] leading-relaxed text-tinta-3">{r.aviso}</p>
+        <FuentesOficiales fuentes={r.fuentesOficiales} />
       </div>
 
       <FuentesCitadas citas={r.citas} base={base} resaltada={resaltada} />
@@ -258,15 +260,17 @@ function EnlaceFuente({ c }: { c: CitaMedicamento }) {
     <div className="min-w-[7rem] text-[0.72rem] leading-snug text-tinta-3">
       {c.fuente.conjunto}
       {c.fuente.cargadoAt ? <span className="block">cargado el {fecha(c.fuente.cargadoAt)}</span> : null}
-      <a
-        href={c.fuente.enlace}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-0.5 inline-flex items-center gap-1 text-tinta-2 underline underline-offset-4 hover:text-tinta"
-      >
-        Ver fuente
-        <ExternalLink className="size-3" aria-hidden />
-      </a>
+      {c.fuente.enlace && (
+        <a
+          href={c.fuente.enlace}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-0.5 inline-flex items-center gap-1 text-tinta-2 underline underline-offset-4 hover:text-tinta"
+        >
+          Ver fuente
+          <ExternalLink className="size-3" aria-hidden />
+        </a>
+      )}
     </div>
   );
 }
@@ -275,6 +279,24 @@ function EnlaceFuente({ c }: { c: CitaMedicamento }) {
  * Las fuentes citadas, agrupadas por tipo y en tabla: comparar registros o precios lado a lado es lo
  * que hace quien audita. Cada fila lleva su marcador, su estado y su enlace a datos.gov.co.
  */
+/** Enlaces a fuentes oficiales para saber más: el asistente no copia su contenido. */
+export function FuentesOficiales({ fuentes }: { fuentes?: FuenteOficial[] }) {
+  if (!fuentes?.length) return null;
+  return (
+    <p className="mt-2 text-[0.76rem] leading-relaxed text-tinta-3">
+      Para saber más:{" "}
+      {fuentes.map((f, i) => (
+        <span key={f.url}>
+          {i > 0 && " · "}
+          <a href={f.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-tinta">
+            {f.nombre}
+          </a>
+        </span>
+      ))}
+    </p>
+  );
+}
+
 export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicamento[]; base: string; resaltada: string | null }) {
   const registros = citas.filter((c): c is CitaRegistro => c.tipo === "REGISTRO_INVIMA");
   const precios = citas.filter((c): c is CitaPrecio => c.tipo === "PRECIO_REGULADO");
@@ -386,7 +408,9 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
             </p>
           </div>
           <p className="etiqueta mt-1">
-            Ficha técnica de {c.medicamento ?? "—"} (principio activo: {c.principioActivo ?? "—"}) · registro {c.registro ?? "—"}
+            {c.origen === "PROSPECTO"
+              ? `Tu prospecto: ${c.nombreArchivo ?? "documento"} · pág. ${c.paginaInicio ?? "—"}`
+              : `Ficha técnica de ${c.medicamento ?? "—"} (principio activo: ${c.principioActivo ?? "—"}) · registro ${c.registro ?? "—"}`}
           </p>
           <blockquote className="mt-3 max-h-64 overflow-y-auto whitespace-pre-line border-l-2 border-accion/40 pl-3.5 text-[0.88rem] leading-relaxed text-tinta-2">
             {c.extractoLiteral}

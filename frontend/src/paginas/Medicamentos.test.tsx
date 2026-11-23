@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { CitaAgregada, CitaFicha, CitaPrecio, CitaRegistro, FuenteDato } from "../api/tipos";
-import { FuentesCitadas } from "./Medicamentos";
+import { FuentesCitadas, FuentesOficiales } from "./Medicamentos";
 
 const fuente: FuenteDato = {
   conjunto: "Código único de medicamentos vigentes",
@@ -112,6 +112,32 @@ describe("FuentesCitadas", () => {
     expect(screen.getByText(/Extracto recortado/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Ver fuente/ })).toHaveAttribute("href", "https://cima.aemps.es/x.html");
     expect(document.getElementById("cita-x-F1")!.className).toContain("ring-marca");
+  });
+
+  it("un prospecto que subió la persona se cita como su documento, sin enlace externo", () => {
+    const prospecto: CitaFicha = {
+      tipo: "FICHA_TECNICA",
+      origen: "PROSPECTO",
+      id: "F1",
+      medicamento: "Ibuprofeno",
+      principioActivo: "ibuprofeno",
+      registro: null,
+      seccion: "pág. 2",
+      titulo: "Prospecto",
+      extractoLiteral: "No debe usarse en pacientes con úlcera gástrica activa.",
+      extractoTruncado: false,
+      nombreArchivo: "prospecto_ibuprofeno.pdf",
+      paginaInicio: 2,
+      fuente: { ...fuente, conjunto: "Tu prospecto: prospecto_ibuprofeno.pdf", datasetId: null, enlace: null, cargadoAt: null, licencia: "Documento que subiste" },
+    };
+    render(<FuentesCitadas citas={[prospecto]} base="cita-x" resaltada={null} />);
+    expect(screen.getByText(/Tu prospecto: prospecto_ibuprofeno\.pdf · pág\. 2/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Ver fuente/ })).not.toBeInTheDocument();
+  });
+
+  it("las fuentes oficiales son solo enlaces", () => {
+    render(<FuentesOficiales fuentes={[{ nombre: "INVIMA", url: "https://www.invima.gov.co/" }]} />);
+    expect(screen.getByRole("link", { name: "INVIMA" })).toHaveAttribute("href", "https://www.invima.gov.co/");
   });
 
   it("no pinta nada si no hay fuentes citadas", () => {

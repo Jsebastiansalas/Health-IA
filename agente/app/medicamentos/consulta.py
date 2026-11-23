@@ -17,6 +17,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.ia.llm import ProveedorLLM
 from app.medicamentos import busqueda
 from app.medicamentos import fichas as modulo_fichas
@@ -43,6 +44,17 @@ AVISO = (
     "farmacéutico. En una urgencia llama al 123."
 )
 LIMITE_FICHAS = 12
+# Fuentes oficiales a las que se remite (solo enlaces: no se guarda su contenido).
+FUENTES_OFICIALES = [
+    {
+        "nombre": "INVIMA: registro sanitario y vigencia de medicamentos en Colombia",
+        "url": "https://www.invima.gov.co/",
+    },
+    {
+        "nombre": "MedlinePlus (en español): información de medicamentos",
+        "url": "https://medlineplus.gov/spanish/druginformation.html",
+    },
+]
 MAX_CARACTERES_FICHA_EN_PROMPT = 3500
 MAX_CARACTERES_EXTRACTO_FICHA = 1500
 LICENCIA = "Datos de INVIMA en datos.gov.co, licencia CC BY-SA 4.0"
@@ -434,6 +446,7 @@ def _respuesta(
             "consultaId": str(uuid.uuid4()),
             "sinEvidencia": sin_evidencia,
             "aviso": AVISO,
+            "fuentesOficiales": FUENTES_OFICIALES,
             "modeloLlm": modelo,
             "latenciaMs": int((time.perf_counter() - t0) * 1000),
         }
@@ -518,7 +531,8 @@ async def responder(
         if not filtros.principio_activo and resultado.registros:
             primeros = resultado.registros[0].get("principios") or []
             principio = (primeros[0].get("nombre") if primeros else None) or principio
-        ctx.fichas = await modulo_fichas.fichas_de(session, principio or "", LIMITE_FICHAS)
+        if get_settings().fichas_cima_activas:
+            ctx.fichas = await modulo_fichas.fichas_de(session, principio or "", LIMITE_FICHAS)
 
     alertas = _frescura(carga, ahora)
     if not resultado.registros and not resultado.precios and not ctx.fichas:

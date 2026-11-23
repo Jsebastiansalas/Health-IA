@@ -1,6 +1,6 @@
 import { Pill, SearchX, TriangleAlert } from "lucide-react";
 import type { RespuestaConsulta } from "../api/tipos";
-import { FuentesCitadas } from "../paginas/Medicamentos";
+import { FuentesCitadas, FuentesOficiales } from "../paginas/Medicamentos";
 import { Insignia } from "./ui/Insignia";
 
 function Chip({ n, alIr }: { n: number; alIr: (n: number) => void }) {
@@ -111,6 +111,8 @@ export function CruceMedicamentos({
           <FuentesCitadas citas={fichas} base={`cita-${r.consultaId}`} resaltada={null} />
         </section>
       )}
+
+      <FuentesOficiales fuentes={r.fuentesOficiales} />
 
       {r.avisoGeneral && (
         <p className="flex items-start gap-2 text-[0.8rem] leading-relaxed text-tinta-3">

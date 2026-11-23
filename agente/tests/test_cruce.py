@@ -28,6 +28,14 @@ HISTORIA = (
 )
 
 
+@pytest.fixture(autouse=True)
+def _cima_activo(monkeypatch):
+    """Estos casos prueban las fichas de CIMA: se activan (en producción están apagadas por defecto)."""
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "fichas_cima_activas", True)
+
+
 class LLMCruce:
     """Primera llamada: extrae. Segunda: cruza. Registra lo que recibe."""
 
@@ -96,6 +104,20 @@ async def _indexar(expediente, router, texto=HISTORIA) -> uuid.UUID:
 async def _cargar_fichas_ibuprofeno():
     async with cima_falsa([]) as c, get_sessionmaker()() as s:
         await fichas.cargar_fichas(s, c, ["Ibuprofeno"])
+
+
+async def _indexar_prospecto(expediente, router) -> uuid.UUID:
+    texto = (
+        "PROSPECTO IBUPROFENO 400 mg. No debe usarse en pacientes con ulcera gastrica activa. "
+        "Puede causar molestias digestivas."
+    )
+    r = await subir(
+        expediente["id"], pdf_texto([texto]), tipo="PROSPECTO", nombre="prospecto_ibuprofeno.pdf"
+    )
+    doc_id = uuid.UUID(r.json()["id"])
+    with ThreadPoolExecutor(max_workers=1) as ex:
+        await procesar_documento(get_sessionmaker(), doc_id, ex, VectorizadorEmbeddings(router))
+    return doc_id
 
 
 async def _cruzar(client, org, expediente, headers=None):
@@ -184,7 +206,9 @@ async def test_un_medicamento_sin_ficha_lo_dice_y_remite_sin_llamar_al_comparado
     await _indexar(expediente, router)
     j = (await _cruzar(client, org_a, expediente)).json()
     assert j["advertencias"] == [] and j["sinFicha"] == ["Ibuprofeno"] and j["fichas"] == []
-    assert any("No hay ficha técnica cargada de: Ibuprofeno" in a for a in j["alertas"])
+    assert any(
+        "No tengo el prospecto ni la ficha técnica de: Ibuprofeno" in a for a in j["alertas"]
+    )
     assert len(llm.prompts) == 1
 
 
@@ -304,3 +328,61 @@ def test_el_modelo_puede_escribir_el_id_dentro_del_nombre_y_se_limpia_el_texto()
     assert omitidas == 0 and len(adv) == 1
     assert "(M1)" not in adv[0]["texto"] and "(D1)" not in adv[0]["texto"]
     assert adv[0]["citaMedicamento"] == 1 and adv[0]["citaDato"] == 2
+
+
+async def test_con_cima_apagado_las_fichas_cargadas_no_se_usan(
+    client, org_a, cola, router, app, monkeypatch
+):
+    from app.core.config import get_settings
+
+    await _cargar_fichas_ibuprofeno()
+    monkeypatch.setattr(get_settings(), "fichas_cima_activas", False)
+    llm = LLMCruce()
+    app.dependency_overrides[get_llm] = lambda: llm
+    expediente = await org_a.crear_expediente(org_a.admin)
+    await _indexar(expediente, router)
+    j = (await _cruzar(client, org_a, expediente)).json()
+    assert j["fichas"] == [] and j["sinFicha"] == ["Ibuprofeno"] and len(llm.prompts) == 1
+
+
+async def test_el_prospecto_que_sube_la_persona_es_la_fuente_con_cima_apagado(
+    client, org_a, cola, router, app, monkeypatch
+):
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "fichas_cima_activas", False)
+    advertencia = {
+        **ADVERTENCIA,
+        "texto": "Tu prospecto de ibuprofeno indica que no debe usarse en pacientes con úlcera gástrica activa; "
+        "tu documento menciona úlcera gástrica.",
+    }
+    llm = LLMCruce(cruzar={"advertencias": [advertencia]})
+    app.dependency_overrides[get_llm] = lambda: llm
+    expediente = await org_a.crear_expediente(org_a.admin)
+    await _indexar(expediente, router)
+    await _indexar_prospecto(expediente, router)
+    j = (await _cruzar(client, org_a, expediente)).json()
+    assert len(j["advertencias"]) == 1 and j["sinFicha"] == []
+    f = j["fichas"][0]
+    assert f["origen"] == "PROSPECTO" and f["nombreArchivo"] == "prospecto_ibuprofeno.pdf"
+    assert (
+        f["fuente"]["enlace"] is None
+        and "úlcera" not in f["extractoLiteral"]
+        and "ulcera gastrica" in f["extractoLiteral"]
+    )
+    assert f["fuente"]["licencia"] == "Documento que subiste"
+    assert not any("España" in a for a in j["alertas"])  # el prospecto es el del propio usuario
+    assert {x["nombre"] for x in j["fuentesOficiales"]} >= {
+        "INVIMA: registro sanitario y vigencia de medicamentos en Colombia"
+    }
+    # el prospecto también salió anonimizado hacia el modelo, sin nombres de archivo
+    assert all("prospecto_ibuprofeno" not in p for _, p in llm.prompts)
+
+
+def test_el_cli_se_niega_a_cargar_fichas_si_cima_esta_apagado(monkeypatch, capsys):
+    from app import cli
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "fichas_cima_activas", False)
+    assert cli.main(["cargar-fichas", "ibuprofeno"]) == 1
+    assert "FICHAS_CIMA_ACTIVAS" in capsys.readouterr().err
