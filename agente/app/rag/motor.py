@@ -101,6 +101,28 @@ async def responder(
     return _fin(resultado, salida.modelo)
 
 
+def cita_a_json(c) -> dict:
+    """Una cita verificada en el contrato público (camelCase): la usan consola y explicaciones."""
+    return {
+        "documentoId": str(c.fragmento.documento_id),
+        "nombreArchivo": c.fragmento.nombre_archivo,
+        "tipoDocumento": c.fragmento.tipo_documento,
+        "numeroAdenda": c.fragmento.numero_adenda,
+        "sha256Original": c.fragmento.sha256_original,
+        "paginaInicio": c.fragmento.pagina_inicio,
+        "paginaFin": c.fragmento.pagina_fin,
+        "seccion": c.fragmento.seccion,
+        "orden": c.fragmento.orden,
+        "extractoLiteral": c.extracto,
+        "extractoAjustado": c.ajustado,
+        "metodoExtraccion": c.fragmento.metadata.get("extraction_method", "NATIVE"),
+        "confianzaOcr": c.fragmento.metadata.get("ocr_confidence"),
+        "requiereVerificacionVisualOriginal": c.requiere_verificacion,
+        "motivoVerificacionVisual": c.motivo_verificacion,
+        "tiposEvidencia": c.tipos_evidencia,
+    }
+
+
 def a_json(r: RespuestaRag, consulta_id: uuid.UUID) -> dict:
     """Contrato de salida del documento de requerimientos (§5.E), en camelCase."""
     return {
@@ -108,27 +130,7 @@ def a_json(r: RespuestaRag, consulta_id: uuid.UUID) -> dict:
         "respuestaAnalitica": r.resultado.respuesta,
         "sinEvidencia": r.resultado.sin_evidencia,
         "alertas": r.resultado.alertas,
-        "citas": [
-            {
-                "documentoId": str(c.fragmento.documento_id),
-                "nombreArchivo": c.fragmento.nombre_archivo,
-                "tipoDocumento": c.fragmento.tipo_documento,
-                "numeroAdenda": c.fragmento.numero_adenda,
-                "sha256Original": c.fragmento.sha256_original,
-                "paginaInicio": c.fragmento.pagina_inicio,
-                "paginaFin": c.fragmento.pagina_fin,
-                "seccion": c.fragmento.seccion,
-                "orden": c.fragmento.orden,
-                "extractoLiteral": c.extracto,
-                "extractoAjustado": c.ajustado,
-                "metodoExtraccion": c.fragmento.metadata.get("extraction_method", "NATIVE"),
-                "confianzaOcr": c.fragmento.metadata.get("ocr_confidence"),
-                "requiereVerificacionVisualOriginal": c.requiere_verificacion,
-                "motivoVerificacionVisual": c.motivo_verificacion,
-                "tiposEvidencia": c.tipos_evidencia,
-            }
-            for c in r.resultado.citas
-        ],
+        "citas": [cita_a_json(c) for c in r.resultado.citas],
         "modeloEmbeddings": r.modelo_embeddings,
         "modeloLlm": r.modelo_llm,
         "fragmentosRecuperados": r.fragmentos_recuperados,

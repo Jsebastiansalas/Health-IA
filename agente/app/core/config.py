@@ -96,6 +96,8 @@ class Settings(BaseSettings):
     # Un modelo que se cuelga no se reintenta: se pasa al respaldo tras este plazo.
     llm_timeout_s: float = 30.0
     llm_intentos_por_modelo: int = 1
+    # «Explícame este documento»: tope de fragmentos que se envían al modelo (≈ 700 tokens c/u).
+    explicar_max_fragmentos: int = 30
     rag_top_k: int = 20  # Top-K vectorial y Top-K léxico que entran a la fusión
     rag_rrf_k: int = 60  # constante k de Reciprocal Rank Fusion
     rag_max_evidencias: int = 6  # fragmentos principales enviados al modelo

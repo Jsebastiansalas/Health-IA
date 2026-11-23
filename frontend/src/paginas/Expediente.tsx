@@ -157,7 +157,12 @@ export function PaginaExpediente() {
 
         <div className={cn("grid gap-8", acoplada ? "xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]" : "xl:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]")}>
           <Tabs.Content value="folios" forceMount className={cn("data-[state=inactive]:hidden xl:sticky xl:top-6 xl:!block xl:max-h-[calc(100vh-3rem)] xl:self-start xl:overflow-y-auto xl:pr-1", acoplada && "xl:!hidden")}>
-            <PanelDocumentos expedienteId={id} puedeSubir={puedeSubir && expediente.estado === "ABIERTO" && !consentimiento.pendiente} />
+            <PanelDocumentos
+              expedienteId={id}
+              puedeSubir={puedeSubir && expediente.estado === "ABIERTO" && !consentimiento.pendiente}
+              puedeExplicar={!consentimiento.pendiente}
+              alExplicar={() => setPestana("consulta")}
+            />
           </Tabs.Content>
           <Tabs.Content value="consulta" forceMount className="data-[state=inactive]:hidden xl:!block">
             <ConsolaRag expedienteId={id} hayIndice={hayIndice} alAbrirCita={setCitaAbierta} bloqueado={consentimiento.pendiente} />

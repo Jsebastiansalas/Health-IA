@@ -69,6 +69,12 @@ Además de PDF se aceptan **JPG, PNG y HEIC** (la foto de un resultado, una orde
 - **Visor local:** abre la foto original desde tu carpeta y compara su huella; las HEIC no se pueden mostrar en la mayoría de navegadores (se avisa).
 - **Móvil:** el panel de documentos tiene un botón «Tomar una foto» que abre la cámara.
 
+## «Explícame este documento»
+Cada documento indexado tiene un botón que lo explica en lenguaje sencillo (`POST /api/v1/expedientes/{id}/documentos/{docId}/explicacion`; agente: `POST /internal/v1/explicaciones`). La respuesta va en **dos capas que no se mezclan**:
+- **Lo que dice el documento:** de qué trata y sus puntos importantes. Cada punto lleva una cita con extracto **literal verificado** contra el texto real; un punto sin cita válida se descarta, y si no queda ninguno el asistente se abstiene.
+- **Qué significan estos términos:** explicación *general* de las palabras técnicas, aparte y rotulada «no es un diagnóstico ni habla de tu caso».
+Además: señales de alarma (solo las que el propio documento marca como urgentes) y preguntas para llevarle a tu médico. El asistente **no diagnostica, no juzga si un resultado es bueno o malo para la persona, no pronostica, no recomienda ni cambia tratamientos y no indica dosis** (prohibido en el prompt y cubierto por pruebas). El texto que sale a la nube va anonimizado, requiere consentimiento en cuentas personales, está sujeto al límite de consultas y se audita sin contenido (`EXPLICACION_DOCUMENTO`: solo ids y conteos). En documentos largos se explican las primeras `EXPLICAR_MAX_FRAGMENTOS` secciones y se avisa.
+
 ## Cuentas personales, consentimiento y supresión
 Además de las organizaciones (hospitales, clínicas, aseguradoras) hay **cuentas personales** para pacientes y familias (`POST /api/v1/auth/registro-personal`, interruptor `REGISTRO_PERSONAL_ABIERTO`): un tenant de una sola persona, con borrado inmediato del PDF (`tenants.tipo = PERSONAL`, migración `V9`).
 

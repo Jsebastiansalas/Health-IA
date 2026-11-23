@@ -71,7 +71,7 @@ React ──HTTPS──> Caddy ──> API Java (Spring Boot :8080)
 | 24 | Salud: seguridad, consentimiento y cuentas personales (`V9`) | ✅ |
 | 25 | Salud: anonimización antes de salir a la nube | ✅ |
 | 26 | Salud: fotos y escaneos de documentos (JPG, PNG, HEIC) | ✅ |
-| 27 | Salud: «Explícame este documento» | ⏳ |
+| 27 | Salud: «Explícame este documento» | ✅ |
 | 28 | Salud: medicamentos, efectos e interacciones con fuente | ⏳ |
 | 29 | Salud: evaluación de seguridad y cierre | ⏳ |
 
