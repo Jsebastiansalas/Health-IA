@@ -101,6 +101,15 @@ services:
       ENTORNO: produccion
       CONFIAR_PROXY: "true"
       ALLOW_TENANT_SIGNUP: "false"
+      # Cuentas personales: el correo se confirma antes de subir o consultar. Requiere un servidor SMTP.
+      CORREO_VERIFICACION_OBLIGATORIA: "true"
+      CORREO_BASE_URL: https://${DOMINIO:?defina DOMINIO}
+      SPRING_MAIL_HOST: ${SMTP_HOST:-}
+      SPRING_MAIL_PORT: ${SMTP_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SMTP_USER:-}
+      SPRING_MAIL_PASSWORD: ${SMTP_PASSWORD:-}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"
       DATABASE_URL: jdbc:postgresql://postgres:5432/medtender
       # La API opera con el rol sin privilegios `medtender_app` (RLS en vigor); Flyway migra como propietario.
       DATABASE_USER: medtender_app

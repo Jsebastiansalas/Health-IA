@@ -52,6 +52,7 @@ public class PrivacidadService {
         jdbc.update("DELETE FROM expedientes WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM actas_purga WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM consentimientos WHERE tenant_id = ?", tenantId);
+        jdbc.update("DELETE FROM verificaciones_correo WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM usuarios WHERE tenant_id = ?", tenantId);
         jdbc.update("DELETE FROM tenants WHERE id = ?", tenantId);
     }

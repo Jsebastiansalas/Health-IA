@@ -30,9 +30,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class PrivacidadController {
 
     public record ConsentimientoOut(String version, boolean requerido, boolean aceptado, Instant aceptadoAt,
-                                    String tipoCuenta) {
-        static ConsentimientoOut de(ConsentimientoService.Estado e) {
-            return new ConsentimientoOut(e.version(), e.requerido(), e.aceptado(), e.aceptadoAt(), e.tipoCuenta().name());
+                                    String tipoCuenta, boolean correoRequerido, boolean correoVerificado) {
+        static ConsentimientoOut de(ConsentimientoService.Estado e, VerificacionCorreoService.Estado c) {
+            return new ConsentimientoOut(e.version(), e.requerido(), e.aceptado(), e.aceptadoAt(), e.tipoCuenta().name(),
+                    c.requerido(), c.verificado());
         }
     }
 
@@ -44,10 +45,13 @@ public class PrivacidadController {
     private final AuditoriaService auditoria;
     private final UsuarioRepository usuarios;
     private final PasswordService passwords;
+    private final VerificacionCorreoService verificacionCorreo;
 
     public PrivacidadController(ConsentimientoService consentimiento, PrivacidadService privacidad,
                                 AutorizacionExpediente autorizacion, AuditoriaService auditoria,
-                                UsuarioRepository usuarios, PasswordService passwords) {
+                                UsuarioRepository usuarios, PasswordService passwords,
+                                VerificacionCorreoService verificacionCorreo) {
+        this.verificacionCorreo = verificacionCorreo;
         this.consentimiento = consentimiento;
         this.privacidad = privacidad;
         this.autorizacion = autorizacion;
@@ -58,7 +62,7 @@ public class PrivacidadController {
 
     @GetMapping("/consentimiento")
     public ConsentimientoOut estado(@AuthenticationPrincipal UsuarioActual user) {
-        return ConsentimientoOut.de(consentimiento.estado(user));
+        return ConsentimientoOut.de(consentimiento.estado(user), verificacionCorreo.estado(user));
     }
 
     @PostMapping("/consentimiento")
@@ -69,7 +73,7 @@ public class PrivacidadController {
             auditoria.auditar(Accion.CONSENTIMIENTO_ACEPTADO, user, "usuario", user.id(),
                     Map.of("version", despues.version()));
         }
-        return ConsentimientoOut.de(despues);
+        return ConsentimientoOut.de(despues, verificacionCorreo.estado(user));
     }
 
     /** Borra las preguntas y respuestas guardadas de un expediente. Requiere ser su administrador. */

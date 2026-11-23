@@ -148,6 +148,74 @@ LIMIT :limite
 )
 
 
+SQL_PROSPECTOS = text(
+    f"""
+SELECT f.id, f.documento_id, f.orden, f.pagina_inicio, f.pagina_fin, f.seccion,
+       f.contenido_texto, f.metadata_jsonb,
+       d.nombre_archivo_original, d.tipo_documento, COALESCE(d.numero_adenda, 0) AS numero_adenda,
+       d.sha256_original,
+       0.0 AS rrf, NULL::bigint AS rango_vectorial, NULL::bigint AS rango_lexico
+FROM fragmentos f JOIN documentos d ON d.id = f.documento_id
+WHERE {_FILTRO_SEGURO} AND d.tipo_documento = 'PROSPECTO'
+ORDER BY d.uploaded_at, f.orden
+LIMIT 80
+"""
+)
+MAX_PROSPECTO_POR_MEDICAMENTO = 4
+
+
+def fichas_de_prospectos(med: dict, prospectos: list[FragmentoRecuperado]) -> list[dict]:
+    """Los fragmentos de los prospectos que subió la persona que hablan de este medicamento, con la forma
+    de una ficha (para comparar igual que con una ficha técnica)."""
+    terminos = {normalizar(med["principio_activo"])}
+    primera = next((p for p in normalizar(med["nombre"]).split() if len(p) > 3), "")
+    if primera:
+        terminos.add(primera)
+    terminos.discard("")
+    elegidos = [p for p in prospectos if any(t in normalizar(p.contenido_texto) for t in terminos)]
+    return [
+        {
+            "origen": "PROSPECTO",
+            "medicamento": med["nombre"],
+            "principio_activo": med["principio_activo"],
+            "seccion": f"pág. {p.pagina_inicio}",
+            "titulo": p.seccion or "Prospecto",
+            "texto": p.contenido_texto,
+            "fragmento": p,
+        }
+        for p in elegidos[:MAX_PROSPECTO_POR_MEDICAMENTO]
+    ]
+
+
+def cita_prospecto(i: int, f: dict) -> dict:
+    """La cita a un prospecto que subió la persona: texto literal de su documento, sin enlace externo."""
+    p: FragmentoRecuperado = f["fragmento"]
+    texto = _t(f.get("texto"))
+    return {
+        "tipo": "FICHA_TECNICA",
+        "origen": "PROSPECTO",
+        "id": f"F{i}",
+        "medicamento": f.get("medicamento"),
+        "principioActivo": f.get("principio_activo"),
+        "registro": None,
+        "seccion": f.get("seccion"),
+        "titulo": f.get("titulo"),
+        "extractoLiteral": texto[: med_consulta.MAX_CARACTERES_EXTRACTO_FICHA],
+        "extractoTruncado": len(texto) > med_consulta.MAX_CARACTERES_EXTRACTO_FICHA,
+        "documentoId": str(p.documento_id),
+        "nombreArchivo": p.nombre_archivo,
+        "paginaInicio": p.pagina_inicio,
+        "sha256Original": p.sha256_original,
+        "fuente": {
+            "conjunto": f"Tu prospecto: {p.nombre_archivo}",
+            "datasetId": None,
+            "enlace": None,
+            "cargadoAt": None,
+            "licencia": "Documento que subiste",
+        },
+    }
+
+
 @dataclass
 class ResultadoCruce:
     medicamentos: list[dict] = field(
@@ -263,7 +331,7 @@ def _prompt_cruzar(
     return (
         "DATOS QUE ESCRIBE EL DOCUMENTO DE LA PERSONA:\n"
         + "\n".join(docs)
-        + "\n\nFICHAS TÉCNICAS (fuente: CIMA, AEMPS de España):\n"
+        + "\n\nFICHAS TÉCNICAS O PROSPECTOS (los que subió la persona y, si hay, fichas oficiales):\n"
         + "\n\n".join(_bloque_ficha(i, f) for i, f in enumerate(fichas, 1))
     )
 
@@ -351,6 +419,17 @@ async def cruzar(
         },
     )
     evidencias = [_fila(r) for r in filas]
+    prospectos = [
+        _fila(x)
+        for x in await session.execute(
+            SQL_PROSPECTOS,
+            {
+                "tenant_id": expediente.tenant_id,
+                "expediente_id": expediente.id,
+                "modelo": expediente.embedding_model_activo,
+            },
+        )
+    ]
     r = ResultadoCruce(fragmentos=len(evidencias))
 
     def cerrar() -> ResultadoCruce:
@@ -376,15 +455,21 @@ async def cruzar(
         r.mensaje, r.sin_evidencia = MENSAJE_SIN_MEDICAMENTOS, True
         return cerrar()
 
-    # Fichas por principio activo (una consulta nueva a la base pública de fichas).
+    # Fuentes por medicamento: los prospectos que subió la persona y, solo si está activado, CIMA.
     fichas_por_med: dict[str, list[dict]] = {}
-    async with get_sessionmaker()() as sesion_fichas:
+    cima = s.fichas_cima_activas
+    sesion_fichas = get_sessionmaker()() if cima else None
+    try:
         for m in meds:
             principio = normalizar(m["principio_activo"])
             if principio not in fichas_por_med:
-                fichas_por_med[principio] = await modulo_fichas.fichas_de(
-                    sesion_fichas, principio, 6
-                )
+                lista = fichas_de_prospectos(m, prospectos)
+                if sesion_fichas is not None:
+                    lista += await modulo_fichas.fichas_de(sesion_fichas, principio, 6)
+                fichas_por_med[principio] = lista
+    finally:
+        if sesion_fichas is not None:
+            await sesion_fichas.close()
     todas = [f for lista in fichas_por_med.values() for f in lista]
     for m in meds:
         m["ficha"] = bool(fichas_por_med.get(normalizar(m["principio_activo"])))
@@ -393,10 +478,12 @@ async def cruzar(
 
     advertencias: list[dict] = []
     if todas and (diags or alergias or len(meds) > 1):
+        prompt = _prompt_cruzar(meds, diags, alergias, todas)
         cruzado = await llm.generar_json(
-            SISTEMA_CRUZAR, _prompt_cruzar(meds, diags, alergias, todas), ESQUEMA_CRUZAR
+            SISTEMA_CRUZAR, anon.enmascarar(prompt) if anon else prompt, ESQUEMA_CRUZAR
         )
-        advertencias, omitidas = ensamblar_advertencias(cruzado.datos, meds, diags, alergias, todas)
+        datos_cruce = anon.restaurar_json(cruzado.datos) if anon else cruzado.datos
+        advertencias, omitidas = ensamblar_advertencias(datos_cruce, meds, diags, alergias, todas)
         if omitidas:
             r.alertas.append(
                 f"Se omitieron {omitidas} advertencia(s) que no se pudieron comprobar contra la ficha y "
@@ -405,19 +492,24 @@ async def cruzar(
     # Solo se muestran las fichas que respaldan alguna advertencia.
     usadas = sorted({a["ficha"] for a in advertencias})
     nuevo_indice = {viejo: i for i, viejo in enumerate(usadas, 1)}
-    r.fichas = [med_consulta.cita_ficha(nuevo_indice[v], todas[v - 1]) for v in usadas]
+    r.fichas = [
+        cita_prospecto(nuevo_indice[v], todas[v - 1])
+        if todas[v - 1].get("origen") == "PROSPECTO"
+        else med_consulta.cita_ficha(nuevo_indice[v], todas[v - 1])
+        for v in usadas
+    ]
     for a in advertencias:
         a["ficha"] = nuevo_indice[a["ficha"]]
     r.advertencias = advertencias
     r.medicamentos, r.diagnosticos, r.alergias, r.citas = meds, diags, alergias, citas.lista
     if r.sin_ficha:
         r.alertas.append(
-            "No hay ficha técnica cargada de: "
+            "No tengo el prospecto ni la ficha técnica de: "
             + ", ".join(dict.fromkeys(r.sin_ficha))
-            + ". Consulta su "
-            "prospecto o pregunta a tu farmacéutico."
+            + ". Sube el prospecto de ese medicamento a tu expediente (tipo «Prospecto») y vuelve a "
+            "intentarlo, o pregunta a tu farmacéutico."
         )
-    if r.fichas:
+    if any(c.get("origen") != "PROSPECTO" for c in r.fichas):
         r.alertas.append(
             "Las fichas citadas son de medicamentos de la fuente (AEMPS, España) con el mismo principio "
             "activo; el nombre comercial y el registro no son los de Colombia."
@@ -443,6 +535,7 @@ def a_json(r: ResultadoCruce, consulta_id: uuid.UUID, modelo_embeddings: str) ->
         "alertas": r.alertas,
         "citas": [cita_a_json(c) for c in r.citas],
         "fichas": r.fichas,
+        "fuentesOficiales": med_consulta.FUENTES_OFICIALES,
         "modeloEmbeddings": modelo_embeddings,
         "modeloLlm": r.modelo_llm,
         "fragmentosRecuperados": r.fragmentos,

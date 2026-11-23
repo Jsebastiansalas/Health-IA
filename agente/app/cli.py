@@ -96,6 +96,14 @@ async def _cargar_fichas(principios: list[str], por_principio: int) -> int:
 
     from app.medicamentos.fichas import ATRIBUCION, cargar_fichas
 
+    if not get_settings().fichas_cima_activas:
+        print(
+            "Las fichas de CIMA están desactivadas (FICHAS_CIMA_ACTIVAS=false): sus condiciones de "
+            "reutilización no están confirmadas. Actívalas solo tras verificarlas.",
+            file=sys.stderr,
+        )
+        return 1
+
     try:
         async with (
             httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=20.0)) as cliente,

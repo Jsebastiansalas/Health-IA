@@ -78,6 +78,11 @@ medtender:
   allow-tenant-signup: ${ALLOW_TENANT_SIGNUP:true}
   # Cuentas personales (pacientes y familias): se pueden abrir aunque el alta de organizaciones este cerrada.
   registro-personal-abierto: ${REGISTRO_PERSONAL_ABIERTO:true}
+  correo:
+    # Si es true, una cuenta personal sin correo verificado no puede subir ni consultar. Actívalo en producción.
+    verificacion-obligatoria: ${CORREO_VERIFICACION_OBLIGATORIA:false}
+    base-url: ${CORREO_BASE_URL:http://localhost:8088}
+    remitente: ${CORREO_REMITENTE:no-responder@medtender.local}
   cors-origins: ${CORS_ORIGINS:http://localhost:5173}
   metrics-token: ${METRICS_TOKEN:}
   ingesta:

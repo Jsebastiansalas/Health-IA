@@ -11,6 +11,7 @@ import { ProveedorSesion, useSesion } from "./sesion";
 // Cada pantalla es su propio paquete: quien aún no ingresó no descarga la aplicación, y viceversa.
 const PaginaBienvenida = lazy(() => import("./paginas/Bienvenida").then((m) => ({ default: m.PaginaBienvenida })));
 const PaginaRegistro = lazy(() => import("./paginas/Registro").then((m) => ({ default: m.PaginaRegistro })));
+const PaginaVerificarCorreo = lazy(() => import("./paginas/VerificarCorreo").then((m) => ({ default: m.PaginaVerificarCorreo })));
 const PaginaIngreso = lazy(() => import("./paginas/Ingreso").then((m) => ({ default: m.PaginaIngreso })));
 const PaginaExpedientes = lazy(() => import("./paginas/Expedientes").then((m) => ({ default: m.PaginaExpedientes })));
 const PaginaMedicamentos = lazy(() => import("./paginas/Medicamentos").then((m) => ({ default: m.PaginaMedicamentos })));
@@ -33,6 +34,7 @@ function Rutas() {
         <Route path="/" element={<PaginaBienvenida />} />
         <Route path="/ingreso" element={<PaginaIngreso />} />
         <Route path="/registro" element={<PaginaRegistro />} />
+        <Route path="/verificar-correo" element={<PaginaVerificarCorreo />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -43,6 +45,7 @@ function Rutas() {
         <Route path="/" element={<PaginaExpedientes />} />
         <Route path="/ingreso" element={<Navigate to="/" replace />} />
         <Route path="/registro" element={<Navigate to="/" replace />} />
+        <Route path="/verificar-correo" element={<PaginaVerificarCorreo />} />
         <Route path="/medicamentos" element={<PaginaMedicamentos />} />
         <Route path="/expedientes/:id" element={<PaginaExpediente />} />
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,6 +1,7 @@
 """Fichas técnicas (CIMA): carga con fuente, nunca posología, y respuestas clínicas solo con ficha citada."""
 
 import httpx
+import pytest
 from httpx import AsyncClient
 from sqlalchemy import text
 
@@ -15,6 +16,14 @@ HTML_CONTRA = (
     "<li>embarazo (tercer trimestre)</li></ul></div>"
 )
 HTML_INTERACCION = "<div><p>Puede aumentar el efecto de los anticoagulantes.</p></div>"
+
+
+@pytest.fixture(autouse=True)
+def _cima_activo(monkeypatch):
+    """Estos casos prueban las fichas de CIMA: se activan (en producción están apagadas por defecto)."""
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "fichas_cima_activas", True)
 
 
 def cima_falsa(pedidas: list[str]) -> httpx.AsyncClient:

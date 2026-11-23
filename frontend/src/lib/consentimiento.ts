@@ -16,6 +16,18 @@ export function useConsentimiento() {
     mutationFn: () => post<EstadoConsentimiento>("/consentimiento", {}),
     onSuccess: (e) => cliente.setQueryData(CLAVE, e),
   });
+  const reenviar = useMutation({ mutationFn: () => post<void>("/auth/reenviar-verificacion", {}) });
   const pendiente = !!estado.data && estado.data.requerido && !estado.data.aceptado;
-  return { estado: estado.data, pendiente, aceptar, esPersonal: estado.data?.tipo_cuenta === "PERSONAL" };
+  const correoPendiente = !!estado.data && estado.data.correo_requerido && !estado.data.correo_verificado;
+  return {
+    estado: estado.data,
+    pendiente,
+    /** Sin confirmar el correo no se sube ni se consulta (el servidor responde 403 `correo_no_verificado`). */
+    correoPendiente,
+    /** Cualquiera de las dos exigencias bloquea subir y consultar. */
+    bloqueado: pendiente || correoPendiente,
+    aceptar,
+    reenviar,
+    esPersonal: estado.data?.tipo_cuenta === "PERSONAL",
+  };
 }

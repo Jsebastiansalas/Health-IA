@@ -123,6 +123,9 @@ export interface EstadoConsentimiento {
   aceptado: boolean;
   aceptado_at: string | null;
   tipo_cuenta: "ORGANIZACION" | "PERSONAL";
+  /** Las cuentas personales deben confirmar su correo (si el servidor lo exige). */
+  correo_requerido: boolean;
+  correo_verificado: boolean;
 }
 
 export interface RespuestaConsulta {
@@ -156,6 +159,7 @@ export interface RespuestaConsulta {
   advertencias?: AdvertenciaCruzada[];
   sinFicha?: string[];
   fichas?: CitaFicha[];
+  fuentesOficiales?: FuenteOficial[];
 }
 
 export interface AdvertenciaCruzada {
@@ -183,8 +187,9 @@ export interface TerminoExplicado {
 /* ---- Medicamentos de Colombia (datos abiertos de INVIMA) ---- */
 export interface FuenteDato {
   conjunto: string;
-  datasetId: string;
-  enlace: string;
+  datasetId: string | null;
+  /** Nulo cuando la fuente es un documento que subió la persona (un prospecto). */
+  enlace: string | null;
   cargadoAt: string | null;
   licencia: string;
 }
@@ -245,7 +250,17 @@ export interface CitaFicha {
   titulo: string;
   extractoLiteral: string;
   extractoTruncado: boolean;
+  /** «PROSPECTO» cuando viene de un prospecto que subió la persona; ausente si es una ficha oficial. */
+  origen?: "PROSPECTO";
+  nombreArchivo?: string;
+  paginaInicio?: number;
   fuente: FuenteDato;
+}
+
+/** Fuente oficial a la que se remite (solo enlace: no se copia su contenido). */
+export interface FuenteOficial {
+  nombre: string;
+  url: string;
 }
 
 export type CitaMedicamento = CitaRegistro | CitaPrecio | CitaAgregada | CitaFicha;
@@ -259,6 +274,7 @@ export interface RespuestaMedicamentos {
   alertas: string[];
   citas: CitaMedicamento[];
   aviso: string;
+  fuentesOficiales?: FuenteOficial[];
   limiteClinico?: { codigo: "dosis" | "receta" | "diagnostico" } | null;
   totalCoincidencias?: number;
   modeloLlm: string | null;

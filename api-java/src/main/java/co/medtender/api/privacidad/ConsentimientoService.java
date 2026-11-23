@@ -30,10 +30,13 @@ public class ConsentimientoService {
 
     private final ConsentimientoRepository consentimientos;
     private final TenantRepository tenants;
+    private final VerificacionCorreoService verificacionCorreo;
 
-    public ConsentimientoService(ConsentimientoRepository consentimientos, TenantRepository tenants) {
+    public ConsentimientoService(ConsentimientoRepository consentimientos, TenantRepository tenants,
+                                 VerificacionCorreoService verificacionCorreo) {
         this.consentimientos = consentimientos;
         this.tenants = tenants;
+        this.verificacionCorreo = verificacionCorreo;
     }
 
     @Transactional(readOnly = true)
@@ -55,6 +58,7 @@ public class ConsentimientoService {
 
     /** 403 con codigo estable para que la interfaz muestre el consentimiento en lugar de un error generico. */
     public void exigir(UsuarioActual u) {
+        verificacionCorreo.exigir(u); // las cuentas personales confirman su correo antes que nada
         Estado e = estado(u);
         if (e.requerido() && !e.aceptado()) {
             throw new ApiException(HttpStatus.FORBIDDEN,

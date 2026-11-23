@@ -43,12 +43,15 @@ public class AuthController {
     private final Limitador limitador;
     private final AuditoriaService auditoria;
     private final MedtenderProperties props;
+    private final co.medtender.api.privacidad.VerificacionCorreoService verificacionCorreo;
     @org.springframework.beans.factory.annotation.Value("${medtender.registro-personal-abierto:true}")
     private boolean registroPersonalAbierto;
 
     public AuthController(UsuarioRepository usuarios, IdentidadService identidad, PasswordService passwords,
                           JwtService jwt, Limitador limitador, AuditoriaService auditoria,
-                          MedtenderProperties props) {
+                          MedtenderProperties props,
+                          co.medtender.api.privacidad.VerificacionCorreoService verificacionCorreo) {
+        this.verificacionCorreo = verificacionCorreo;
         this.usuarios = usuarios;
         this.identidad = identidad;
         this.passwords = passwords;
@@ -114,6 +117,7 @@ public class AuthController {
         var r = identidad.registrarPersonal(in.nombre().trim(), in.email().toLowerCase(Locale.ROOT), hash);
         auditoria.auditar(Accion.REGISTRO_PERSONAL, r.tenant().getId(), r.admin().getId(), r.admin().getEmail(),
                 "OK", "tenant", r.tenant().getId(), null);
+        verificacionCorreo.enviar(r.tenant().getId(), r.admin().getId(), r.admin().getEmail());
         return tokens(r.admin());
     }
 

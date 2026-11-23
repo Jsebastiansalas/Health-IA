@@ -98,6 +98,10 @@ class Settings(BaseSettings):
     llm_intentos_por_modelo: int = 1
     # «Explícame este documento»: tope de fragmentos que se envían al modelo (≈ 700 tokens c/u).
     explicar_max_fragmentos: int = 30
+    # Fichas técnicas de CIMA (AEMPS): apagadas por defecto hasta confirmar sus condiciones de
+    # reutilización.
+    # Sin ellas, la información de medicamentos sale de los prospectos que sube la persona.
+    fichas_cima_activas: bool = False
     rag_top_k: int = 20  # Top-K vectorial y Top-K léxico que entran a la fusión
     rag_rrf_k: int = 60  # constante k de Reciprocal Rank Fusion
     rag_max_evidencias: int = 6  # fragmentos principales enviados al modelo
