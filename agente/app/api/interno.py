@@ -26,7 +26,7 @@ from app.ia.llm import ErrorLLM, ProveedorLLM, get_llm
 from app.medicamentos import busqueda as med_busqueda
 from app.medicamentos import consulta as med_consulta
 from app.models import Consulta, Documento, Expediente, Reindexacion
-from app.rag import explicar, motor, seguridad
+from app.rag import explicar, garantias, motor, seguridad
 from app.schemas import ModeloEmbeddingOut, ReindexacionIn, ReindexacionOut
 from app.services import reindexacion
 from app.services.cola import ColaProcesamiento, get_cola
@@ -147,7 +147,7 @@ async def consultar(
     if r.modelo_llm:
         LLM_RESPUESTAS.labels(r.modelo_llm).inc()
     consulta_id = uuid.uuid4()
-    cuerpo = motor.a_json(r, consulta_id)
+    cuerpo = garantias.sin_posologia_inventada(motor.a_json(r, consulta_id))
     session.add(
         Consulta(
             id=consulta_id,
@@ -288,7 +288,7 @@ async def consultar_medicamentos(
     CONSULTA_DURACION.observe(r.latencia_ms / 1000)
     if r.modelo_llm:
         LLM_RESPUESTAS.labels(r.modelo_llm).inc()
-    return seguridad.con_urgencia(r.cuerpo, pregunta)
+    return seguridad.con_urgencia(garantias.sin_posologia_inventada(r.cuerpo), pregunta)
 
 
 @router.get("/medicamentos/fuentes")

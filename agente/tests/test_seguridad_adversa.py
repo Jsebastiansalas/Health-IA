@@ -74,9 +74,11 @@ def test_las_preguntas_sobre_lo_que_dice_un_documento_no_se_bloquean(pregunta):
 
 
 def test_en_medicamentos_cualquier_mencion_de_dosis_se_rechaza():
-    assert seguridad.detectar_limite_clinico("¿Cuál es la dosis de ibuprofeno?") is None
+    assert seguridad.detectar_limite_clinico("Háblame de la posología del ibuprofeno") is None
     assert (
-        seguridad.detectar_limite_clinico("¿Cuál es la dosis de ibuprofeno?", estricto=True).codigo
+        seguridad.detectar_limite_clinico(
+            "Háblame de la posología del ibuprofeno", estricto=True
+        ).codigo
         == "dosis"
     )
 

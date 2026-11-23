@@ -357,7 +357,12 @@ def test_motivos_de_verificacion_visual():
         0.85,
     )
     assert requiere
-    assert "sellos o firmas" in motivo and "confianza 62%" in motivo and "original de su equipo" in motivo and "PDF" not in motivo
+    assert (
+        "sellos o firmas" in motivo
+        and "confianza 62%" in motivo
+        and "original de su equipo" in motivo
+        and "PDF" not in motivo
+    )
     assert "tablas" in generacion.verificacion_visual({"has_tables": True}, 0.85)[1]
 
 
