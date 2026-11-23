@@ -94,8 +94,10 @@ async def test_pipeline_completo(client, org_a, expediente, ejecutor, ephemeral_
         assert f.tenant_id == d.tenant_id and f.expediente_id == d.expediente_id
         assert f.token_count <= 1000
         assert f.embedding_model == "gemini-embedding-001"
+        # Con la anonimización activa (por defecto) el nombre del archivo no sale a la nube: suele traer
+        # el nombre de una persona. El nombre real se conserva en `documentos`.
         assert f.contenido_vectorizado.startswith(
-            f"[Expediente: LIC-001 | Doc: Pliego_Hospital.pdf | Tipo: PLIEGO | "
+            f"[Expediente: LIC-001 | Doc: documento | Tipo: PLIEGO | "
             f"Pág: {f.pagina_inicio}-{f.pagina_fin} | Sección: {f.seccion}] "
         )
         assert f.metadata_jsonb["tipo_documento"] == "PLIEGO"

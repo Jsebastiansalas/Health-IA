@@ -20,8 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ConsentimientoService {
 
-    /** Cambiar el texto de consentimiento exige subir esta version: todos deben aceptarlo de nuevo. */
-    public static final String VERSION_VIGENTE = "2026-11-v1";
+    /**
+     * Cambiar el texto de consentimiento exige subir esta version: todos deben aceptarlo de nuevo.
+     * v2: el texto pasa a decir que los datos personales se enmascaran antes de enviarlos al proveedor.
+     */
+    public static final String VERSION_VIGENTE = "2026-11-v2";
 
     public record Estado(String version, boolean requerido, boolean aceptado, Instant aceptadoAt, TipoTenant tipoCuenta) {}
 

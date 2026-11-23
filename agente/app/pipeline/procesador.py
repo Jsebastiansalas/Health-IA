@@ -29,6 +29,7 @@ from app.pipeline.modelos import (
     FragmentoGenerado,
 )
 from app.pipeline.vectorizacion import Vectorizador
+from app.privacidad.anonimizar import enmascarar_texto
 from app.services import almacen_efimero
 from app.services.estados import transicionar
 from app.services.purga import fallar_y_purgar
@@ -65,8 +66,22 @@ def config_fragmentacion(s: Settings) -> ConfigFragmentacion:
 
 
 def _filas(
-    documento: Documento, expediente: Expediente, fragmentos: list[FragmentoGenerado]
+    documento: Documento,
+    expediente: Expediente,
+    fragmentos: list[FragmentoGenerado],
+    anonimizar: bool = True,
 ) -> list[dict]:
+    # `contenido_vectorizado` es lo ÚNICO que viaja al proveedor de embeddings (al indexar y al
+    # reindexar). `contenido_texto` conserva el original: es lo que se muestra y se cita. El nombre
+    # del archivo suele traer el nombre de la persona: en la cabecera se reemplaza por uno neutro.
+    nombre = "documento" if anonimizar else documento.nombre_archivo_original
+
+    def vectorizable(f: FragmentoGenerado) -> str:
+        cabecera = cabecera_contextual(
+            expediente.codigo_expediente, nombre, documento.tipo_documento, f
+        )
+        return enmascarar_texto(cabecera) if anonimizar else cabecera
+
     return [
         {
             "tenant_id": documento.tenant_id,
@@ -77,12 +92,7 @@ def _filas(
             "pagina_fin": f.pagina_fin,
             "seccion": f.seccion,
             "contenido_texto": f.texto,
-            "contenido_vectorizado": cabecera_contextual(
-                expediente.codigo_expediente,
-                documento.nombre_archivo_original,
-                documento.tipo_documento,
-                f,
-            ),
+            "contenido_vectorizado": vectorizable(f),
             "token_count": f.token_count,
             "embedding_model": documento.embedding_model,
             "embedding": None,
@@ -161,7 +171,8 @@ async def procesar_documento(
             if not fragmentos:
                 raise DocumentoSinTexto("No se pudo extraer texto de ninguna página")
 
-            await session.execute(insert(Fragmento), _filas(documento, expediente, fragmentos))
+            filas = _filas(documento, expediente, fragmentos, settings.anonimizar_antes_de_nube)
+            await session.execute(insert(Fragmento), filas)
             documento.total_chunks_esperados = len(fragmentos)
             documento.total_chunks_guardados = 0
             transicionar(documento, E.VECTORIZANDO)

@@ -11,6 +11,7 @@ from app.core.config import Settings
 from app.ia.embeddings import EmbeddingRouter
 from app.ia.llm import ProveedorLLM
 from app.models import Expediente
+from app.privacidad.anonimizar import Anonimizador, evidencias_para_la_nube
 from app.rag import busqueda, generacion
 
 log = logging.getLogger(__name__)
@@ -45,7 +46,11 @@ async def responder(
     # segundos: antes se devuelve la conexión a la base de datos (la autenticación y el permiso
     # ya abrieron una transacción). La sesión se reabre sola en la siguiente consulta.
     await session.close()
-    vector = await router.embeber_consulta(modelo, pregunta)
+    # Privacidad: a la nube solo sale la pregunta enmascarada; la búsqueda léxica (en la base
+    # propia) sigue usando la original. Lo mismo vale para las evidencias del prompt, más abajo.
+    anon = Anonimizador() if s.anonimizar_antes_de_nube else None
+    pregunta_nube = anon.enmascarar(pregunta) if anon else pregunta
+    vector = await router.embeber_consulta(modelo, pregunta_nube)
 
     # Pasos 12-13: híbrida + RRF + reranking de dominio + vecinos.
     candidatos = await busqueda.busqueda_hibrida(
@@ -77,10 +82,16 @@ async def responder(
     # Paso 14: generación fundamentada. Las evidencias son dataclasses (no ORM) y la generación
     # puede tardar hasta el timeout del modelo: no se retiene ninguna conexión mientras tanto.
     await session.close()
+    evidencias_nube = evidencias_para_la_nube(evidencias, anon) if anon else evidencias
     salida = await llm.generar_json(
-        generacion.SISTEMA, generacion.construir_prompt(pregunta, evidencias), generacion.ESQUEMA
+        generacion.SISTEMA,
+        generacion.construir_prompt(pregunta_nube, evidencias_nube),
+        generacion.ESQUEMA,
     )
-    resultado = generacion.ensamblar(salida.datos, evidencias, s.umbral_confianza_ocr)
+    # Se restauran los datos en lo que devolvió el modelo y SOLO ENTONCES se verifican los extractos
+    # contra los fragmentos originales: las citas siguen siendo literales.
+    datos = anon.restaurar_json(salida.datos) if anon else salida.datos
+    resultado = generacion.ensamblar(datos, evidencias, s.umbral_confianza_ocr)
     if resultado.citas_descartadas:
         log.warning(
             "Consulta expediente=%s: %d cita(s) con id inexistente descartadas",

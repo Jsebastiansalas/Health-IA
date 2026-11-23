@@ -69,7 +69,7 @@ React ──HTTPS──> Caddy ──> API Java (Spring Boot :8080)
 | 22 | Frontend: portada e ingreso con el producto en acción | ✅ |
 | 23 | Frontend: pulido (residuos, casos extremos, táctil) | ✅ |
 | 24 | Salud: seguridad, consentimiento y cuentas personales (`V9`) | ✅ |
-| 25 | Salud: anonimización antes de salir a la nube | ⏳ |
+| 25 | Salud: anonimización antes de salir a la nube | ✅ |
 | 26 | Salud: fotos y escaneos de documentos (JPG, PNG, HEIC) | ⏳ |
 | 27 | Salud: «Explícame este documento» | ⏳ |
 | 28 | Salud: medicamentos, efectos e interacciones con fuente | ⏳ |

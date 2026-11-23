@@ -189,7 +189,9 @@ async def consultar_medicamentos(
     un expediente: los datos son públicos; tenant y usuario viajan para trazabilidad."""
     pregunta = " ".join(data.pregunta.split())
     try:
-        r = await med_consulta.responder(session, pregunta, llm)
+        r = await med_consulta.responder(
+            session, pregunta, llm, anonimizar=get_settings().anonimizar_antes_de_nube
+        )
     except ErrorLLM as exc:
         CONSULTAS.labels("error_ia").inc()
         log.error("Consulta de medicamentos fallida: %s", exc)

@@ -79,7 +79,9 @@ def _configurar_entorno(postgres_url: str, ephemeral_dir: Path) -> Iterator[None
     assert len(scripts) >= 8, f"No se encontraron las migraciones de Flyway en {MIGRACIONES}"
     with psycopg.connect(postgres_url, autocommit=True) as conn:
         for script in scripts:
-            conn.execute(script.read_text(encoding="utf-8").replace("${app_password}", APP_PASSWORD))
+            conn.execute(
+                script.read_text(encoding="utf-8").replace("${app_password}", APP_PASSWORD)
+            )
     yield
 
 

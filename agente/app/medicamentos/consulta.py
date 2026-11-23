@@ -21,6 +21,7 @@ from app.ia.llm import ProveedorLLM
 from app.medicamentos import busqueda
 from app.medicamentos.busqueda import FUENTES, Filtros, Resultado
 from app.medicamentos.carga import BASE, CONJUNTOS
+from app.privacidad.anonimizar import Anonimizador
 
 log = logging.getLogger(__name__)
 
@@ -109,7 +110,13 @@ ESQUEMA_REDACTOR = {
         "precios_usados": {"type": "ARRAY", "items": {"type": "STRING"}},
         "usa_estadisticas": {"type": "BOOLEAN"},
     },
-    "required": ["respuesta", "hay_evidencia", "registros_usados", "precios_usados", "usa_estadisticas"],
+    "required": [
+        "respuesta",
+        "hay_evidencia",
+        "registros_usados",
+        "precios_usados",
+        "usa_estadisticas",
+    ],
 }
 
 MENSAJE_FUERA_DE_ALCANCE = (
@@ -242,7 +249,11 @@ def _prompt_redactor(pregunta: str, tipo: str, ctx: _Contexto, hoy: date) -> str
         "coincidencias_cum": r.total_cum,
         "registros_sanitarios_distintos": r.total_registros,
         "por_conjunto": [
-            {"conjunto": CONJUNTOS[x["fuente"]].nombre, "cum": x["cum"], "registros": x["registros"]}
+            {
+                "conjunto": CONJUNTOS[x["fuente"]].nombre,
+                "cum": x["cum"],
+                "registros": x["registros"],
+            }
             for x in r.por_fuente
         ],
         "titulares_distintos": r.titulares_distintos,
@@ -255,7 +266,8 @@ def _prompt_redactor(pregunta: str, tipo: str, ctx: _Contexto, hoy: date) -> str
     partes = [
         f"FECHA DE HOY: {hoy.isoformat()}",
         f"TIPO DE PREGUNTA: {tipo}",
-        "ESTADÍSTICAS DE LA BÚSQUEDA:\n" + "\n".join(f"{k}: {_escapar(_s(v))}" for k, v in stats.items()),
+        "ESTADÍSTICAS DE LA BÚSQUEDA:\n"
+        + "\n".join(f"{k}: {_escapar(_s(v))}" for k, v in stats.items()),
         "REGISTROS (uno por registro sanitario):\n"
         + "\n\n".join(_texto_registro(i, x) for i, x in enumerate(r.registros, start=1)),
     ]
@@ -314,7 +326,9 @@ def _cita_precio(i: int, p: dict, carga: dict) -> dict:
         "precioFinalComercial": _s(p.get("precio_final_comercial")) or None,
         "circular": p.get("circular"),
         "vigenciaDesde": _iso(p.get("vigencia_desde")),
-        "fuente": _fuente("PRECIO", carga, f"{BASE}/{CONJUNTOS['PRECIO'].dataset_id}.json?cum={p.get('cum')}"),
+        "fuente": _fuente(
+            "PRECIO", carga, f"{BASE}/{CONJUNTOS['PRECIO'].dataset_id}.json?cum={p.get('cum')}"
+        ),
     }
 
 
@@ -328,11 +342,10 @@ def _cita_estadistica(ctx: _Contexto) -> dict:
         "registrosSanitarios": r.total_registros,
         "titularesDistintos": r.titulares_distintos,
         "porConjunto": [
-            {"conjunto": x["fuente"], "cum": x["cum"], "registros": x["registros"]} for x in r.por_fuente
+            {"conjunto": x["fuente"], "cum": x["cum"], "registros": x["registros"]}
+            for x in r.por_fuente
         ],
-        "fuente": _fuente(
-            ctx.f.estado if ctx.f.estado in CONJUNTOS else "VIGENTE", ctx.carga
-        ),
+        "fuente": _fuente(ctx.f.estado if ctx.f.estado in CONJUNTOS else "VIGENTE", ctx.carga),
     }
 
 
@@ -358,7 +371,12 @@ def _a_filtros(d: dict) -> tuple[str, Filtros]:
 
 
 def _respuesta(
-    pregunta: str, cuerpo: dict, sin_evidencia: bool, ctx: _Contexto | None, t0: float, modelo: str | None
+    pregunta: str,
+    cuerpo: dict,
+    sin_evidencia: bool,
+    ctx: _Contexto | None,
+    t0: float,
+    modelo: str | None,
 ) -> RespuestaMedicamentos:
     cuerpo.setdefault("alertas", [])
     cuerpo.setdefault("citas", [])
@@ -388,7 +406,11 @@ def _frescura(carga: dict[str, dict[str, Any]], ahora: datetime) -> list[str]:
 
 
 async def responder(
-    session: AsyncSession, pregunta: str, llm: ProveedorLLM, hoy: date | None = None
+    session: AsyncSession,
+    pregunta: str,
+    llm: ProveedorLLM,
+    hoy: date | None = None,
+    anonimizar: bool = True,
 ) -> RespuestaMedicamentos:
     t0 = time.perf_counter()
     ahora = datetime.now(UTC)
@@ -403,27 +425,39 @@ async def responder(
         }
         return _respuesta(pregunta, cuerpo, True, None, t0, None)
 
-    # 1. Interpretar la pregunta
+    # 1. Interpretar la pregunta (a la nube solo sale enmascarada: puede mencionar datos de una persona)
+    anon = Anonimizador() if anonimizar else None
+    pregunta_nube = anon.enmascarar(pregunta) if anon else pregunta
     await session.rollback()  # no se retiene conexión durante la llamada al modelo
-    interpretada = await llm.generar_json(SISTEMA_INTERPRETE, pregunta, ESQUEMA_INTERPRETE)
+    interpretada = await llm.generar_json(SISTEMA_INTERPRETE, pregunta_nube, ESQUEMA_INTERPRETE)
     tipo, filtros = _a_filtros(interpretada.datos)
     modelo = interpretada.modelo
     interpretacion = {"tipo": tipo, "filtros": filtros.como_dict()}
 
     if tipo == "fuera_de_alcance":
         return _respuesta(
-            pregunta, {"respuestaAnalitica": MENSAJE_FUERA_DE_ALCANCE, "interpretacion": interpretacion},
-            True, None, t0, modelo,
+            pregunta,
+            {"respuestaAnalitica": MENSAJE_FUERA_DE_ALCANCE, "interpretacion": interpretacion},
+            True,
+            None,
+            t0,
+            modelo,
         )
     if filtros.vacio():
         return _respuesta(
-            pregunta, {"respuestaAnalitica": MENSAJE_SIN_FILTROS, "interpretacion": interpretacion},
-            True, None, t0, modelo,
+            pregunta,
+            {"respuestaAnalitica": MENSAJE_SIN_FILTROS, "interpretacion": interpretacion},
+            True,
+            None,
+            t0,
+            modelo,
         )
 
     # 2. Buscar
     resultado = await busqueda.buscar(session, filtros, LIMITE_REGISTROS)
-    if resultado.registros and (tipo in ("precio", "ficha", "listado", "equivalentes") or filtros.cum):
+    if resultado.registros and (
+        tipo in ("precio", "ficha", "listado", "equivalentes") or filtros.cum
+    ):
         resultado.precios = await busqueda.buscar_precios(session, filtros, resultado.registros)
     elif tipo == "precio":
         resultado.precios = await busqueda.buscar_precios(session, filtros, [])
@@ -442,10 +476,10 @@ async def responder(
     # 3. Redactar con lo encontrado
     await session.rollback()
     salida = await llm.generar_json(
-        SISTEMA_REDACTOR, _prompt_redactor(pregunta, tipo, ctx, hoy), ESQUEMA_REDACTOR
+        SISTEMA_REDACTOR, _prompt_redactor(pregunta_nube, tipo, ctx, hoy), ESQUEMA_REDACTOR
     )
     modelo = salida.modelo
-    d = salida.datos
+    d = anon.restaurar_json(salida.datos) if anon else salida.datos
 
     por_id = {f"R{i}": x for i, x in enumerate(resultado.registros, start=1)}
     precios_id = {f"P{i}": x for i, x in enumerate(resultado.precios, start=1)}
@@ -462,7 +496,9 @@ async def responder(
     if d.get("usa_estadisticas"):
         citas.append(_cita_estadistica(ctx))
     if resultado.aproximada:
-        alertas.append("La coincidencia del nombre fue aproximada: confirme que es el medicamento buscado.")
+        alertas.append(
+            "La coincidencia del nombre fue aproximada: confirme que es el medicamento buscado."
+        )
 
     hay = bool(d.get("hay_evidencia")) and bool(citas)
     cuerpo = {
