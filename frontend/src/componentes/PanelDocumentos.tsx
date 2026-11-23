@@ -26,6 +26,7 @@ export function PanelDocumentos({
   puedeSubir,
   puedeExplicar = true,
   alExplicar,
+  clinico = false,
 }: {
   expedienteId: string;
   puedeSubir: boolean;
@@ -33,6 +34,8 @@ export function PanelDocumentos({
   puedeExplicar?: boolean;
   /** Se llama cuando la explicación ya está lista, para llevar a la persona a la consola. */
   alExplicar?: () => void;
+  /** Expediente clínico o cuenta personal: el tipo por defecto es «Historia clínica», no «Pliego». */
+  clinico?: boolean;
 }) {
   const { data: documentos, isLoading } = useQuery({
     queryKey: ["documentos", expedienteId],
@@ -49,7 +52,7 @@ export function PanelDocumentos({
         </h2>
         <span className="num text-sm text-tinta-3">{documentos?.length ?? 0} cargados</span>
       </div>
-      {puedeSubir && <FormularioSubida expedienteId={expedienteId} />}
+      {puedeSubir && <FormularioSubida expedienteId={expedienteId} clinico={clinico} />}
       <ul className="mt-4 space-y-3">
         {isLoading && (
           <li aria-busy>
@@ -70,12 +73,12 @@ export function PanelDocumentos({
   );
 }
 
-function FormularioSubida({ expedienteId }: { expedienteId: string }) {
+function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; clinico: boolean }) {
   const cliente = useQueryClient();
   const entrada = useRef<HTMLInputElement>(null);
   const camara = useRef<HTMLInputElement>(null);
   const [archivo, setArchivo] = useState<File | null>(null);
-  const [tipo, setTipo] = useState<TipoDocumento>("PLIEGO");
+  const [tipo, setTipo] = useState<TipoDocumento>(clinico ? "HISTORIA_CLINICA" : "PLIEGO");
   const [numero, setNumero] = useState(1);
   const [progreso, setProgreso] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);

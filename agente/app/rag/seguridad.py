@@ -53,6 +53,8 @@ _REGLAS: list[tuple[str, str, re.Pattern[str]]] = [
         _GENERAL,
         re.compile(
             r"\b(no puedo respirar|dificultad (para|al) respirar|falta de (aire|aliento)|"
+            r"me falta(n)? (el )?(aire|aliento)|falta el aire|(me )?cuesta (trabajo )?respirar|"
+            r"respir\w* (mal|con dificultad)|no respiro|sin aliento|"
             r"me ahogo|ahogo|asfixia|labios morados)\b"
         ),
     ),
