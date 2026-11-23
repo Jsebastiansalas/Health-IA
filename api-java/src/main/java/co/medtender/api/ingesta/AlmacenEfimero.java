@@ -1,6 +1,7 @@
 package co.medtender.api.ingesta;
 
 import co.medtender.api.config.IngestaProperties;
+import co.medtender.api.domain.FormatoDocumento;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -8,8 +9,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 /**
- * Directorio aislado donde vive temporalmente cada PDF mientras se indexa. El nombre del archivo
- * es siempre {documento_id}.pdf: el nombre original del cliente nunca se usa para construir rutas.
+ * Directorio aislado donde vive temporalmente cada documento (PDF o foto) mientras se indexa. El nombre
+ * del archivo es siempre {documento_id}{extension del formato real}: el nombre original del cliente nunca
+ * se usa para construir rutas.
  * Java escribe; el agente Python lo lee y lo borra al terminar (o lo borra Java si lo rechaza).
  */
 @Component
@@ -29,7 +31,12 @@ public class AlmacenEfimero {
     }
 
     public Path rutaPdf(UUID documentoId) {
-        return directorio.resolve(documentoId + ".pdf");
+        return rutaDocumento(documentoId, FormatoDocumento.PDF);
+    }
+
+    /** {id}.pdf, {id}.jpg, {id}.png o {id}.heic: el nombre lo decide el formato real, no el cliente. */
+    public Path rutaDocumento(UUID documentoId, FormatoDocumento formato) {
+        return directorio.resolve(documentoId + formato.extension());
     }
 
     public Path rutaParcial(UUID documentoId) {
@@ -45,10 +52,12 @@ public class AlmacenEfimero {
         }
     }
 
-    /** Borra el PDF y su version parcial; true si alguno existia. */
+    /** Borra el documento (en cualquier formato) y su version parcial; true si alguno existia. */
     public boolean borrarTodo(UUID documentoId) {
-        boolean pdf = borrar(rutaPdf(documentoId));
-        boolean parcial = borrar(rutaParcial(documentoId));
-        return pdf || parcial;
+        boolean alguno = false;
+        for (FormatoDocumento f : FormatoDocumento.values()) {
+            alguno |= borrar(rutaDocumento(documentoId, f));
+        }
+        return borrar(rutaParcial(documentoId)) || alguno;
     }
 }

@@ -88,8 +88,8 @@ export async function api<T>(ruta: string, opciones: RequestInit = {}, reintento
 export const post = <T>(ruta: string, cuerpo: unknown) =>
   api<T>(ruta, { method: "POST", body: JSON.stringify(cuerpo) });
 
-/** Subida multipart con progreso real de bytes (fetch no lo expone). */
-export function subirPdf(
+/** Subida multipart (PDF o foto) con progreso real de bytes (fetch no lo expone). */
+export function subirDocumento(
   expedienteId: string,
   formulario: FormData,
   alProgresar: (fraccion: number) => void,
@@ -109,7 +109,7 @@ export function subirPdf(
       }
       if (xhr.status === 202) return resolver(cuerpo as Documento);
       const c = cuerpo as { detail?: unknown; documento?: Documento };
-      // 422 por "no es PDF" trae el documento ya purgado: se muestra igual en la lista.
+      // 422 por «formato no soportado» trae el documento ya purgado: se muestra igual en la lista.
       if (xhr.status === 422 && c.documento) return resolver(c.documento);
       rechazar(new ErrorApi(xhr.status, c.detail ?? cuerpo));
     };

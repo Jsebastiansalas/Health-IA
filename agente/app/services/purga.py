@@ -51,8 +51,8 @@ async def verificar_indexacion(session: AsyncSession, documento: Documento) -> i
 
 
 def _borrar_archivos(documento_id: uuid.UUID) -> bool:
-    existia_pdf = almacen_efimero.borrar(almacen_efimero.ruta_pdf(documento_id))
-    existia_parcial = almacen_efimero.borrar(almacen_efimero.ruta_parcial(documento_id))
+    existia_pdf = almacen_efimero.borrar_documento(documento_id)
+    existia_parcial = False  # borrar_documento ya incluye la versión parcial
     return existia_pdf or existia_parcial
 
 

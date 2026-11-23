@@ -21,6 +21,7 @@ import pypdfium2.raw as pdfium_c
 from app.pipeline import tablas
 from app.pipeline.modelos import (
     ConfigExtraccion,
+    ErrorDeDocumento,
     MetodoExtraccion,
     PaginaExtraida,
     Parte,
@@ -165,10 +166,14 @@ def _rotar(imagen, grados: int):
 
 
 def _ocr(pagina: pdfium.PdfPage, cfg: ConfigExtraccion) -> tuple[str, float | None]:
-    """OCR de una página. Si la confianza es baja se reintenta (rotación detectada por OSD y
+    """OCR de una página de PDF escaneada (se rasteriza solo ella)."""
+    return _ocr_imagen(pagina.render(scale=cfg.ocr_dpi / 72).to_pil(), cfg)
+
+
+def _ocr_imagen(imagen, cfg: ConfigExtraccion) -> tuple[str, float | None]:
+    """OCR de una imagen. Si la confianza es baja se reintenta (rotación detectada por OSD y
     binarización) y se conserva el mejor resultado: un texto leído mal nunca debe ganarle a uno
     leído bien."""
-    imagen = pagina.render(scale=cfg.ocr_dpi / 72).to_pil()
     mejor = _leer(imagen, cfg)
     if mejor[1] is not None and mejor[1] >= cfg.ocr_umbral_reintento:
         return mejor
@@ -286,7 +291,66 @@ def _extraer_pagina(
     return resultado
 
 
+class ImagenNoLegible(ErrorDeDocumento):
+    """La foto no se puede indexar: está dañada, no tiene texto o se lee con muy poca claridad."""
+
+
+_MENSAJE_SIN_TEXTO = (
+    "Esta imagen no contiene texto legible. MedTender no interpreta imágenes médicas (como una "
+    "radiografía): sube el informe escrito del radiólogo, o una foto más nítida del documento."
+)
+
+
+def _registrar_heic() -> None:
+    try:
+        import pillow_heif
+
+        pillow_heif.register_heif_opener()
+    except ImportError:  # sin la biblioteca, un HEIC se rechaza como «no se pudo abrir»
+        log.warning("pillow-heif no está instalado: las fotos HEIC no se podrán leer")
+
+
+def extraer_imagen(ruta: str, cfg: ConfigExtraccion) -> ResultadoExtraccion:
+    """Foto o escaneo de un documento: se orienta con EXIF (los móviles guardan la foto girada), se
+    reduce si es enorme y se lee con OCR. Una foto ilegible se rechaza con un mensaje que dice cómo
+    repetirla, en vez de indexar texto basura."""
+    from PIL import Image, ImageOps
+
+    _registrar_heic()
+    Image.MAX_IMAGE_PIXELS = cfg.imagen_max_pixeles  # bomba de descompresión: error, no memoria
+    try:
+        with Image.open(ruta) as original:
+            original.load()
+            imagen = ImageOps.exif_transpose(original).convert("RGB")
+    except (OSError, ValueError, Image.DecompressionBombError) as exc:
+        log.info("Imagen ilegible: %s", exc)
+        raise ImagenNoLegible(
+            "No se pudo abrir la imagen: el archivo está dañado o es demasiado grande."
+        ) from exc
+    if max(imagen.size) > cfg.imagen_max_lado:
+        imagen.thumbnail((cfg.imagen_max_lado, cfg.imagen_max_lado))
+
+    texto, confianza = _ocr_imagen(imagen, cfg)
+    texto = texto.strip()
+    if len(texto) < cfg.imagen_texto_minimo:
+        raise ImagenNoLegible(_MENSAJE_SIN_TEXTO)
+    if confianza is not None and confianza < cfg.imagen_confianza_minima:
+        raise ImagenNoLegible(
+            f"La foto se lee con muy poca claridad (confianza {confianza:.0%}). Vuelve a "
+            "tomarla con buena luz, sin sombras y con el documento recto y de frente."
+        )
+    pagina = PaginaExtraida(
+        numero=1,
+        metodo=MetodoExtraccion.OCR,
+        partes=[Parte(texto)],
+        ocr_confidence=confianza,
+    )
+    return ResultadoExtraccion(paginas=[pagina], ocr_version=version_tesseract())
+
+
 def extraer_documento(ruta: str, cfg: ConfigExtraccion) -> ResultadoExtraccion:
+    if not str(ruta).lower().endswith(".pdf"):
+        return extraer_imagen(ruta, cfg)
     paginas: list[PaginaExtraida] = []
     documento = pdfium.PdfDocument(ruta)
     try:

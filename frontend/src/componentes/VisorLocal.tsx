@@ -29,7 +29,7 @@ import {
   type PdfLocal,
 } from "../lib/carpetaLocal";
 import { cn } from "../lib/cn";
-import { etiquetaDocumento, paginas } from "../lib/formato";
+import { esHeic, esImagen, etiquetaDocumento, paginas } from "../lib/formato";
 import { mismoHash, sha256Hex } from "../lib/sha256";
 import { Boton } from "./ui/Boton";
 import { Esqueleto } from "./ui/Esqueleto";
@@ -171,7 +171,11 @@ export function VisorLocal({
 
       <div className="min-h-0 flex-1">
         {estado.fase === "listo" ? (
-          <LectorPdf pdf={estado.pdf} cita={cita} />
+          esImagen(estado.pdf.archivo.name) ? (
+            <LectorImagen pdf={estado.pdf} cita={cita} />
+          ) : (
+            <LectorPdf pdf={estado.pdf} cita={cita} />
+          )
         ) : (
           <div className="grid h-full place-items-center overflow-auto px-6 py-10">
             <Indicaciones
@@ -388,6 +392,33 @@ function Indicaciones({
 
 const normalizar = (t: string) => t.normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
 const ZOOMS = [0.6, 0.8, 1, 1.25, 1.6, 2];
+
+/** El original es una foto: se muestra tal cual (el texto citado no se puede resaltar sobre una imagen). */
+function LectorImagen({ pdf, cita }: { pdf: PdfLocal; cita: Cita }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (esHeic(pdf.archivo.name)) return;
+    const u = URL.createObjectURL(pdf.archivo);
+    setUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [pdf.archivo]);
+  return (
+    <div className="h-full min-h-0 overflow-auto px-6 py-5">
+      <blockquote className="mx-auto mb-4 max-w-3xl font-display text-[1rem] leading-[1.75]">
+        <span className="mb-1 block text-[0.72rem] font-medium text-tinta-3">Extracto citado (lo que leyó el OCR)</span>
+        <span className="resaltado">«{cita.extractoLiteral}»</span>
+      </blockquote>
+      {url ? (
+        <img src={url} alt={`Foto original: ${pdf.ruta}`} className="mx-auto block max-w-full rounded-md bg-white" />
+      ) : (
+        <p className="mx-auto max-w-xl rounded-md border border-tinta/15 bg-folio-2 px-4 py-3 text-sm text-tinta-2">
+          Este navegador no puede mostrar fotos HEIC. La huella coincide, así que es el original: ábrelo con el visor de
+          fotos de tu equipo ({pdf.ruta}).
+        </p>
+      )}
+    </div>
+  );
+}
 
 function LectorPdf({ pdf, cita }: { pdf: PdfLocal; cita: Cita }) {
   const lienzo = useRef<HTMLCanvasElement>(null);

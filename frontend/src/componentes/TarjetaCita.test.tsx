@@ -18,7 +18,7 @@ const base: Cita = {
   metodoExtraccion: "OCR",
   confianzaOcr: 0.62,
   requiereVerificacionVisualOriginal: true,
-  motivoVerificacionVisual: "Verifique en el PDF original de su PC: el fragmento contiene sellos o firmas.",
+  motivoVerificacionVisual: "Verifique en el original de su equipo: el fragmento contiene sellos o firmas.",
   tiposEvidencia: ["FIRMA_O_SELLO", "OCR_BAJA_CONFIANZA"],
 };
 

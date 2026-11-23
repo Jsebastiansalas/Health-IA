@@ -153,7 +153,7 @@ public class DocumentoController {
             var duplicados = documentos.duplicados(user.tenantId(), expedienteId, recibido.sha256());
             if (!duplicados.isEmpty()) {
                 Map<String, Object> detalle = new LinkedHashMap<>();
-                detalle.put("msg", "Este PDF ya fue cargado en el expediente");
+                detalle.put("msg", "Este documento ya fue cargado en el expediente");
                 detalle.put("documento_id", duplicados.get(0).toString());
                 throw new ApiException(HttpStatus.CONFLICT, detalle);
             }
@@ -165,16 +165,20 @@ public class DocumentoController {
             auditoria.auditar(Accion.DOCUMENTO_SUBIDO, user, "documento", documentoId, Map.of(
                     "expediente", expedienteId.toString(), "tipo", meta.tipo().name(),
                     "sha256", recibido.sha256(), "bytes", recibido.tamano()));
-            Files.move(parcial, almacen.rutaPdf(documentoId), StandardCopyOption.ATOMIC_MOVE);
+            // El formato lo decide el contenido. Si no es nada soportado se guarda como .pdf solo para que la
+            // purga de abajo lo encuentre; el rechazo es inmediato.
+            var formatoDetectado = inspector.detectarFormato(recibido.cabecera());
+            d.setFormato(formatoDetectado.orElse(co.medtender.api.domain.FormatoDocumento.PDF));
+            Files.move(parcial, almacen.rutaDocumento(documentoId, d.getFormato()), StandardCopyOption.ATOMIC_MOVE);
 
             d.transicionar(EstadoIndexacion.VALIDANDO);
             d = documentos.saveAndFlush(d);
 
             // La firma binaria se comprueba aqui (instantaneo, no parsea nada) para dar respuesta
             // inmediata; antivirus y estructura van en segundo plano.
-            if (!inspector.tieneFirmaPdf(recibido.cabecera())) {
+            if (formatoDetectado.isEmpty()) {
                 var rechazado = purga.rechazar(documentoId, MotivoPurga.ERROR_VALIDACION,
-                        "El archivo no es un PDF (firma %PDF- ausente)").orElse(d);
+                        "El archivo no es un PDF ni una imagen compatible (JPG, PNG o HEIC)").orElse(d);
                 Map<String, Object> extra = new LinkedHashMap<>();
                 extra.put("documento", DocumentoOut.de(rechazado, ingesta.ocrVersionActual()));
                 throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, rechazado.getMotivoError(), extra);

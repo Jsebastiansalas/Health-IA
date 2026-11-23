@@ -60,7 +60,7 @@ public class ValidadorAsincrono {
                 return;
             }
 
-            Resultado r = evaluar(documentoId);
+            Resultado r = evaluar(documentoId, previo.getFormato());
 
             // Se relee: pudo eliminarse o expirar mientras se escaneaba. Que no quede el archivo.
             var actual = documentos.findById(documentoId).orElse(null);
@@ -96,15 +96,15 @@ public class ValidadorAsincrono {
     }
 
     /** Antivirus primero: un archivo malicioso no debe llegar al parser de PDF. No toca la base de datos. */
-    private Resultado evaluar(UUID documentoId) {
-        Path ruta = almacen.rutaPdf(documentoId);
+    private Resultado evaluar(UUID documentoId, co.medtender.api.domain.FormatoDocumento formato) {
+        Path ruta = almacen.rutaDocumento(documentoId, formato);
         long t0 = System.nanoTime();
         VirusScanner.ResultadoEscaneo escaneo;
         try {
             escaneo = scanner.escanear(ruta);
         } catch (VirusScanner.AntivirusNoDisponibleException e) {
             log.error("Antivirus no disponible documento={}: {}", documentoId, e.getMessage());
-            return new Resultado("El antivirus no está disponible; vuelva a cargar el PDF más tarde", null);
+            return new Resultado("El antivirus no está disponible; vuelva a cargar el documento más tarde", null);
         }
         double segAv = (System.nanoTime() - t0) / 1e9;
         if (!escaneo.limpio()) {
@@ -113,7 +113,7 @@ public class ValidadorAsincrono {
         }
         t0 = System.nanoTime();
         try {
-            int paginas = inspector.inspeccionar(ruta);
+            int paginas = formato.esImagen() ? inspector.inspeccionarImagen(ruta, formato) : inspector.inspeccionar(ruta);
             log.info("Validacion documento={} antivirus={}s estructura={}s paginas={}", documentoId,
                     String.format("%.1f", segAv), String.format("%.1f", (System.nanoTime() - t0) / 1e9), paginas);
             return new Resultado(null, paginas);

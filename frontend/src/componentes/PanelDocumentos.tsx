@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertOctagon,
+  Camera,
   CheckCheck,
   Clock,
   FileText,
@@ -11,7 +12,7 @@ import {
 } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { api, subirPdf } from "../api/cliente";
+import { api, subirDocumento } from "../api/cliente";
 import type { Documento, EstadoIndexacion, TipoDocumento } from "../api/tipos";
 import { cn } from "../lib/cn";
 import { esFinal, estadoPaso, etiquetaDocumento, fecha, PASOS, tamano, TIPOS_DOCUMENTO } from "../lib/formato";
@@ -57,6 +58,7 @@ export function PanelDocumentos({ expedienteId, puedeSubir }: { expedienteId: st
 function FormularioSubida({ expedienteId }: { expedienteId: string }) {
   const cliente = useQueryClient();
   const entrada = useRef<HTMLInputElement>(null);
+  const camara = useRef<HTMLInputElement>(null);
   const [archivo, setArchivo] = useState<File | null>(null);
   const [tipo, setTipo] = useState<TipoDocumento>("PLIEGO");
   const [numero, setNumero] = useState(1);
@@ -74,13 +76,13 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
     setError(null);
     setProgreso(0);
     try {
-      await subirPdf(expedienteId, form, setProgreso);
-      toast.success("PDF recibido", { description: `${archivo.name}: ahora se valida e indexa.` });
+      await subirDocumento(expedienteId, form, setProgreso);
+      toast.success("Documento recibido", { description: `${archivo.name}: ahora se valida e indexa.` });
       setArchivo(null);
       if (entrada.current) entrada.current.value = "";
       cliente.invalidateQueries({ queryKey: ["documentos", expedienteId] });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cargar el PDF.");
+      setError(err instanceof Error ? err.message : "No se pudo cargar el documento.");
     } finally {
       setProgreso(null);
     }
@@ -113,7 +115,7 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
         <input
           ref={entrada}
           type="file"
-          accept="application/pdf,.pdf"
+          accept="application/pdf,image/jpeg,image/png,image/heic,image/heif,.pdf,.jpg,.jpeg,.png,.heic,.heif"
           className="sr-only"
           onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
         />
@@ -135,12 +137,29 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
               aria-hidden
             />
             <span className="mt-2 block font-medium">
-              {arrastrando ? "Suelta el PDF aquí" : "Arrastra un PDF o elígelo en tu equipo"}
+              {arrastrando ? "Suelta el documento aquí" : "Arrastra un PDF o una foto, o elígelo en tu equipo"}
             </span>
-            <span className="mt-1 block text-xs text-tinta-3">Se valida, se indexa y el original se elimina del servidor</span>
+            <span className="mt-1 block text-xs text-tinta-3">PDF, JPG, PNG o HEIC. Se lee, se indexa y el original se elimina del servidor</span>
           </span>
         )}
       </label>
+
+      {/* En el móvil, abre la cámara directamente: es la forma natural de subir el papel que te dieron. */}
+      <div className="hidden pointer-coarse:block">
+        <input
+          ref={camara}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="sr-only"
+          aria-label="Fotografiar un documento"
+          onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
+        />
+        <Boton type="button" variante="secundario" className="w-full" onClick={() => camara.current?.click()}>
+          <Camera className="size-4" aria-hidden />
+          Tomar una foto del documento
+        </Boton>
+      </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[11rem] flex-1">
@@ -238,7 +257,7 @@ function FilaDocumento({ doc }: { doc: Documento }) {
         {listo && (
           <span className="inline-flex shrink-0 -rotate-2 items-center gap-1.5 rounded-[3px] border-2 border-accion/70 px-2 py-0.5 font-display text-[0.68rem] font-bold uppercase tracking-wider text-accion">
             <Trash2 className="size-3.5" aria-hidden />
-            PDF eliminado
+            Original eliminado
           </span>
         )}
         {error && (

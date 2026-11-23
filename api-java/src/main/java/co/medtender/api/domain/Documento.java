@@ -54,6 +54,10 @@ public class Documento {
     @Column(name = "estado_indexacion", nullable = false, length = 40)
     private EstadoIndexacion estadoIndexacion;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private FormatoDocumento formato = FormatoDocumento.PDF;
+
     @Column(name = "ocr_version", nullable = false, length = 30)
     private String ocrVersion = "tesseract-5.x-v1";
 
@@ -146,4 +150,8 @@ public class Documento {
     public int getPaginasOcr() { return paginasOcr; }
     public Instant getPurgaProgramadaAt() { return purgaProgramadaAt; }
     public Instant getEstadoActualizadoAt() { return estadoActualizadoAt; }
+
+    public FormatoDocumento getFormato() { return formato; }
+
+    public void setFormato(FormatoDocumento formato) { this.formato = formato; }
 }

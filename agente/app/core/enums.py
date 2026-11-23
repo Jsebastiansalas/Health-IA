@@ -47,6 +47,15 @@ class TipoDocumento(StrEnum):
     PRESUPUESTO = "PRESUPUESTO"
 
 
+class FormatoDocumento(StrEnum):
+    """Formato real del archivo recibido: decide cómo se lee y su extensión en el disco."""
+
+    PDF = "PDF"
+    JPG = "JPG"
+    PNG = "PNG"
+    HEIC = "HEIC"
+
+
 class EstadoIndexacion(StrEnum):
     """Enum único de estados del pipeline, compartido por BD y UI.
 

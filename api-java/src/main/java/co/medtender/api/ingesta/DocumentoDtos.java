@@ -28,7 +28,7 @@ public final class DocumentoDtos {
                                String ocrVersion, String extractorVersion, Integer totalChunksEsperados,
                                Integer totalChunksGuardados, boolean tempFilePurged, Instant uploadedAt,
                                Instant estadoActualizadoAt, Instant purgaProgramadaAt, Instant purgedAt,
-                               int paginasOcr, int progreso, boolean avisoOcrDesactualizado) {
+                               int paginasOcr, int progreso, boolean avisoOcrDesactualizado, String formato) {
 
         public static DocumentoOut de(Documento d, String ocrVersionActual) {
             int progreso = d.getEstadoIndexacion().progreso();
@@ -45,7 +45,7 @@ public final class DocumentoDtos {
                     d.getEstadoIndexacion(), d.getMotivoError(), d.getEmbeddingModel(), d.getOcrVersion(),
                     d.getExtractorVersion(), esperados, d.getTotalChunksGuardados(), d.isTempFilePurged(),
                     d.getUploadedAt(), d.getEstadoActualizadoAt(), d.getPurgaProgramadaAt(), d.getPurgedAt(),
-                    d.getPaginasOcr(), progreso, aviso);
+                    d.getPaginasOcr(), progreso, aviso, d.getFormato().name());
         }
     }
 
