@@ -45,6 +45,7 @@ class TipoDocumento(StrEnum):
     REGISTRO_SANITARIO = "REGISTRO_SANITARIO"
     HISTORIA_CLINICA = "HISTORIA_CLINICA"
     PRESUPUESTO = "PRESUPUESTO"
+    PROSPECTO = "PROSPECTO"
 
 
 class FormatoDocumento(StrEnum):

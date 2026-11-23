@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ia.llm import ProveedorLLM
 from app.medicamentos import busqueda
+from app.medicamentos import fichas as modulo_fichas
 from app.medicamentos.busqueda import FUENTES, Filtros, Resultado
 from app.medicamentos.carga import BASE, CONJUNTOS
 from app.privacidad.anonimizar import Anonimizador
@@ -37,9 +38,13 @@ TIPOS = [
 ]
 
 AVISO = (
-    "Información del registro sanitario de INVIMA (datos abiertos). No reemplaza la ficha técnica ni "
-    "el criterio de un profesional de la salud: dosis, indicaciones e interacciones no están en esta fuente."
+    "Información de apoyo con fuente citada. No reemplaza la ficha técnica ni el criterio de un "
+    "profesional de la salud, y no indica dosis ni dice qué medicamento tomar: consulta a tu médico o "
+    "farmacéutico. En una urgencia llama al 123."
 )
+LIMITE_FICHAS = 12
+MAX_CARACTERES_FICHA_EN_PROMPT = 3500
+MAX_CARACTERES_EXTRACTO_FICHA = 1500
 LICENCIA = "Datos de INVIMA en datos.gov.co, licencia CC BY-SA 4.0"
 DIAS_DATOS_VIEJOS = 45
 LIMITE_REGISTROS = 8
@@ -90,9 +95,15 @@ Reglas obligatorias:
 2. Indica en `registros_usados` los ids (R1, R2…) de los registros en los que te apoyas y en
    `precios_usados` los ids (P1, P2…) de precios. Pon `usa_estadisticas`: true si das cifras de las
    ESTADÍSTICAS (cuántos registros, titulares…).
-3. Si la pregunta es clínica (dosis, indicaciones, interacciones, contraindicaciones, embarazo, efectos
-   adversos), dilo: esos datos no están en la base de INVIMA que consultas. Da solo lo que sí consta del
-   registro (principio activo, forma, vía, ATC, estado) y remite a la ficha técnica o al prospecto.
+3. Si la pregunta es clínica (indicaciones, interacciones, contraindicaciones, embarazo, efectos
+   adversos), responde SOLO con las FICHAS TÉCNICAS entregadas (<ficha id="Fn">) e indica en
+   `fichas_usadas` los ids en los que te apoyas. Aclara que la ficha es de un medicamento de la fuente
+   (España) con ese principio activo, no necesariamente el que la persona usa. Si no hay fichas, dilo:
+   esos datos no están en la base de INVIMA; da solo lo que consta del registro y remite al prospecto.
+   NUNCA indiques dosis, cuánto o cada cuánto tomar; NUNCA digas qué medicamento debe tomar o dejar de
+   tomar la persona, ni si le «conviene» o «puede» tomar uno según su caso: explica qué dice la ficha y
+   remite a su médico o farmacéutico. Si te piden una dosis o qué tomar, responde que no puedes
+   indicarlo y por qué.
 4. Distingue siempre el estado del registro (vigente, vencido, en trámite…) y su fecha de vencimiento
    respecto a la fecha de hoy que se te da.
 5. Si hay más coincidencias de las mostradas, dilo y da el total. Si la coincidencia fue aproximada,
@@ -109,6 +120,7 @@ ESQUEMA_REDACTOR = {
         "registros_usados": {"type": "ARRAY", "items": {"type": "STRING"}},
         "precios_usados": {"type": "ARRAY", "items": {"type": "STRING"}},
         "usa_estadisticas": {"type": "BOOLEAN"},
+        "fichas_usadas": {"type": "ARRAY", "items": {"type": "STRING"}},
     },
     "required": [
         "respuesta",
@@ -143,6 +155,7 @@ class _Contexto:
     f: Filtros
     r: Resultado
     carga: dict[str, dict[str, Any]] = field(default_factory=dict)
+    fichas: list[dict] = field(default_factory=list)
 
 
 # ---------- Utilidades ----------
@@ -243,6 +256,15 @@ def _texto_precio(i: int, p: dict) -> str:
     return f'<precio id="P{i}">\n{lineas}\n</precio>'
 
 
+def _texto_ficha(i: int, f: dict) -> str:
+    cuerpo = _escapar(_s(f.get("texto")))[:MAX_CARACTERES_FICHA_EN_PROMPT]
+    return (
+        f'<ficha id="F{i}">\nmedicamento: {_escapar(_s(f.get("medicamento")))}\n'
+        f"principio activo: {_escapar(_s(f.get('principio_activo')))}\n"
+        f"sección {f.get('seccion')}: {_escapar(_s(f.get('titulo')))}\n{cuerpo}\n</ficha>"
+    )
+
+
 def _prompt_redactor(pregunta: str, tipo: str, ctx: _Contexto, hoy: date) -> str:
     r = ctx.r
     stats = {
@@ -282,6 +304,11 @@ def _prompt_redactor(pregunta: str, tipo: str, ctx: _Contexto, hoy: date) -> str
             "Comisión Nacional de Precios de Medicamentos y Dispositivos Médicos) y NO hay precio regulado para "
             "estos medicamentos o presentaciones. Dilo así; no digas que falta la base de datos, y no inventes "
             "ningún precio ni afirmes que su precio es libre."
+        )
+    if ctx.fichas:
+        partes.append(
+            "FICHAS TÉCNICAS (fuente: CIMA, AEMPS de España; medicamentos de esa fuente):\n"
+            + "\n\n".join(_texto_ficha(i, x) for i, x in enumerate(ctx.fichas, start=1))
         )
     partes.append(f"PREGUNTA DEL USUARIO:\n{pregunta}")
     return "\n\n".join(partes)
@@ -329,6 +356,28 @@ def _cita_precio(i: int, p: dict, carga: dict) -> dict:
         "fuente": _fuente(
             "PRECIO", carga, f"{BASE}/{CONJUNTOS['PRECIO'].dataset_id}.json?cum={p.get('cum')}"
         ),
+    }
+
+
+def _cita_ficha(i: int, f: dict) -> dict:
+    texto = _s(f.get("texto"))
+    return {
+        "tipo": "FICHA_TECNICA",
+        "id": f"F{i}",
+        "medicamento": f.get("medicamento"),
+        "principioActivo": f.get("principio_activo"),
+        "registro": f.get("nregistro"),
+        "seccion": f.get("seccion"),
+        "titulo": f.get("titulo"),
+        "extractoLiteral": texto[:MAX_CARACTERES_EXTRACTO_FICHA],
+        "extractoTruncado": len(texto) > MAX_CARACTERES_EXTRACTO_FICHA,
+        "fuente": {
+            "conjunto": "Ficha técnica (CIMA, AEMPS de España)",
+            "datasetId": f.get("nregistro"),
+            "enlace": f.get("url_origen"),
+            "cargadoAt": _iso(f.get("cargado_at")),
+            "licencia": modulo_fichas.ATRIBUCION,
+        },
     }
 
 
@@ -463,8 +512,16 @@ async def responder(
         resultado.precios = await busqueda.buscar_precios(session, filtros, [])
     ctx = _Contexto(filtros, resultado, carga)
 
+    # Información clínica (efectos, contraindicaciones, interacciones): solo de las fichas cargadas.
+    if tipo == "clinica":
+        principio = filtros.principio_activo or filtros.producto
+        if not filtros.principio_activo and resultado.registros:
+            primeros = resultado.registros[0].get("principios") or []
+            principio = (primeros[0].get("nombre") if primeros else None) or principio
+        ctx.fichas = await modulo_fichas.fichas_de(session, principio or "", LIMITE_FICHAS)
+
     alertas = _frescura(carga, ahora)
-    if not resultado.registros and not resultado.precios:
+    if not resultado.registros and not resultado.precios and not ctx.fichas:
         cuerpo = {
             "respuestaAnalitica": "No encontré ese medicamento en la base de INVIMA con los criterios indicados. "
             "Revise la escritura del nombre o pruebe con el principio activo o el registro sanitario.",
@@ -483,6 +540,7 @@ async def responder(
 
     por_id = {f"R{i}": x for i, x in enumerate(resultado.registros, start=1)}
     precios_id = {f"P{i}": x for i, x in enumerate(resultado.precios, start=1)}
+    fichas_id = {f"F{i}": x for i, x in enumerate(ctx.fichas, start=1)}
     usados = [str(x).strip().upper() for x in d.get("registros_usados") or []]
     usados_p = [str(x).strip().upper() for x in d.get("precios_usados") or []]
     citas: list[dict] = []
@@ -490,11 +548,21 @@ async def responder(
         if rid in por_id:
             citas.append(_cita_registro(int(rid[1:]), por_id[rid], carga))
             alertas += _alertas_registro(por_id[rid], hoy)
+    usadas_f = [str(x).strip().upper() for x in d.get("fichas_usadas") or []]
+    for fid in dict.fromkeys(usadas_f):
+        if fid in fichas_id:
+            citas.append(_cita_ficha(int(fid[1:]), fichas_id[fid]))
     for pid in dict.fromkeys(usados_p):
         if pid in precios_id:
             citas.append(_cita_precio(int(pid[1:]), precios_id[pid], carga))
     if d.get("usa_estadisticas"):
         citas.append(_cita_estadistica(ctx))
+    if any(c["tipo"] == "FICHA_TECNICA" for c in citas):
+        alertas.append(
+            "La ficha técnica citada es de un medicamento de la fuente (AEMPS, España) con el mismo principio "
+            "activo; el nombre comercial y el registro no son los de Colombia. Confirma con tu médico o "
+            "farmacéutico y con el prospecto de tu medicamento."
+        )
     if resultado.aproximada:
         alertas.append(
             "La coincidencia del nombre fue aproximada: confirme que es el medicamento buscado."

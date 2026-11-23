@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type { CitaAgregada, CitaPrecio, CitaRegistro, FuenteDato } from "../api/tipos";
+import type { CitaAgregada, CitaFicha, CitaPrecio, CitaRegistro, FuenteDato } from "../api/tipos";
 import { FuentesCitadas } from "./Medicamentos";
 
 const fuente: FuenteDato = {
@@ -91,6 +91,27 @@ describe("FuentesCitadas", () => {
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     expect(screen.getByText("6 registros sanitarios")).toBeInTheDocument();
     expect(screen.getByText(/principio_activo: metformina/)).toBeInTheDocument();
+  });
+
+  it("muestra la ficha técnica citada con su sección, el extracto literal y el enlace a la fuente", () => {
+    const ficha: CitaFicha = {
+      tipo: "FICHA_TECNICA",
+      id: "F1",
+      medicamento: "IBUPROFENO FALSO 400 MG",
+      principioActivo: "ibuprofeno",
+      registro: "111",
+      seccion: "4.3",
+      titulo: "Contraindicaciones",
+      extractoLiteral: "- en pacientes con úlcera gástrica",
+      extractoTruncado: true,
+      fuente: { ...fuente, conjunto: "Ficha técnica (CIMA, AEMPS de España)", enlace: "https://cima.aemps.es/x.html" },
+    };
+    render(<FuentesCitadas citas={[ficha]} base="cita-x" resaltada="F1" />);
+    expect(screen.getByText(/Contraindicaciones · sección 4\.3/)).toBeInTheDocument();
+    expect(screen.getByText(/en pacientes con úlcera gástrica/)).toBeInTheDocument();
+    expect(screen.getByText(/Extracto recortado/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Ver fuente/ })).toHaveAttribute("href", "https://cima.aemps.es/x.html");
+    expect(document.getElementById("cita-x-F1")!.className).toContain("ring-marca");
   });
 
   it("no pinta nada si no hay fuentes citadas", () => {

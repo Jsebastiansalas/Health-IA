@@ -49,6 +49,7 @@ export const TIPOS_DOCUMENTO: Record<TipoDocumento, string> = {
   REGISTRO_SANITARIO: "Registro sanitario",
   HISTORIA_CLINICA: "Historia clínica",
   PRESUPUESTO: "Presupuesto",
+  PROSPECTO: "Prospecto de medicamento",
 };
 
 export const TIPOS_EXPEDIENTE: Record<TipoExpediente, string> = {

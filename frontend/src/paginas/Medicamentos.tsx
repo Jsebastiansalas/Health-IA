@@ -3,7 +3,7 @@ import { AlertOctagon, ArrowUpRight, ExternalLink, SearchX, SendHorizontal, Tria
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { api, post } from "../api/cliente";
-import type { CitaAgregada, CitaMedicamento, CitaPrecio, CitaRegistro, FuenteCargada, RespuestaMedicamentos } from "../api/tipos";
+import type { CitaAgregada, CitaFicha, CitaMedicamento, CitaPrecio, CitaRegistro, FuenteCargada, RespuestaMedicamentos } from "../api/tipos";
 import { AvisoSalud, AvisoUrgencia } from "../componentes/AvisoSalud";
 import { Boton } from "../componentes/ui/Boton";
 import { Esqueleto } from "../componentes/ui/Esqueleto";
@@ -90,8 +90,8 @@ export function PaginaMedicamentos() {
           <div className="animate-aparecer">
             <p className="max-w-xl font-display text-2xl font-semibold leading-tight">Pregunta por un medicamento.</p>
             <p className="mt-2 max-w-lg text-tinta-2">
-              Responde con la base oficial de INVIMA. Dosis, indicaciones e interacciones no están en esa fuente: para eso, consulta
-              la ficha técnica o el prospecto.
+              Responde con la base oficial de INVIMA y, para efectos, contraindicaciones e interacciones, con fichas técnicas oficiales
+              citadas. No indica dosis ni dice qué medicamento tomar: eso lo decide tu médico o farmacéutico.
             </p>
             <ul className="mt-5 max-w-2xl divide-y divide-tinta/12 border-y border-tinta/12">
               {SUGERENCIAS.map((q) => (
@@ -180,7 +180,7 @@ function Burbuja({ texto }: { texto: string }) {
 
 /** Convierte las referencias [R1], [P1], [E1] del texto en enlaces a su tarjeta (solo si esa cita existe). */
 function conReferencias(texto: string, ids: Set<string>) {
-  return texto.replace(/\[([RPE]\d{1,2})\]/g, (m, id) => (ids.has(id) ? `[${id}](#cita-${id})` : m));
+  return texto.replace(/\[([RPEF]\d{1,2})\]/g, (m, id) => (ids.has(id) ? `[${id}](#cita-${id})` : m));
 }
 
 function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos }) {
@@ -279,6 +279,7 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
   const registros = citas.filter((c): c is CitaRegistro => c.tipo === "REGISTRO_INVIMA");
   const precios = citas.filter((c): c is CitaPrecio => c.tipo === "PRECIO_REGULADO");
   const agregadas = citas.filter((c): c is CitaAgregada => c.tipo === "CONSULTA_AGREGADA");
+  const fichas = citas.filter((c): c is CitaFicha => c.tipo === "FICHA_TECNICA");
   const fila = (id: string) => cn("border-t border-tinta/10 transition-colors duration-500", resaltada === id && "bg-marca/35");
   return (
     <div className="space-y-4">
@@ -370,6 +371,30 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
           </table>
         </section>
       )}
+
+      {fichas.map((c) => (
+        <section
+          key={c.id}
+          id={`${base}-${c.id}`}
+          aria-label={`Ficha técnica ${c.id}`}
+          className={cn("folio p-4 transition-shadow duration-500", resaltada === c.id && "ring-2 ring-marca")}
+        >
+          <div className="flex flex-wrap items-center gap-3">
+            <Marcador id={c.id} />
+            <p className="font-display text-[1.05rem] font-semibold">
+              {c.titulo} · sección {c.seccion}
+            </p>
+          </div>
+          <p className="etiqueta mt-1">
+            Ficha técnica de {c.medicamento ?? "—"} (principio activo: {c.principioActivo ?? "—"}) · registro {c.registro ?? "—"}
+          </p>
+          <blockquote className="mt-3 max-h-64 overflow-y-auto whitespace-pre-line border-l-2 border-accion/40 pl-3.5 text-[0.88rem] leading-relaxed text-tinta-2">
+            {c.extractoLiteral}
+          </blockquote>
+          {c.extractoTruncado && <p className="mt-1 text-[0.76rem] text-tinta-3">Extracto recortado: la sección completa está en la fuente.</p>}
+          <div className="mt-3 border-t border-tinta/10 pt-3"><EnlaceFuente c={c} /></div>
+        </section>
+      ))}
 
       {agregadas.map((c) => (
         <section
