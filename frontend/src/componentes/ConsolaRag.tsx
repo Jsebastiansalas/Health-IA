@@ -233,13 +233,13 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
       <div className="flex gap-3.5">
         <AvatarIA />
         <div className="min-w-0 flex-1">
-          <div className={cn("folio p-5 sm:p-6", r.sinEvidencia && "border-aviso/30")}>
+          <div className={cn("folio p-5 sm:p-6", r.sinEvidencia && !r.limiteClinico && "border-aviso/30")}>
             {r.urgencia && <AvisoUrgencia mensaje={r.urgencia.mensaje} />}
             {r.modo === "explicar" ? (
               <ExplicacionDocumento respuesta={r} alIrACita={irACita} />
             ) : (
               <>
-            {r.sinEvidencia && (
+            {r.sinEvidencia && !r.limiteClinico && (
               <Insignia tono="aviso" className="mb-3.5">
                 <SearchX className="size-3.5" aria-hidden />
                 Sin evidencia suficiente

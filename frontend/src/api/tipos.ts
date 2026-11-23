@@ -138,6 +138,8 @@ export interface RespuestaConsulta {
   modeloLlm: string | null;
   fragmentosRecuperados: number;
   latenciaMs: number;
+  /** El asistente no decide dosis, qué tomar ni diagnósticos: respuesta fija que remite al médico. */
+  limiteClinico?: { codigo: "dosis" | "receta" | "diagnostico" } | null;
   /** «Explícame este documento»: las consultas de ese modo traen además estos campos. */
   modo?: "explicar";
   documentoId?: string;
@@ -239,6 +241,7 @@ export interface RespuestaMedicamentos {
   alertas: string[];
   citas: CitaMedicamento[];
   aviso: string;
+  limiteClinico?: { codigo: "dosis" | "receta" | "diagnostico" } | null;
   totalCoincidencias?: number;
   modeloLlm: string | null;
   latenciaMs: number;
