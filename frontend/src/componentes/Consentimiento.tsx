@@ -4,7 +4,7 @@ import { Boton } from "./ui/Boton";
 /** Lo que la persona acepta antes de usar sus documentos de salud. El texto cambia con la versión del servidor. */
 const PUNTOS = [
   "Subirás documentos médicos (historias clínicas, resultados, órdenes). Son datos sensibles.",
-  "Para leerlos y responderte usamos un servicio de inteligencia artificial de un proveedor externo (Google Gemini): el texto de tus documentos y tus preguntas se le envían. Por ahora no ocultamos automáticamente tus datos personales antes de enviarlos.",
+  "Para leerlos y responderte usamos un servicio de inteligencia artificial de un proveedor externo (Google Gemini). Antes de enviarle el texto ocultamos nombres, cédulas, teléfonos, correos y direcciones cuando aparecen con una etiqueta (por ejemplo «Paciente:» o «CC»). Este ocultamiento no es perfecto: un nombre suelto dentro de una frase puede no detectarse, así que evita subir datos que no hagan falta.",
   "El archivo original se elimina del servidor después de leerlo. Guardamos fragmentos de texto y tus preguntas para poder responderte.",
   "Puedes borrar tu historial de preguntas y eliminar tu cuenta con todo su contenido cuando quieras.",
   "MedTender explica y cita lo que dicen tus documentos. No es un médico, no diagnostica ni receta. Si es una urgencia, llama al 123.",

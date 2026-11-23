@@ -253,7 +253,9 @@ def test_paginas_rotadas_y_tenues_se_clasifican_como_escaneadas(extraer, monkeyp
 @pytest.mark.skipif(not tesseract_disponible(), reason="Tesseract no instalado (corre en Docker)")
 @pytest.mark.parametrize("grados", [90, 180, 270])
 def test_ocr_real_lee_paginas_rotadas(extraer, grados):
-    r = extraer(pdf_escaneado_rotado("REGISTRO SANITARIO INVIMA 2024M-0001234\n\nPaclitaxel", grados))
+    r = extraer(
+        pdf_escaneado_rotado("REGISTRO SANITARIO INVIMA 2024M-0001234\n\nPaclitaxel", grados)
+    )
     assert "INVIMA" in r.paginas[0].texto
 
 
@@ -267,8 +269,15 @@ def test_ocr_real_lee_escaneo_de_bajo_contraste(extraer):
 @pytest.mark.parametrize(
     "filas",
     [
-        [["Código", "Producto", "Cantidad"], ["1", "Paclitaxel 6 mg/ml", "120"], ["2", "Cisplatino", "45"]],
-        [["CUM", "Descripción", "Precio", "IVA"], *[[f"{i}-1", f"Ítem {i}", f"$ {i * 1000}", "0 %"] for i in range(1, 12)]],
+        [
+            ["Código", "Producto", "Cantidad"],
+            ["1", "Paclitaxel 6 mg/ml", "120"],
+            ["2", "Cisplatino", "45"],
+        ],
+        [
+            ["CUM", "Descripción", "Precio", "IVA"],
+            *[[f"{i}-1", f"Ítem {i}", f"$ {i * 1000}", "0 %"] for i in range(1, 12)],
+        ],
         [["Ref", "Observación"], ["A", "Texto con barra | vertical"], ["B", "Acción: «urgente»"]],
     ],
 )

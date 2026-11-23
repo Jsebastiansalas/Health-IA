@@ -188,9 +188,13 @@ async def test_busca_por_titular_cum_y_registro(client: AsyncClient):
     async with get_sessionmaker()() as s:
         assert (await busqueda.buscar(s, Filtros(titular="tecnoquimicas"))).total_cum == 1
         assert (await busqueda.buscar(s, Filtros(cum="1001-2"))).registros[0]["consecutivo"] == "2"
-        assert (await busqueda.buscar(s, Filtros(registro_sanitario="2023M-0001003"))).total_cum == 1
+        assert (
+            await busqueda.buscar(s, Filtros(registro_sanitario="2023M-0001003"))
+        ).total_cum == 1
         assert (await busqueda.buscar(s, Filtros(atc="C09"))).total_cum == 3
-        assert (await busqueda.buscar(s, Filtros(principio_activo="losartan", estado="VENCIDO"))).total_cum == 0
+        assert (
+            await busqueda.buscar(s, Filtros(principio_activo="losartan", estado="VENCIDO"))
+        ).total_cum == 0
 
 
 async def test_error_de_escritura_se_resuelve_por_similitud_y_se_marca(client: AsyncClient):
@@ -206,7 +210,9 @@ async def test_precios_por_cum_y_por_nombre(client: AsyncClient):
     await sembrar()
     async with get_sessionmaker()() as s:
         r = await busqueda.buscar(s, Filtros(principio_activo="acetaminofen"))
-        por_cum = await busqueda.buscar_precios(s, Filtros(principio_activo="acetaminofen"), r.registros)
+        por_cum = await busqueda.buscar_precios(
+            s, Filtros(principio_activo="acetaminofen"), r.registros
+        )
         assert por_cum and por_cum[0]["cum"] == "1003-1"
         por_nombre = await busqueda.buscar_precios(s, Filtros(principio_activo="acetaminofen"), [])
         assert por_nombre
@@ -255,7 +261,9 @@ async def test_consulta_con_citas_construidas_desde_la_base(client: AsyncClient,
     )
     con_llm(app, llm)
     r = await client.post(
-        "/internal/v1/medicamentos/consultas", json=cuerpo("¿Qué registro tiene el acetaminofén MK?"), headers=interno()
+        "/internal/v1/medicamentos/consultas",
+        json=cuerpo("¿Qué registro tiene el acetaminofén MK?"),
+        headers=interno(),
     )
     assert r.status_code == 200, r.text
     j = r.json()
@@ -288,7 +296,13 @@ async def test_estadisticas_se_citan_como_consulta_agregada(client: AsyncClient,
             },
         ),
     )
-    j = (await client.post("/internal/v1/medicamentos/consultas", json=cuerpo("¿Cuántos registros de losartán hay?"), headers=interno())).json()
+    j = (
+        await client.post(
+            "/internal/v1/medicamentos/consultas",
+            json=cuerpo("¿Cuántos registros de losartán hay?"),
+            headers=interno(),
+        )
+    ).json()
     agregada = next(c for c in j["citas"] if c["tipo"] == "CONSULTA_AGREGADA")
     assert agregada["registrosSanitarios"] == 2 and agregada["titularesDistintos"] == 2
     assert agregada["filtros"]["principio_activo"] == "losartan"
@@ -298,7 +312,11 @@ async def test_sin_coincidencias_no_gasta_la_segunda_llamada(client: AsyncClient
     await sembrar()
     llm = LLMFalso({"tipo": "ficha", "producto": "medicamento inexistente xyz"})
     con_llm(app, llm)
-    j = (await client.post("/internal/v1/medicamentos/consultas", json=cuerpo("¿Qué es xyz?"), headers=interno())).json()
+    j = (
+        await client.post(
+            "/internal/v1/medicamentos/consultas", json=cuerpo("¿Qué es xyz?"), headers=interno()
+        )
+    ).json()
     assert j["sinEvidencia"] is True and j["citas"] == []
     assert len(llm.prompts) == 1
 
@@ -306,21 +324,37 @@ async def test_sin_coincidencias_no_gasta_la_segunda_llamada(client: AsyncClient
 async def test_pregunta_fuera_de_alcance_y_sin_filtros(client: AsyncClient, app):
     await sembrar()
     con_llm(app, LLMFalso({"tipo": "fuera_de_alcance"}))
-    j = (await client.post("/internal/v1/medicamentos/consultas", json=cuerpo("¿Cómo está el clima?"), headers=interno())).json()
+    j = (
+        await client.post(
+            "/internal/v1/medicamentos/consultas",
+            json=cuerpo("¿Cómo está el clima?"),
+            headers=interno(),
+        )
+    ).json()
     assert j["sinEvidencia"] is True and "medicamentos" in j["respuestaAnalitica"]
     con_llm(app, LLMFalso({"tipo": "listado"}))
-    j = (await client.post("/internal/v1/medicamentos/consultas", json=cuerpo("¿Qué hay?"), headers=interno())).json()
+    j = (
+        await client.post(
+            "/internal/v1/medicamentos/consultas", json=cuerpo("¿Qué hay?"), headers=interno()
+        )
+    ).json()
     assert j["sinEvidencia"] is True and "Indica un medicamento" in j["respuestaAnalitica"]
 
 
 async def test_sin_base_cargada_lo_dice(client: AsyncClient, app):
     con_llm(app, LLMFalso({"tipo": "ficha", "producto": "x"}))
-    j = (await client.post("/internal/v1/medicamentos/consultas", json=cuerpo("¿Qué es x?"), headers=interno())).json()
+    j = (
+        await client.post(
+            "/internal/v1/medicamentos/consultas", json=cuerpo("¿Qué es x?"), headers=interno()
+        )
+    ).json()
     assert j["sinEvidencia"] is True and "no está cargada" in j["respuestaAnalitica"]
 
 
 async def test_endpoint_exige_token_y_lista_fuentes(client: AsyncClient):
-    assert (await client.post("/internal/v1/medicamentos/consultas", json=cuerpo("hola mundo"))).status_code == 401
+    assert (
+        await client.post("/internal/v1/medicamentos/consultas", json=cuerpo("hola mundo"))
+    ).status_code == 401
     assert (await client.get("/internal/v1/medicamentos/fuentes")).status_code == 401
     await sembrar()
     r = await client.get("/internal/v1/medicamentos/fuentes", headers=interno())
@@ -369,6 +403,12 @@ async def test_si_no_hay_precio_regulado_se_le_dice_al_redactor(client: AsyncCli
         },
     )
     con_llm(app, llm)
-    j = (await client.post("/internal/v1/medicamentos/consultas", json=cuerpo("Precio del losartán"), headers=interno())).json()
+    j = (
+        await client.post(
+            "/internal/v1/medicamentos/consultas",
+            json=cuerpo("Precio del losartán"),
+            headers=interno(),
+        )
+    ).json()
     assert "NO hay precio regulado" in llm.prompts[1]
     assert j["sinEvidencia"] is False and all(c["tipo"] != "PRECIO_REGULADO" for c in j["citas"])

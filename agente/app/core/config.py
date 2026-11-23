@@ -75,6 +75,11 @@ class Settings(BaseSettings):
     openai_base_url: str = "https://api.openai.com/v1"
     ollama_url: str = "http://localhost:11434"
 
+    # ---------- Privacidad (Sprint 25) ----------
+    # Enmascara nombres, cédulas, teléfonos, correos y direcciones ANTES de enviar texto a un
+    # proveedor de IA externo (embeddings y LLM). Lo guardado y lo que se muestra es el original.
+    anonimizar_antes_de_nube: bool = True
+
     # ---------- Motor RAG (Sprint 5) ----------
     # gemini-2.5-flash: estable y ~2 s por respuesta en las pruebas. gemini-3.8-flash respondió
     # 503 por alta demanda o se colgó hasta el timeout, así que queda como respaldo.
