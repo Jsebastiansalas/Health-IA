@@ -159,9 +159,7 @@ def verificacion_visual(metadata: dict, umbral_ocr: float) -> tuple[bool, str | 
     motivos = []
     for tipo in tipos_evidencia(metadata, umbral_ocr):
         if tipo == "OCR_BAJA_CONFIANZA":
-            motivos.append(
-                f"se leyó por OCR con confianza {metadata['ocr_confidence']:.0%}"
-            )
+            motivos.append(f"se leyó por OCR con confianza {metadata['ocr_confidence']:.0%}")
         else:
             motivos.append(explicacion[tipo])
     if not motivos:

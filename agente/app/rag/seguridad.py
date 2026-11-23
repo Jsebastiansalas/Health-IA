@@ -147,10 +147,10 @@ _LIMITES: list[tuple[str, str, re.Pattern[str]]] = [
         "No puedo indicar dosis ni decirte cuánto o cada cuánto tomar un medicamento: depende de cada "
         "persona y solo la define tu médico o tu farmacéutico." + _DERIVAR,
         re.compile(
-            r"\b(que|cual) (es la |seria la )?dosis (me|debo|puedo|tomo|tomar|usar|uso|correcta|"
-            r"adecuada|segura|maxima)|"
-            r"\b(cuanto|cuanta|cuantos|cuantas) \w*\s?(me )?(tomo|tomar|debo tomar|puedo tomar|"
-            r"inyecto|aplico|debo darle|le doy)\b|"
+            r"\b(que|cual|cuales) (es la |seria la )?dosis (?!(indica|aparece|dice|figura|trae|menciona|"
+            r"prescribe|receto|ordeno|tiene la)\b)|"
+            r"\b(cuanto|cuanta|cuantos|cuantas) (?:\w+ ){0,3}?(me |le )?(tomo|tomar|debo tomar|puedo tomar|"
+            r"inyecto|aplico|debo darle|le doy|le debo dar|debo dar|puedo darle|le toca)\b|"
             r"\b(cada cuanto|cuantas veces al dia) (me |debo |puedo )?(tomo|tomar|tomarlo|inyecto)\b|"
             r"\bdosis (para|de) (un )?(nino|bebe|nina|adulto mayor)\b"
         ),
@@ -160,9 +160,10 @@ _LIMITES: list[tuple[str, str, re.Pattern[str]]] = [
         "No puedo decirte qué medicamento tomar, recetarte ni elegir uno según tu caso: esa decisión "
         "es de tu médico o tu farmacéutico, que conocen tu historia." + _DERIVAR,
         re.compile(
-            r"\b(que|cual) (pastillas?|medicamentos?|medicinas?|antibioticos?|analgesicos?|remedios?|"
+            r"\b(que|cual|cuales) (pastillas?|medicamentos?|medicinas?|antibioticos?|analgesicos?|remedios?|"
             r"tabletas?|jarabes?) (me )?(tomo|tomar|debo tomar|puedo tomar|deberia tomar|me conviene|"
-            r"me sirve|me receto|me recetas|se pueden tomar|puedo usar|me puedo tomar)\b|"
+            r"me sirve|me receto(?!\s+(?:el|la|mi|segun|en|doctora?|medic[oa]|dr)\b)|me recetas|"
+            r"se pueden tomar|puedo usar|me puedo tomar)\b|"
             r"\b(recetame|formulame|recomiendame (un|una|algun|alguna) ?\w*)\b|"
             r"\bdime que (me )?(tomo|tomar)\b|\bque me tomo\b|\bque me puedo tomar\b"
         ),

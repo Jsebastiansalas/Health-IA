@@ -23,7 +23,7 @@ from app.core.config import Settings
 from app.ia.llm import ProveedorLLM
 from app.models import Expediente
 from app.privacidad.anonimizar import Anonimizador, evidencias_para_la_nube
-from app.rag import busqueda, generacion
+from app.rag import busqueda, garantias, generacion
 from app.rag.generacion import CitaFinal
 
 PREGUNTA_FIJA = (
@@ -141,11 +141,20 @@ def ensamblar_explicacion(
     indice: dict[tuple[uuid.UUID, str], int] = {}
     hallazgos: list[dict] = []
     descartados = 0
+    sin_respaldo = 0
     for h in datos.get("hallazgos") or []:
         texto = _texto(h.get("texto"))
         e = por_id.get(_texto(h.get("fragmento")).strip("[]").upper())
         if not texto or e is None:
             descartados += 1
+            continue
+        # La paráfrasis no puede traer cifras, juicios ni dosis que el fragmento citado no contiene.
+        fragmento = e.contenido_texto
+        if garantias.afirma_sin_respaldo(texto, fragmento) or garantias.posologia_sin_respaldo(
+            texto, [fragmento]
+        ):
+            descartados += 1
+            sin_respaldo += 1
             continue
         parte, extracto, ajustado = generacion.localizar_extracto(
             _texto(h.get("extracto_literal")), [e]
@@ -161,7 +170,9 @@ def ensamblar_explicacion(
     terminos = [
         {"termino": _texto(t.get("termino")), "explicacion": _texto(t.get("explicacion"))}
         for t in (datos.get("terminos") or [])
-        if _texto(t.get("termino")) and _texto(t.get("explicacion"))
+        if _texto(t.get("termino"))
+        and _texto(t.get("explicacion"))
+        and not garantias.posologia_sin_respaldo(_texto(t.get("explicacion")), [])
     ][:_MAX_TERMINOS]
     preguntas = [_texto(p) for p in (datos.get("preguntas_para_el_medico") or []) if _texto(p)]
     senales = [_texto(s) for s in (datos.get("senales_de_alarma") or []) if _texto(s)]
@@ -179,6 +190,14 @@ def ensamblar_explicacion(
         senales_de_alarma=senales,
         preguntas_para_el_medico=preguntas[:_MAX_PREGUNTAS],
         descartados=descartados,
+        alertas=(
+            [
+                f"Se omitieron {sin_respaldo} punto(s) del resumen que no se pudieron comprobar "
+                "contra el texto del documento."
+            ]
+            if sin_respaldo
+            else []
+        ),
     )
 
 
