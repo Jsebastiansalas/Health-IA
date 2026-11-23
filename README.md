@@ -69,6 +69,9 @@ Además de PDF se aceptan **JPG, PNG y HEIC** (la foto de un resultado, una orde
 - **Visor local:** abre la foto original desde tu carpeta y compara su huella; las HEIC no se pueden mostrar en la mayoría de navegadores (se avisa).
 - **Móvil:** el panel de documentos tiene un botón «Tomar una foto» que abre la cámara.
 
+## Paquete para la revisión legal (sprint 34)
+[`docs/revision-legal.md`](docs/revision-legal.md) reúne, para un abogado y sin leer código: qué datos se tratan y dónde quedan, qué sale a Google y con qué protección, conservación y supresión (incluido que los respaldos guardan los datos **14 días** después de borrar una cuenta y que la auditoría no vence), medidas de seguridad, el texto de consentimiento vigente, los límites conocidos del producto y las preguntas concretas a resolver (datos sensibles y transferencia internacional, historia clínica, software como dispositivo médico, menores, responsabilidad). **No es asesoría legal**; la revisión y la aprobación son del dueño y su abogado.
+
 ## Verificación de correo (sprint 33)
 Las cuentas personales confirman su correo (migración `V12`, tabla `verificaciones_correo`): al registrarse se envía un enlace de un solo uso que vence a las 24 horas; en la base solo queda su SHA-256. Mientras no se confirme, subir documentos y consultar responden 403 con `codigo: correo_no_verificado` (`GET /api/v1/consentimiento` informa `correo_requerido` y `correo_verificado`). `POST /api/v1/auth/verificar-correo` (sin sesión, limitado por IP) usa el enlace; `POST /api/v1/auth/reenviar-verificacion` (máx. 3 por hora) pide uno nuevo. Las organizaciones no lo necesitan.
 - **Interruptor:** `CORREO_VERIFICACION_OBLIGATORIA` (apagado por defecto en desarrollo, **encendido en `docker-compose.prod.yml`**).
