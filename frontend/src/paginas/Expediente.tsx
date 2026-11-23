@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/cliente";
 import type { Cita, Documento, Expediente } from "../api/tipos";
+import { AvisoCorreo } from "../componentes/AvisoCorreo";
 import { ConsolaRag } from "../componentes/ConsolaRag";
 import { Consentimiento } from "../componentes/Consentimiento";
 import { PanelDocumentos } from "../componentes/PanelDocumentos";
@@ -126,7 +127,16 @@ export function PaginaExpediente() {
         )}
       </header>
 
-      {consentimiento.pendiente && consentimiento.estado && (
+      {consentimiento.correoPendiente && (
+        <AvisoCorreo
+          reenviando={consentimiento.reenviar.isPending}
+          reenviado={consentimiento.reenviar.isSuccess}
+          error={consentimiento.reenviar.error ? (consentimiento.reenviar.error as Error).message : undefined}
+          alReenviar={() => consentimiento.reenviar.mutate()}
+        />
+      )}
+
+      {consentimiento.pendiente && !consentimiento.correoPendiente && consentimiento.estado && (
         <Consentimiento
           version={consentimiento.estado.version}
           aceptando={consentimiento.aceptar.isPending}
@@ -159,8 +169,8 @@ export function PaginaExpediente() {
           <Tabs.Content value="folios" forceMount className={cn("data-[state=inactive]:hidden xl:sticky xl:top-6 xl:!block xl:max-h-[calc(100vh-3rem)] xl:self-start xl:overflow-y-auto xl:pr-1", acoplada && "xl:!hidden")}>
             <PanelDocumentos
               expedienteId={id}
-              puedeSubir={puedeSubir && expediente.estado === "ABIERTO" && !consentimiento.pendiente}
-              puedeExplicar={!consentimiento.pendiente}
+              puedeSubir={puedeSubir && expediente.estado === "ABIERTO" && !consentimiento.bloqueado}
+              puedeExplicar={!consentimiento.bloqueado}
               alExplicar={() => setPestana("consulta")}
               clinico={expediente.tipo_expediente === "AUDITORIA_CLINICA"}
             />
@@ -170,7 +180,7 @@ export function PaginaExpediente() {
               expedienteId={id}
               hayIndice={hayIndice}
               alAbrirCita={setCitaAbierta}
-              bloqueado={consentimiento.pendiente}
+              bloqueado={consentimiento.bloqueado}
               clinico={expediente.tipo_expediente === "AUDITORIA_CLINICA"}
             />
           </Tabs.Content>

@@ -69,6 +69,12 @@ Además de PDF se aceptan **JPG, PNG y HEIC** (la foto de un resultado, una orde
 - **Visor local:** abre la foto original desde tu carpeta y compara su huella; las HEIC no se pueden mostrar en la mayoría de navegadores (se avisa).
 - **Móvil:** el panel de documentos tiene un botón «Tomar una foto» que abre la cámara.
 
+## Verificación de correo (sprint 33)
+Las cuentas personales confirman su correo (migración `V12`, tabla `verificaciones_correo`): al registrarse se envía un enlace de un solo uso que vence a las 24 horas; en la base solo queda su SHA-256. Mientras no se confirme, subir documentos y consultar responden 403 con `codigo: correo_no_verificado` (`GET /api/v1/consentimiento` informa `correo_requerido` y `correo_verificado`). `POST /api/v1/auth/verificar-correo` (sin sesión, limitado por IP) usa el enlace; `POST /api/v1/auth/reenviar-verificacion` (máx. 3 por hora) pide uno nuevo. Las organizaciones no lo necesitan.
+- **Interruptor:** `CORREO_VERIFICACION_OBLIGATORIA` (apagado por defecto en desarrollo, **encendido en `docker-compose.prod.yml`**).
+- **Correo:** SMTP por `SPRING_MAIL_HOST/PORT/USERNAME/PASSWORD` (en producción `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`) y `CORREO_BASE_URL` para el enlace. Sin SMTP configurado el correo **no sale** y el log lo avisa (no imprime el enlace, que es una credencial). **Pendiente del dueño: elegir el proveedor de correo** (un SMTP propio, o el de un servicio como SES o Brevo con su plan gratuito).
+- Un fallo de envío no impide el registro: la persona puede pedir el enlace de nuevo desde el aviso «Confirma tu correo».
+
 ## «Explícame este documento»
 Cada documento indexado tiene un botón que lo explica en lenguaje sencillo (`POST /api/v1/expedientes/{id}/documentos/{docId}/explicacion`; agente: `POST /internal/v1/explicaciones`). La respuesta va en **dos capas que no se mezclan**:
 - **Lo que dice el documento:** de qué trata y sus puntos importantes. Cada punto lleva una cita con extracto **literal verificado** contra el texto real; un punto sin cita válida se descarta, y si no queda ninguno el asistente se abstiene.

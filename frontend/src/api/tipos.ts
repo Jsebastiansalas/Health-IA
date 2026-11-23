@@ -123,6 +123,9 @@ export interface EstadoConsentimiento {
   aceptado: boolean;
   aceptado_at: string | null;
   tipo_cuenta: "ORGANIZACION" | "PERSONAL";
+  /** Las cuentas personales deben confirmar su correo (si el servidor lo exige). */
+  correo_requerido: boolean;
+  correo_verificado: boolean;
 }
 
 export interface RespuestaConsulta {
