@@ -58,6 +58,15 @@ services:
       DATABASE_PASSWORD: ${APP_DB_PASSWORD:-medtender_app}
       MIGRACION_USER: medtender
       MIGRACION_PASSWORD: ${POSTGRES_PASSWORD:-medtender}
+      # Correo de verificación (opcional en desarrollo): sin SMTP_HOST el correo no sale y el log lo avisa.
+      CORREO_VERIFICACION_OBLIGATORIA: ${CORREO_VERIFICACION_OBLIGATORIA:-false}
+      CORREO_REMITENTE: ${CORREO_REMITENTE:-no-responder@medtender.local}
+      SPRING_MAIL_HOST: ${SMTP_HOST:-}
+      SPRING_MAIL_PORT: ${SMTP_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SMTP_USER:-}
+      SPRING_MAIL_PASSWORD: ${SMTP_PASSWORD:-}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"
       APP_DB_PASSWORD: ${APP_DB_PASSWORD:-medtender_app}
       REDIS_URL: redis://redis:6379/0
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET en infra/.env}
