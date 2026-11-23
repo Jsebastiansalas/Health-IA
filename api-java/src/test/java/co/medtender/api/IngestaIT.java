@@ -155,6 +155,16 @@ class IngestaIT {
     // ---------- camino feliz ----------
 
     @Test
+    void unProspectoDeMedicamentoSeAceptaComoTipoDeDocumento() throws Exception {
+        Respuesta r = subir(expediente, token, PdfsDePrueba.valido(1), "prospecto.pdf", Map.of("tipo_documento", "PROSPECTO"));
+        assertThat(r.estado()).isEqualTo(202);
+        assertThat(r.cuerpo().get("tipo_documento").asText()).isEqualTo("PROSPECTO");
+        assertThat(jdbc.queryForObject("select tipo_documento from documentos where id = ?::uuid", String.class,
+                r.cuerpo().get("id").asText())).isEqualTo("PROSPECTO");
+        esperarEstadoFinalDeValidacion(r.cuerpo().get("id").asText()); // la validacion asincrona termina antes del siguiente test
+    }
+
+    @Test
     void pdfValidoSeValidaYSeEntregaAlAgente() throws Exception {
         byte[] pdf = PdfsDePrueba.valido(3);
         Respuesta r = subirPliego(pdf);

@@ -204,8 +204,8 @@ conocimiento propio del modelo:
   de medicamentos *vigentes*, *en trámite de renovación*, *otros estados* y *vencidos*, y el *precio máximo de
   venta* regulado por presentación.
 - **Qué responde:** registro sanitario, titular, vigencia y vencimiento, principios activos y concentración,
-  forma y vía, ATC, presentaciones (CUM), equivalentes y precio máximo. **No** responde dosis, indicaciones ni
-  interacciones: esos datos no están en la fuente y el asistente lo dice y remite a la ficha técnica.
+  forma y vía, ATC, presentaciones (CUM), equivalentes y precio máximo. **Nunca** indica dosis ni dice qué medicamento tomar. Efectos, contraindicaciones e
+  interacciones salen solo de fichas técnicas oficiales cargadas (ver «Efectos e interacciones con fuente»).
 - **Cómo:** el modelo traduce la pregunta a filtros (no escribe SQL), PostgreSQL busca (trigramas, sin
   vectores) y el modelo redacta solo con lo encontrado. Las citas se arman desde la base: registro, CUM, enlace
   al dato en datos.gov.co y fecha de carga. El código marca registros «vigentes» con fecha de vencimiento ya
@@ -220,6 +220,14 @@ docker compose -f infra/docker-compose.yml exec agente python -m app.cli cargar-
   Cada fuente se reemplaza completa en una transacción; repetir el comando la actualiza. Variable opcional
   `SOCRATA_APP_TOKEN` para evitar límites de la API. Endpoints: `POST /api/v1/medicamentos/consultas` y
   `GET /api/v1/medicamentos/fuentes` (cualquier usuario autenticado; límite y auditoría como la consola RAG).
+
+## Efectos e interacciones con fuente
+- **Prospectos subidos:** `PROSPECTO` es un tipo de documento más (migración `V11`): entra al mismo RAG y se cita con extracto literal, igual que una historia clínica.
+- **Fichas técnicas oficiales (CIMA, AEMPS de España):** `python -m app.cli cargar-fichas ibuprofeno paracetamol …` descarga por principio activo las secciones 4.1 indicaciones, 4.3 contraindicaciones, 4.4 advertencias, 4.5 interacciones, 4.6 embarazo y lactancia y 4.8 reacciones adversas a `med_ficha`, cada una con su enlace al documento original. **Nunca** se cargan la posología (4.2) ni la sobredosis (4.9).
+- **Cómo responde:** una pregunta clínica sobre un medicamento se responde solo con las fichas cargadas (`<ficha id="Fn">`); las citas `FICHA_TECNICA` se arman desde la base (sección, extracto literal, enlace), no desde lo que diga el modelo. Si no hay fichas, lo dice y remite al prospecto. Se avisa que la ficha es de un medicamento de España con el mismo principio activo, no necesariamente el de la persona.
+- **Reglas del redactor:** nunca indica dosis ni qué debe tomar o dejar de tomar la persona; ante «¿qué me tomo?» explica por qué no puede y remite al médico o farmacéutico.
+- **Antes de cargar:** verifica las condiciones de reutilización de CIMA (no pude confirmar el texto de su licencia al diseñar el sprint); el comando muestra la atribución exigible. Las fichas son datos públicos sin `tenant_id`.
+- **Pendiente:** «¿qué medicamentos de mis documentos tienen advertencias frente a mi diagnóstico?» (cruce RAG + fichas) no está hecho todavía.
 
 ## Frontend web
 ```powershell

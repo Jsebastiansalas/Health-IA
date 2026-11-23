@@ -9,7 +9,8 @@ export type TipoDocumento =
   | "FICHA_TECNICA"
   | "REGISTRO_SANITARIO"
   | "HISTORIA_CLINICA"
-  | "PRESUPUESTO";
+  | "PRESUPUESTO"
+  | "PROSPECTO";
 export type EstadoIndexacion =
   | "RECIBIDO"
   | "VALIDANDO"
@@ -213,7 +214,21 @@ export interface CitaAgregada {
   fuente: FuenteDato;
 }
 
-export type CitaMedicamento = CitaRegistro | CitaPrecio | CitaAgregada;
+/** Sección de una ficha técnica oficial (CIMA, AEMPS): contraindicaciones, interacciones, reacciones… */
+export interface CitaFicha {
+  tipo: "FICHA_TECNICA";
+  id: string;
+  medicamento: string | null;
+  principioActivo: string | null;
+  registro: string | null;
+  seccion: string;
+  titulo: string;
+  extractoLiteral: string;
+  extractoTruncado: boolean;
+  fuente: FuenteDato;
+}
+
+export type CitaMedicamento = CitaRegistro | CitaPrecio | CitaAgregada | CitaFicha;
 
 export interface RespuestaMedicamentos {
   consultaId: string;

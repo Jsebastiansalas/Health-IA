@@ -6,5 +6,6 @@ public enum TipoDocumento {
     FICHA_TECNICA,
     REGISTRO_SANITARIO,
     HISTORIA_CLINICA,
-    PRESUPUESTO
+    PRESUPUESTO,
+    PROSPECTO
 }
