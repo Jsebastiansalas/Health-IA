@@ -137,6 +137,26 @@ export interface RespuestaConsulta {
   modeloLlm: string | null;
   fragmentosRecuperados: number;
   latenciaMs: number;
+  /** «Explícame este documento»: las consultas de ese modo traen además estos campos. */
+  modo?: "explicar";
+  documentoId?: string;
+  deQueTrata?: string;
+  hallazgos?: HallazgoExplicado[];
+  terminos?: TerminoExplicado[];
+  senalesDeAlarma?: string[];
+  preguntasParaElMedico?: string[];
+  avisoGeneral?: string;
+}
+
+export interface HallazgoExplicado {
+  texto: string;
+  /** Número (desde 1) de la cita que respalda el hallazgo. */
+  cita: number | null;
+}
+
+export interface TerminoExplicado {
+  termino: string;
+  explicacion: string;
 }
 
 /* ---- Medicamentos de Colombia (datos abiertos de INVIMA) ---- */

@@ -26,7 +26,7 @@ from app.ia.llm import ErrorLLM, ProveedorLLM, get_llm
 from app.medicamentos import busqueda as med_busqueda
 from app.medicamentos import consulta as med_consulta
 from app.models import Consulta, Documento, Expediente, Reindexacion
-from app.rag import motor, seguridad
+from app.rag import explicar, motor, seguridad
 from app.schemas import ModeloEmbeddingOut, ReindexacionIn, ReindexacionOut
 from app.services import reindexacion
 from app.services.cola import ColaProcesamiento, get_cola
@@ -170,6 +170,63 @@ async def historial(
         {"pregunta": c.pregunta, "createdAt": c.created_at.isoformat(), **c.respuesta}
         for c in filas
     ]
+
+
+# ---------- Explicar un documento
+class ExplicacionIn(BaseModel):
+    tenant_id: uuid.UUID
+    expediente_id: uuid.UUID
+    documento_id: uuid.UUID
+    usuario_id: uuid.UUID
+
+
+@router.post("/explicaciones")
+async def explicar_documento(
+    data: ExplicacionIn,
+    session: SessionDep,
+    llm: Annotated[ProveedorLLM, Depends(get_llm)],
+) -> dict:
+    """«Explícame este documento»: qué dice (con citas verificadas) y qué significan sus términos
+    (explicación general, aparte y rotulada). Nunca diagnostica ni receta."""
+    expediente = await _expediente(session, data.tenant_id, data.expediente_id)
+    documento = await session.get(Documento, data.documento_id)
+    if documento is None or documento.expediente_id != expediente.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Documento no encontrado")
+    if documento.estado_indexacion not in (E.INDEXADO_Y_PURGADO, E.INDEXADO_PENDIENTE_PURGA):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "El documento todavía se está procesando; intenta en un momento.",
+        )
+    try:
+        r = await explicar.explicar(session, expediente, data.documento_id, llm, get_settings())
+    except ErrorLLM as exc:
+        CONSULTAS.labels("error_ia").inc()
+        log.error("Explicación fallida documento=%s: %s", data.documento_id, exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "El servicio de IA no está disponible en este momento; intente de nuevo.",
+        ) from exc
+    CONSULTAS.labels("sin_evidencia" if r.sin_evidencia else "con_evidencia").inc()
+    consulta_id = uuid.uuid4()
+    cuerpo = explicar.a_json(r, consulta_id, data.documento_id, expediente.embedding_model_activo)
+    session.add(
+        Consulta(
+            id=consulta_id,
+            tenant_id=data.tenant_id,
+            expediente_id=data.expediente_id,
+            usuario_id=data.usuario_id,
+            # Sin el nombre del archivo: puede traer el de la persona.
+            pregunta=f"[Explicar documento {data.documento_id}]",
+            respuesta=cuerpo,
+            sin_evidencia=r.sin_evidencia,
+            modelo_embeddings=expediente.embedding_model_activo,
+            modelo_llm=r.modelo_llm,
+            fragmentos_recuperados=r.fragmentos_analizados,
+            latencia_ms=r.latencia_ms,
+        )
+    )
+    await session.commit()
+    return cuerpo
 
 
 # ---------- Medicamentos (datos abiertos de INVIMA) ----------

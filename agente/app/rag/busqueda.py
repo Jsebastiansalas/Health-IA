@@ -77,6 +77,27 @@ ORDER BY fu.rrf DESC
 """
 )
 
+SQL_DE_DOCUMENTO = text(
+    f"""
+SELECT f.id, f.documento_id, f.orden, f.pagina_inicio, f.pagina_fin, f.seccion,
+       f.contenido_texto, f.metadata_jsonb,
+       d.nombre_archivo_original, d.tipo_documento, COALESCE(d.numero_adenda, 0) AS numero_adenda,
+       d.sha256_original,
+       0.0 AS rrf, NULL::bigint AS rango_vectorial, NULL::bigint AS rango_lexico
+FROM fragmentos f JOIN documentos d ON d.id = f.documento_id
+WHERE {_FILTRO_SEGURO} AND f.documento_id = :documento_id
+ORDER BY f.orden
+LIMIT :limite
+"""
+)
+
+SQL_CONTAR_DE_DOCUMENTO = text(
+    f"""
+SELECT count(*) FROM fragmentos f JOIN documentos d ON d.id = f.documento_id
+WHERE {_FILTRO_SEGURO} AND f.documento_id = :documento_id
+"""
+)
+
 SQL_VECINOS = text(
     f"""
 SELECT f.id, f.documento_id, f.orden, f.pagina_inicio, f.pagina_fin, f.seccion,
@@ -227,3 +248,47 @@ async def expandir_vecinos(
                 e.vecinos.append(vecinos[clave])
                 asignados.add(clave)
         e.vecinos.sort(key=lambda v: v.orden)
+
+
+async def fragmentos_de_documento(
+    session: AsyncSession,
+    *,
+    tenant_id: uuid.UUID,
+    expediente_id: uuid.UUID,
+    documento_id: uuid.UUID,
+    modelo: str,
+    limite: int,
+) -> list[FragmentoRecuperado]:
+    """Los primeros `limite` fragmentos de un documento ya indexado, en orden de lectura. Con los
+    mismos filtros de seguridad que la búsqueda: tenant, expediente, modelo y documento indexado."""
+    filas = await session.execute(
+        SQL_DE_DOCUMENTO,
+        {
+            "tenant_id": tenant_id,
+            "expediente_id": expediente_id,
+            "documento_id": documento_id,
+            "modelo": modelo,
+            "limite": limite,
+        },
+    )
+    return [_fila(r) for r in filas]
+
+
+async def contar_fragmentos_de_documento(
+    session: AsyncSession,
+    *,
+    tenant_id: uuid.UUID,
+    expediente_id: uuid.UUID,
+    documento_id: uuid.UUID,
+    modelo: str,
+) -> int:
+    resultado = await session.execute(
+        SQL_CONTAR_DE_DOCUMENTO,
+        {
+            "tenant_id": tenant_id,
+            "expediente_id": expediente_id,
+            "documento_id": documento_id,
+            "modelo": modelo,
+        },
+    )
+    return int(resultado.scalar_one())

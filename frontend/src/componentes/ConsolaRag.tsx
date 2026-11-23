@@ -9,6 +9,7 @@ import { cn } from "../lib/cn";
 import { Logotipo } from "./Marca";
 import { TarjetaCita } from "./TarjetaCita";
 import { AvisoSalud, AvisoUrgencia } from "./AvisoSalud";
+import { ExplicacionDocumento } from "./ExplicacionDocumento";
 import { Boton } from "./ui/Boton";
 import { Esqueleto } from "./ui/Esqueleto";
 import { Insignia } from "./ui/Insignia";
@@ -228,12 +229,16 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
 
   return (
     <article className="space-y-5 animate-aparecer">
-      <Burbuja texto={r.pregunta ?? ""} />
+      <Burbuja texto={r.modo === "explicar" ? "Explícame este documento" : (r.pregunta ?? "")} />
       <div className="flex gap-3.5">
         <AvatarIA />
         <div className="min-w-0 flex-1">
           <div className={cn("folio p-5 sm:p-6", r.sinEvidencia && "border-aviso/30")}>
             {r.urgencia && <AvisoUrgencia mensaje={r.urgencia.mensaje} />}
+            {r.modo === "explicar" ? (
+              <ExplicacionDocumento respuesta={r} alIrACita={irACita} />
+            ) : (
+              <>
             {r.sinEvidencia && (
               <Insignia tono="aviso" className="mb-3.5">
                 <SearchX className="size-3.5" aria-hidden />
@@ -261,6 +266,8 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
                 {conReferencias(r.respuestaAnalitica, r.citas.length)}
               </ReactMarkdown>
             </div>
+              </>
+            )}
 
             {r.alertas.length > 0 && (
               <ul className="mt-5 space-y-2">

@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertOctagon,
   Camera,
@@ -6,21 +6,34 @@ import {
   Clock,
   FileText,
   Loader2,
+  ScrollText,
   Trash2,
   TriangleAlert,
   UploadCloud,
 } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { api, subirDocumento } from "../api/cliente";
-import type { Documento, EstadoIndexacion, TipoDocumento } from "../api/tipos";
+import { api, post, subirDocumento } from "../api/cliente";
+import type { Documento, EstadoIndexacion, RespuestaConsulta, TipoDocumento } from "../api/tipos";
 import { cn } from "../lib/cn";
 import { esFinal, estadoPaso, etiquetaDocumento, fecha, PASOS, tamano, TIPOS_DOCUMENTO } from "../lib/formato";
 import { Boton } from "./ui/Boton";
 import { Esqueleto } from "./ui/Esqueleto";
 import { Insignia } from "./ui/Insignia";
 
-export function PanelDocumentos({ expedienteId, puedeSubir }: { expedienteId: string; puedeSubir: boolean }) {
+export function PanelDocumentos({
+  expedienteId,
+  puedeSubir,
+  puedeExplicar = true,
+  alExplicar,
+}: {
+  expedienteId: string;
+  puedeSubir: boolean;
+  /** Falso mientras la persona no haya aceptado el consentimiento. */
+  puedeExplicar?: boolean;
+  /** Se llama cuando la explicación ya está lista, para llevar a la persona a la consola. */
+  alExplicar?: () => void;
+}) {
   const { data: documentos, isLoading } = useQuery({
     queryKey: ["documentos", expedienteId],
     queryFn: () => api<Documento[]>(`/expedientes/${expedienteId}/documentos`),
@@ -43,7 +56,9 @@ export function PanelDocumentos({ expedienteId, puedeSubir }: { expedienteId: st
             <Esqueleto className="h-32 rounded-3xl" />
           </li>
         )}
-        {documentos?.map((d) => <FilaDocumento key={d.id} doc={d} />)}
+        {documentos?.map((d) => (
+          <FilaDocumento key={d.id} doc={d} expedienteId={expedienteId} puedeExplicar={puedeExplicar} alExplicar={alExplicar} />
+        ))}
         {documentos?.length === 0 && (
           <li className="rounded-3xl border border-dashed border-tinta/14 p-6 text-sm leading-relaxed text-tinta-2">
             Aún no hay documentos. Sube el pliego y sus adendas desde tu equipo: el original no queda guardado en el
@@ -225,7 +240,25 @@ function FormularioSubida({ expedienteId }: { expedienteId: string }) {
   );
 }
 
-function FilaDocumento({ doc }: { doc: Documento }) {
+function FilaDocumento({
+  doc,
+  expedienteId,
+  puedeExplicar,
+  alExplicar,
+}: {
+  doc: Documento;
+  expedienteId: string;
+  puedeExplicar: boolean;
+  alExplicar?: () => void;
+}) {
+  const cliente = useQueryClient();
+  const explicar = useMutation({
+    mutationFn: () => post<RespuestaConsulta>(`/expedientes/${expedienteId}/documentos/${doc.id}/explicacion`, {}),
+    onSuccess: (r) => {
+      cliente.setQueryData<RespuestaConsulta[]>(["consultas", expedienteId], (h) => [r, ...(h ?? [])]);
+      alExplicar?.();
+    },
+  });
   const error = doc.estado_indexacion === "ERROR_PURGADO";
   const pendientePurga = doc.estado_indexacion === "INDEXADO_PENDIENTE_PURGA";
   const listo = doc.estado_indexacion === "INDEXADO_Y_PURGADO";
@@ -292,6 +325,25 @@ function FilaDocumento({ doc }: { doc: Documento }) {
         <p className="mt-3 text-xs text-aviso">
           Indexado. La copia temporal se destruirá el {fecha(doc.purga_programada_at)}.
         </p>
+      )}
+      {listo && (
+        <div className="mt-4">
+          <Boton
+            tamano="sm"
+            variante="secundario"
+            onClick={() => explicar.mutate()}
+            disabled={!puedeExplicar}
+            cargando={explicar.isPending}
+          >
+            {!explicar.isPending && <ScrollText className="size-4" aria-hidden />}
+            {explicar.isPending ? "Leyendo el documento…" : "Explícame este documento"}
+          </Boton>
+          {explicar.error && (
+            <p role="alert" className="mt-2 text-sm text-peligro">
+              {(explicar.error as Error).message}
+            </p>
+          )}
+        </div>
       )}
       {doc.aviso_ocr_desactualizado && (
         <p className="mt-3 rounded-xl border border-aviso/30 bg-aviso/10 px-3.5 py-2.5 text-xs leading-relaxed text-aviso">
