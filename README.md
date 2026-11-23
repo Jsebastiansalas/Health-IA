@@ -221,6 +221,14 @@ docker compose -f infra/docker-compose.yml exec agente python -m app.cli cargar-
   `SOCRATA_APP_TOKEN` para evitar límites de la API. Endpoints: `POST /api/v1/medicamentos/consultas` y
   `GET /api/v1/medicamentos/fuentes` (cualquier usuario autenticado; límite y auditoría como la consola RAG).
 
+## Verificación con el mundo real (sprint 30)
+Tres scripts en `agente/scripts/` prueban lo que la suite solo simula (la suite nunca lee la clave real):
+- `verificar_gemini_real.py`: Gemini real con documentos sintéticos (laboratorio, orden con instrucción inyectada, informe de radiografía). Resultado: JSON válido, 0 datos personales en el prompt, 0 citas ajustadas, la instrucción inyectada no se obedeció.
+- `verificar_ocr_real.py` (se ejecuta en el contenedor del agente): Tesseract real sobre 10 condiciones. Aceptó nítida PNG/JPG, HEIC, foto con EXIF girado, ligeramente borrosa, con sombra, baja resolución y muy comprimida (100 % de palabras recuperadas); rechazó la muy borrosa (confianza 37 %) y la imagen sin texto. Los umbrales (`imagen_confianza_minima` 0,45 y `imagen_texto_minimo` 20) quedaron como estaban.
+- `recorrido_real.py`: registro personal → consentimiento → foto → indexación → «Explícame» → consulta → rechazo de dosis → urgencia → supresión de la cuenta, contra la API real en :8010. `--conservar` deja la cuenta para revisar la interfaz.
+Hallazgos corregidos: «me falta el aire» no activaba el aviso de urgencia (patrones ampliados); la alerta de OCR decía «el fragmento el texto proviene…»; las respuestas fijas mostraban «0 fragmentos recuperados»; un expediente clínico sugería preguntas de licitaciones y subía por defecto «Pliego»; la interfaz prometía fichas técnicas aunque no haya ninguna cargada. Las migraciones V9 a V11 se probaron primero en una copia de la base y luego se aplicaron a la real (respaldo previo en `~/medtender-respaldos/`).
+Limitaciones: HEIC se probó generado con `pillow-heif`, no con una foto de iPhone; el estilo visual se revisó en una ventana de 800 px; las alertas de OCR se repiten en cada cita de una foto (ruido, no error).
+
 ## Seguridad clínica (evaluación adversa)
 `tests/test_seguridad_adversa.py` fija los casos que deben terminar en negativa, remisión, aviso o abstención, y no dependen de que el modelo se porte bien:
 - **Dosis, «qué me tomo / qué me receto», diagnóstico:** `seguridad.detectar_limite_clinico` responde con un mensaje fijo (`limiteClinico`) **sin llamar al modelo**, remite al médico o farmacéutico y dice qué sí puede hacer. En la consulta de medicamentos es estricto (cualquier mención de dosis o posología); en la consola de un expediente solo bloquea pedirle al asistente que decida, para que «¿qué dosis indica mi orden?» siga respondiéndose desde el documento.

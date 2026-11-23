@@ -162,10 +162,17 @@ export function PaginaExpediente() {
               puedeSubir={puedeSubir && expediente.estado === "ABIERTO" && !consentimiento.pendiente}
               puedeExplicar={!consentimiento.pendiente}
               alExplicar={() => setPestana("consulta")}
+              clinico={expediente.tipo_expediente === "AUDITORIA_CLINICA"}
             />
           </Tabs.Content>
           <Tabs.Content value="consulta" forceMount className="data-[state=inactive]:hidden xl:!block">
-            <ConsolaRag expedienteId={id} hayIndice={hayIndice} alAbrirCita={setCitaAbierta} bloqueado={consentimiento.pendiente} />
+            <ConsolaRag
+              expedienteId={id}
+              hayIndice={hayIndice}
+              alAbrirCita={setCitaAbierta}
+              bloqueado={consentimiento.pendiente}
+              clinico={expediente.tipo_expediente === "AUDITORIA_CLINICA"}
+            />
           </Tabs.Content>
           {acoplada && citaAbierta && (
             <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] xl:block">

@@ -90,8 +90,8 @@ export function PaginaMedicamentos() {
           <div className="animate-aparecer">
             <p className="max-w-xl font-display text-2xl font-semibold leading-tight">Pregunta por un medicamento.</p>
             <p className="mt-2 max-w-lg text-tinta-2">
-              Responde con la base oficial de INVIMA y, para efectos, contraindicaciones e interacciones, con fichas técnicas oficiales
-              citadas. No indica dosis ni dice qué medicamento tomar: eso lo decide tu médico o farmacéutico.
+              Responde con la base oficial de INVIMA y, cuando hay una ficha técnica cargada, también efectos, contraindicaciones e
+              interacciones con su cita. No indica dosis ni dice qué medicamento tomar: eso lo decide tu médico o farmacéutico.
             </p>
             <ul className="mt-5 max-w-2xl divide-y divide-tinta/12 border-y border-tinta/12">
               {SUGERENCIAS.map((q) => (

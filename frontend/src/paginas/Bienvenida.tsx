@@ -132,7 +132,7 @@ const CASOS: { titulo: string; texto: string; pregunta: string }[] = [
   {
     titulo: "Medicamentos de Colombia",
     texto:
-      "Registro sanitario, titular, vigencia, presentaciones y precio máximo regulado, con los datos abiertos de INVIMA, y efectos, contraindicaciones e interacciones con fichas técnicas oficiales citadas. No indica dosis ni dice qué tomar.",
+      "Registro sanitario, titular, vigencia, presentaciones y precio máximo regulado, con los datos abiertos de INVIMA y, cuando hay ficha técnica cargada, efectos, contraindicaciones e interacciones citados. No indica dosis ni dice qué tomar.",
     pregunta: "¿Está vigente el registro de la losartán de Genfar?",
   },
 ];

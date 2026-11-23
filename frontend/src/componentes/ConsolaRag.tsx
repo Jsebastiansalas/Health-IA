@@ -19,18 +19,26 @@ const SUGERENCIAS = [
   "¿Qué garantías y pólizas se exigen?",
   "¿Qué registros sanitarios INVIMA se acreditan?",
 ];
+const SUGERENCIAS_CLINICAS = [
+  "¿Qué resultados de mis exámenes están marcados como altos o bajos?",
+  "¿Qué control o cita me piden y para cuándo?",
+  "¿Qué medicamentos aparecen en mis documentos?",
+];
 
 export function ConsolaRag({
   expedienteId,
   hayIndice,
   alAbrirCita,
   bloqueado = false,
+  clinico = false,
 }: {
   expedienteId: string;
   hayIndice: boolean;
   alAbrirCita: (c: Cita) => void;
   /** Hasta que la persona acepte el consentimiento no se puede consultar. */
   bloqueado?: boolean;
+  /** Expediente de auditoría clínica o cuenta personal: ejemplos de salud en lugar de licitaciones. */
+  clinico?: boolean;
 }) {
   const cliente = useQueryClient();
   const clave = ["consultas", expedienteId];
@@ -90,7 +98,7 @@ export function ConsolaRag({
             </p>
             {hayIndice && (
               <ul className="mt-5 max-w-xl divide-y divide-tinta/12 border-y border-tinta/12">
-                {SUGERENCIAS.map((q) => (
+                {(clinico ? SUGERENCIAS_CLINICAS : SUGERENCIAS).map((q) => (
                   <li key={q}>
                     <button
                       onClick={() => {
@@ -151,7 +159,9 @@ export function ConsolaRag({
             aria-label="Tu pregunta"
             placeholder={
               hayIndice
-                ? "Ej.: ¿Qué requisitos técnicos exige la ficha del equipo de rayos X?"
+                ? clinico
+                  ? "Ej.: ¿Qué dice mi examen sobre el colesterol?"
+                  : "Ej.: ¿Qué requisitos técnicos exige la ficha del equipo de rayos X?"
                 : "Carga un documento y espera la indexación"
             }
             disabled={!hayIndice || bloqueado}
@@ -284,10 +294,15 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
             )}
 
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-tinta/8 pt-3.5">
-              <p className="font-mono text-[0.7rem] leading-relaxed text-tinta-3">
-                {r.fragmentosRecuperados} fragmentos recuperados · {r.modeloEmbeddings}
-                {r.modeloLlm ? ` · ${r.modeloLlm}` : ""} · {(r.latenciaMs / 1000).toFixed(1)} s
-              </p>
+              {r.limiteClinico ? (
+                <span />
+              ) : (
+                <p className="font-mono text-[0.7rem] leading-relaxed text-tinta-3">
+                  {r.fragmentosRecuperados} {r.fragmentosRecuperados === 1 ? "fragmento recuperado" : "fragmentos recuperados"} ·{" "}
+                  {r.modeloEmbeddings}
+                  {r.modeloLlm ? ` · ${r.modeloLlm}` : ""} · {(r.latenciaMs / 1000).toFixed(1)} s
+                </p>
+              )}
               <Boton tamano="sm" variante="fantasma" onClick={copiar}>
                 {copiado ? <Check className="size-4 text-accion" aria-hidden /> : <Copy className="size-4" aria-hidden />}
                 {copiado ? "Copiada" : "Copiar"}
