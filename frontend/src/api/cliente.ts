@@ -28,6 +28,7 @@ export class ErrorApi extends Error {
   constructor(
     public status: number,
     public detalle: unknown,
+    public codigo?: string,
   ) {
     super(mensajeDe(detalle) ?? `Error ${status}`);
   }
@@ -77,7 +78,10 @@ export async function api<T>(ruta: string, opciones: RequestInit = {}, reintento
   }
   if (r.status === 204) return undefined as T;
   const cuerpo = r.headers.get("content-type")?.includes("json") ? await r.json() : await r.text();
-  if (!r.ok) throw new ErrorApi(r.status, (cuerpo as { detail?: unknown })?.detail ?? cuerpo);
+  if (!r.ok) {
+    const c = cuerpo as { detail?: unknown; codigo?: string };
+    throw new ErrorApi(r.status, c?.detail ?? cuerpo, c?.codigo);
+  }
   return cuerpo as T;
 }
 

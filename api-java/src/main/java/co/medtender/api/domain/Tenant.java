@@ -29,6 +29,10 @@ public class Tenant {
     @Column(name = "politica_borrado", nullable = false, length = 30)
     private PoliticaBorrado politicaBorrado = PoliticaBorrado.INMEDIATO;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private TipoTenant tipo = TipoTenant.ORGANIZACION;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -40,6 +44,12 @@ public class Tenant {
         this.politicaBorrado = politicaBorrado;
     }
 
+    public Tenant(String nombre, String nit, PoliticaBorrado politicaBorrado, TipoTenant tipo) {
+        this(nombre, nit, politicaBorrado);
+        this.tipo = tipo;
+    }
+
+    public TipoTenant getTipo() { return tipo; }
     public UUID getId() { return id; }
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }

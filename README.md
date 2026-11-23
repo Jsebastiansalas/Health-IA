@@ -59,6 +59,15 @@ Si algún día se necesita un modelo mayor hay que cambiar la columna y el índi
 
 **Verificación al arrancar.** El agente comprueba en segundo plano que el modelo de embeddings por defecto responde con la dimensión declarada (una llamada real, un vector) y que el LLM principal y los de respaldo existen en el proveedor (consulta de su ficha, sin gastar tokens). Un modelo retirado o sin API key queda en el log como error y en la métrica `medtender_modelo_disponible{tipo,modelo}` (1/0) para alertar. **No impide arrancar.** Se desactiva con `VERIFICAR_MODELOS_AL_ARRANCAR=false`.
 
+## Cuentas personales, consentimiento y supresión
+Además de las organizaciones (hospitales, clínicas, aseguradoras) hay **cuentas personales** para pacientes y familias (`POST /api/v1/auth/registro-personal`, interruptor `REGISTRO_PERSONAL_ABIERTO`): un tenant de una sola persona, con borrado inmediato del PDF (`tenants.tipo = PERSONAL`, migración `V9`).
+
+- **Consentimiento informado:** una cuenta personal debe aceptar el texto vigente (`ConsentimientoService.VERSION_VIGENTE`) antes de subir documentos o consultar; sin aceptarlo el servidor responde `403` con `codigo: consentimiento_requerido` y no llama al agente. Si el texto cambia se sube la versión y todos deben aceptarlo de nuevo. Las organizaciones no lo necesitan: lo gestiona la institución. `GET/POST /api/v1/consentimiento`.
+- **Supresión:** `DELETE /api/v1/expedientes/{id}/consultas` borra las preguntas y respuestas guardadas; `POST /api/v1/cuenta/eliminar` (pide la contraseña) elimina la cuenta personal con todo su contenido. La auditoría es de solo anexado y no guarda contenido, así que conserva la constancia.
+- **Lo que se guarda:** fragmentos de texto, vectores y **las preguntas y respuestas** (tabla `consultas`), hasta que la persona las borre. La auditoría, en cambio, nunca registra el texto de las preguntas.
+- **Avisos y urgencias:** las pantallas de consulta muestran siempre un aviso («información de apoyo, no atención médica; en una urgencia llama al 123»). Si la pregunta describe una posible emergencia (dolor de pecho, falta de aire, sobredosis, ideas de hacerse daño…), el agente antepone un aviso de urgencia (`rag/seguridad.py`), sin depender del modelo.
+- **Límite actual:** el texto de los documentos y las preguntas se envían a Gemini y **todavía no se anonimizan** (sprint 25); el texto del consentimiento lo dice así.
+
 ## Evidencia probatoria y calidad de OCR
 Cada cita indica **por qué** conviene mirar el PDF original (`tiposEvidencia`): `FIRMA_O_SELLO`, `TABLA`, `IMAGEN`, `OCR_BAJA_CONFIANZA` u `OCR`. La interfaz los muestra como etiquetas junto al motivo.
 

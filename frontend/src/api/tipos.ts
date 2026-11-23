@@ -106,8 +106,23 @@ export interface Cita {
 
 export type TipoEvidencia = "FIRMA_O_SELLO" | "TABLA" | "IMAGEN" | "OCR" | "OCR_BAJA_CONFIANZA";
 
+/** Aviso que el agente antepone cuando la pregunta describe una posible emergencia. */
+export interface Urgencia {
+  codigo: string;
+  mensaje: string;
+}
+
+export interface EstadoConsentimiento {
+  version: string;
+  requerido: boolean;
+  aceptado: boolean;
+  aceptado_at: string | null;
+  tipo_cuenta: "ORGANIZACION" | "PERSONAL";
+}
+
 export interface RespuestaConsulta {
   consultaId: string;
+  urgencia?: Urgencia | null;
   pregunta?: string;
   createdAt?: string;
   respuestaAnalitica: string;
@@ -178,6 +193,7 @@ export type CitaMedicamento = CitaRegistro | CitaPrecio | CitaAgregada;
 
 export interface RespuestaMedicamentos {
   consultaId: string;
+  urgencia?: Urgencia | null;
   pregunta?: string;
   respuestaAnalitica: string;
   sinEvidencia: boolean;

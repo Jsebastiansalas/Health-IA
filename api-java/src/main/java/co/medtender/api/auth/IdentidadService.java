@@ -40,6 +40,22 @@ public class IdentidadService {
         }
     }
 
+    /**
+     * Cuenta personal (paciente o familiar): un tenant de una sola persona, con borrado inmediato del PDF.
+     * El NIT es un identificador interno generado: una persona no tiene NIT de organizacion.
+     */
+    @Transactional
+    public TenantConAdmin registrarPersonal(String nombre, String email, String passwordHash) {
+        try {
+            Tenant t = tenants.saveAndFlush(new Tenant(nombre, "P-" + UUID.randomUUID(), PoliticaBorrado.INMEDIATO,
+                    co.medtender.api.domain.TipoTenant.PERSONAL));
+            Usuario u = usuarios.saveAndFlush(new Usuario(t.getId(), email, passwordHash, nombre, RolGlobal.ADMIN_TENANT));
+            return new TenantConAdmin(t, u);
+        } catch (DataIntegrityViolationException e) {
+            throw new ApiException(HttpStatus.CONFLICT, "El correo ya está registrado");
+        }
+    }
+
     @Transactional
     public Usuario crearUsuario(UUID tenantId, String email, String passwordHash, String nombre, RolGlobal rol) {
         try {

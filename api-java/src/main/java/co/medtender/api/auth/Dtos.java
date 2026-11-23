@@ -28,6 +28,11 @@ public final class Dtos {
             @NotBlank @Size(min = 10) String adminPassword,
             @NotBlank @Size(min = 2, max = 150) String adminNombre) {}
 
+    public record RegistroPersonalIn(
+            @NotBlank @Size(min = 2, max = 150) String nombre,
+            @NotBlank @Email @Size(max = 150) String email,
+            @NotBlank @Size(min = 10) String password) {}
+
     public record TokensOut(String accessToken, String refreshToken, String tokenType) {
         public static TokensOut de(String access, String refresh) {
             return new TokensOut(access, refresh, "bearer");

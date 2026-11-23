@@ -97,8 +97,11 @@ function Heroe() {
           </a>
         </Revelar>
         <Revelar retraso={0.24}>
-          <p className="mt-8 max-w-[30rem] text-[0.88rem] leading-relaxed text-tinta-3">
-            Para auditores médicos, ingenieros biomédicos y abogados de entidades de salud.
+          <p className="mt-8 max-w-[32rem] text-[0.88rem] leading-relaxed text-tinta-3">
+            Para auditores médicos, ingenieros biomédicos y abogados de entidades de salud.{" "}
+            <Link to="/registro" className="font-semibold text-accion underline underline-offset-4">
+              ¿Eres paciente o familiar? Crea tu cuenta personal.
+            </Link>
           </p>
         </Revelar>
       </div>

@@ -8,6 +8,7 @@ import type { Cita, RespuestaConsulta } from "../api/tipos";
 import { cn } from "../lib/cn";
 import { Logotipo } from "./Marca";
 import { TarjetaCita } from "./TarjetaCita";
+import { AvisoSalud, AvisoUrgencia } from "./AvisoSalud";
 import { Boton } from "./ui/Boton";
 import { Esqueleto } from "./ui/Esqueleto";
 import { Insignia } from "./ui/Insignia";
@@ -22,10 +23,13 @@ export function ConsolaRag({
   expedienteId,
   hayIndice,
   alAbrirCita,
+  bloqueado = false,
 }: {
   expedienteId: string;
   hayIndice: boolean;
   alAbrirCita: (c: Cita) => void;
+  /** Hasta que la persona acepte el consentimiento no se puede consultar. */
+  bloqueado?: boolean;
 }) {
   const cliente = useQueryClient();
   const clave = ["consultas", expedienteId];
@@ -70,6 +74,7 @@ export function ConsolaRag({
         </h2>
         <span className="text-sm text-tinta-3">Respuestas solo con evidencia citada</span>
       </div>
+      <AvisoSalud className="mb-5" />
 
       <div className="flex-1 space-y-8 pb-6" role="log" aria-live="polite" aria-label="Conversación">
         {vacio && (
@@ -148,7 +153,7 @@ export function ConsolaRag({
                 ? "Ej.: ¿Qué requisitos técnicos exige la ficha del equipo de rayos X?"
                 : "Carga un documento y espera la indexación"
             }
-            disabled={!hayIndice}
+            disabled={!hayIndice || bloqueado}
             value={pregunta}
             onChange={(e) => setPregunta(e.target.value)}
             onKeyDown={(e) => {
@@ -160,7 +165,7 @@ export function ConsolaRag({
             variante="primario"
             tamano="icono"
             className="size-11 shrink-0"
-            disabled={!hayIndice || pregunta.trim().length < 3}
+            disabled={!hayIndice || bloqueado || pregunta.trim().length < 3}
             cargando={consultar.isPending}
             aria-label="Consultar"
           >
@@ -187,7 +192,7 @@ function AvatarIA() {
 function Burbuja({ texto }: { texto: string }) {
   return (
     <div className="flex justify-end">
-      <p className="max-w-[85%] bg-folio-2 px-5 py-3 text-[0.97rem] leading-relaxed text-tinta">
+      <p className="max-w-[85%] rounded-md bg-folio-2 px-5 py-3 text-[0.97rem] leading-relaxed text-tinta">
         {texto}
       </p>
     </div>
@@ -227,7 +232,8 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
       <div className="flex gap-3.5">
         <AvatarIA />
         <div className="min-w-0 flex-1">
-          <div className={cn("folio  p-5 sm:p-6", r.sinEvidencia && "border-aviso/30")}>
+          <div className={cn("folio p-5 sm:p-6", r.sinEvidencia && "border-aviso/30")}>
+            {r.urgencia && <AvisoUrgencia mensaje={r.urgencia.mensaje} />}
             {r.sinEvidencia && (
               <Insignia tono="aviso" className="mb-3.5">
                 <SearchX className="size-3.5" aria-hidden />
