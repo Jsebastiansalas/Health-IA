@@ -9,6 +9,7 @@ import { cn } from "../lib/cn";
 import { Logotipo } from "./Marca";
 import { TarjetaCita } from "./TarjetaCita";
 import { AvisoSalud, AvisoUrgencia } from "./AvisoSalud";
+import { CruceMedicamentos } from "./CruceMedicamentos";
 import { ExplicacionDocumento } from "./ExplicacionDocumento";
 import { Boton } from "./ui/Boton";
 import { Esqueleto } from "./ui/Esqueleto";
@@ -239,7 +240,15 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
 
   return (
     <article className="space-y-5 animate-aparecer">
-      <Burbuja texto={r.modo === "explicar" ? "Explícame este documento" : (r.pregunta ?? "")} />
+      <Burbuja
+        texto={
+          r.modo === "explicar"
+            ? "Explícame este documento"
+            : r.modo === "cruce"
+              ? "Ver advertencias de mis medicamentos"
+              : (r.pregunta ?? "")
+        }
+      />
       <div className="flex gap-3.5">
         <AvatarIA />
         <div className="min-w-0 flex-1">
@@ -247,6 +256,8 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
             {r.urgencia && <AvisoUrgencia mensaje={r.urgencia.mensaje} />}
             {r.modo === "explicar" ? (
               <ExplicacionDocumento respuesta={r} alIrACita={irACita} />
+            ) : r.modo === "cruce" ? (
+              <CruceMedicamentos respuesta={r} alIrACita={irACita} />
             ) : (
               <>
             {r.sinEvidencia && !r.limiteClinico && (

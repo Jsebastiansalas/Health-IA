@@ -91,7 +91,7 @@ def _limpiar(postgres_url: str, ephemeral_dir: Path) -> Iterator[None]:
     with psycopg.connect(postgres_url) as conn:
         conn.execute(
             "TRUNCATE auditoria, actas_purga, consultas, fragmentos, documentos, "
-            "expediente_permisos, expedientes, usuarios, tenants, med_cum, med_precio, med_carga "
+            "expediente_permisos, expedientes, usuarios, tenants, med_cum, med_precio, med_carga, med_ficha "
             "RESTART IDENTITY CASCADE"
         )
     for f in ephemeral_dir.iterdir():

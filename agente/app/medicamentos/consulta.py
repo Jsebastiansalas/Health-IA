@@ -577,3 +577,8 @@ async def responder(
         "alertas": list(dict.fromkeys(alertas)),
     }
     return _respuesta(pregunta, cuerpo, not hay, ctx, t0, modelo)
+
+
+cita_ficha = (
+    _cita_ficha  # contrato público de la cita a una ficha técnica (también la usa el cruce)
+)
