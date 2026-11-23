@@ -7,12 +7,17 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 EXTRACTOR_VERSION = "pdfium-pdfplumber-v1"
+EXTRACTOR_VERSION_IMAGEN = "pillow-tesseract-v1"
 
 
 class MetodoExtraccion(StrEnum):
     NATIVE = "NATIVE"
     OCR = "OCR"
     MIXED = "MIXED"
+
+
+class ErrorDeDocumento(Exception):
+    """Su mensaje se muestra tal cual a la persona. Viaja entre procesos: solo lleva texto."""
 
 
 @dataclass(frozen=True)
@@ -45,6 +50,11 @@ class ConfigExtraccion:
     ocr_idioma: str = "spa"
     # Si la confianza del primer OCR queda por debajo, se reintenta rotando y binarizando la página.
     ocr_umbral_reintento: float = 0.85
+    # Fotos y escaneos (sprint 26)
+    imagen_confianza_minima: float = 0.45  # por debajo, la foto se rechaza como ilegible
+    imagen_texto_minimo: int = 20  # menos caracteres: no hay texto (p. ej. una radiografía)
+    imagen_max_lado: int = 3200  # px; las fotos de móvil se reducen para acotar tiempo y memoria
+    imagen_max_pixeles: int = 100_000_000
     imagen_relevante_min_area: float = 0.01
     imagen_escaneo_min_area: float = 0.30
     imagen_sello_max_area: float = 0.15

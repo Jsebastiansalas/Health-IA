@@ -21,6 +21,7 @@ dependencies = [
     "arq>=0.26",
     "httpx>=0.28",
     "prometheus-client>=0.21",
+    "pillow-heif>=1.8.1",
 ]
 
 [dependency-groups]

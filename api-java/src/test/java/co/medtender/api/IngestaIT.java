@@ -204,6 +204,73 @@ class IngestaIT {
         assertThat(lista.cuerpo()).hasSize(1);
     }
 
+    // ---------- fotos y escaneos ----------
+
+    private Respuesta subirImagen(byte[] archivo, String nombre) throws Exception {
+        return subir(expediente, token, archivo, nombre, Map.of("tipo_documento", "HISTORIA_CLINICA"));
+    }
+
+    @Test
+    void fotoPngValidaSeAceptaYSeGuardaConSuExtension() throws Exception {
+        byte[] foto = PdfsDePrueba.png();
+        Respuesta r = subirImagen(foto, "resultado-laboratorio.png"); // el cliente la declara como PDF: no cuenta
+        assertThat(r.estado()).isEqualTo(202);
+        assertThat(r.cuerpo().get("formato").asText()).isEqualTo("PNG");
+        String docId = r.cuerpo().get("id").asText();
+
+        JsonNode d = esperarEstadoFinalDeValidacion(docId);
+        assertThat(d.get("estado_indexacion").asText()).isEqualTo("EN_COLA");
+        assertThat(d.get("total_paginas").asInt()).isEqualTo(1);
+        assertThat(archivosEfimeros()).containsExactly(docId + ".png");
+        assertThat(sha256(Files.readAllBytes(Infra.EFIMERO.resolve(docId + ".png")))).isEqualTo(sha256(foto));
+        assertThat(Infra.AGENTE.llamadas()).hasSize(1);
+    }
+
+    @Test
+    void fotoJpgValidaSeAceptaYSeGuardaConSuExtension() throws Exception {
+        Respuesta r = subirImagen(PdfsDePrueba.jpg(), "orden-medica.jpg");
+        assertThat(r.estado()).isEqualTo(202);
+        assertThat(r.cuerpo().get("formato").asText()).isEqualTo("JPG");
+        String docId = r.cuerpo().get("id").asText();
+        assertThat(esperarEstadoFinalDeValidacion(docId).get("estado_indexacion").asText()).isEqualTo("EN_COLA");
+        assertThat(archivosEfimeros()).containsExactly(docId + ".jpg");
+    }
+
+    @Test
+    void elFormatoSeDecidePorElContenidoNoPorLaExtensionDelNombre() throws Exception {
+        Respuesta r = subirImagen(PdfsDePrueba.png(), "parece-un-pdf.pdf");
+        assertThat(r.estado()).isEqualTo(202);
+        assertThat(r.cuerpo().get("formato").asText()).isEqualTo("PNG");
+    }
+
+    @Test
+    void unaImagenConFirmaValidaPeroCorruptaSeRechazaEnLaValidacionYSePurga() throws Exception {
+        String docId = subirImagen(PdfsDePrueba.pngCorrupto(), "rota.png").cuerpo().get("id").asText();
+        JsonNode d = esperarEstadoFinalDeValidacion(docId);
+        assertThat(d.get("estado_indexacion").asText()).isEqualTo("ERROR_PURGADO");
+        assertThat(d.get("motivo_error").asText()).contains("Imagen corrupta");
+        assertThat(archivosEfimeros()).isEmpty();
+        assertThat(Infra.AGENTE.llamadas()).isEmpty();
+    }
+
+    @Test
+    void unFormatoDeImagenNoSoportadoSeRechazaDeInmediato() throws Exception {
+        Respuesta r = subirImagen(PdfsDePrueba.gif(), "animacion.gif");
+        assertThat(r.estado()).isEqualTo(422);
+        assertThat(r.cuerpo().get("detail").asText()).contains("no es un PDF ni una imagen compatible");
+        assertThat(archivosEfimeros()).isEmpty();
+    }
+
+    @Test
+    void laCabeceraHeicSeReconoceAunqueNoSePuedaDecodificarEnJava() {
+        var inspector = new co.medtender.api.ingesta.InspectorPdf();
+        assertThat(inspector.detectarFormato(PdfsDePrueba.cabeceraHeic()))
+                .contains(co.medtender.api.domain.FormatoDocumento.HEIC);
+        assertThat(inspector.detectarFormato(PdfsDePrueba.png())).contains(co.medtender.api.domain.FormatoDocumento.PNG);
+        assertThat(inspector.detectarFormato(PdfsDePrueba.valido(1))).contains(co.medtender.api.domain.FormatoDocumento.PDF);
+        assertThat(inspector.detectarFormato(PdfsDePrueba.noEsPdf())).isEmpty();
+    }
+
     // ---------- rechazos: el archivo nunca queda en disco ----------
 
     @Test

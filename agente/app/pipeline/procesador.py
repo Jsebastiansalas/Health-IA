@@ -24,8 +24,10 @@ from app.pipeline.extraccion import extraer_documento
 from app.pipeline.fragmentacion import Fragmentador, cabecera_contextual
 from app.pipeline.modelos import (
     EXTRACTOR_VERSION,
+    EXTRACTOR_VERSION_IMAGEN,
     ConfigExtraccion,
     ConfigFragmentacion,
+    ErrorDeDocumento,
     FragmentoGenerado,
 )
 from app.pipeline.vectorizacion import Vectorizador
@@ -51,6 +53,8 @@ def config_extraccion(s: Settings) -> ConfigExtraccion:
         ocr_dpi=s.ocr_dpi,
         ocr_idioma=s.ocr_idioma,
         ocr_umbral_reintento=s.umbral_confianza_ocr,
+        imagen_confianza_minima=s.imagen_confianza_minima,
+        imagen_texto_minimo=s.imagen_texto_minimo,
         imagen_relevante_min_area=s.imagen_relevante_min_area,
         imagen_escaneo_min_area=s.imagen_escaneo_min_area,
         imagen_sello_max_area=s.imagen_sello_max_area,
@@ -132,15 +136,15 @@ async def procesar_documento(
         async with sessionmaker() as session:
             documento = await session.get(Documento, documento_id)
             if documento is None:
-                almacen_efimero.borrar(almacen_efimero.ruta_pdf(documento_id))
+                almacen_efimero.borrar_documento(documento_id)
                 return
             if not await _preparar(session, documento, intento):
                 return
             expediente = await session.get(Expediente, documento.expediente_id)
             assert expediente is not None
-            ruta = almacen_efimero.ruta_pdf(documento.id)
+            ruta = almacen_efimero.ruta_documento(documento.id, documento.formato or "PDF")
             if not ruta.exists():
-                raise ArchivoTemporalAusente("El PDF temporal ya no está en el servidor")
+                raise ArchivoTemporalAusente("El archivo temporal ya no está en el servidor")
 
             # --- Paso 5: extracción + OCR selectivo (en un proceso aparte) ---
             transicionar(documento, E.EXTRAYENDO_OCR)
@@ -159,7 +163,10 @@ async def procesar_documento(
             )
             documento.total_paginas = len(resultado.paginas)
             documento.paginas_ocr = ocr
-            documento.extractor_version = EXTRACTOR_VERSION
+            es_imagen = (documento.formato or "PDF") != "PDF"
+            documento.extractor_version = (
+                EXTRACTOR_VERSION_IMAGEN if es_imagen else EXTRACTOR_VERSION
+            )
             if resultado.ocr_version:
                 documento.ocr_version = resultado.ocr_version
 
@@ -169,7 +176,11 @@ async def procesar_documento(
             fragmentador = Fragmentador(config_fragmentacion(settings))
             fragmentos = await asyncio.to_thread(fragmentador.fragmentar, resultado.paginas)
             if not fragmentos:
-                raise DocumentoSinTexto("No se pudo extraer texto de ninguna página")
+                raise DocumentoSinTexto(
+                    "No se pudo extraer texto del documento"
+                    if es_imagen
+                    else "No se pudo extraer texto de ninguna página"
+                )
 
             filas = _filas(documento, expediente, fragmentos, settings.anonimizar_antes_de_nube)
             await session.execute(insert(Fragmento), filas)
@@ -182,7 +193,10 @@ async def procesar_documento(
         # --- Paso 7 en adelante (Sprint 4) ---
         await vectorizador.vectorizar(sessionmaker, documento_id)
     except BaseException as exc:
-        detalle = f"{type(exc).__name__}: {str(exc)[:300]}" if str(exc) else type(exc).__name__
+        if isinstance(exc, ErrorDeDocumento):
+            detalle = str(exc)  # ya es un mensaje claro para la persona, sin nombres de clases
+        else:
+            detalle = f"{type(exc).__name__}: {str(exc)[:300]}" if str(exc) else type(exc).__name__
         await asyncio.shield(
             fallar_y_purgar(sessionmaker, documento_id, MotivoPurga.ERROR_PROCESAMIENTO, detalle)
         )

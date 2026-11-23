@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     # Imágenes relevantes por debajo de este tamaño se consideran posibles sellos/firmas.
     imagen_sello_max_area: float = 0.15
 
+    # Fotos de documentos (sprint 26)
+    imagen_confianza_minima: float = 0.45
+    imagen_texto_minimo: int = 20
+
     # Fragmentación (Paso 6)
     chunk_min_tokens: int = 500
     chunk_max_tokens: int = 1000

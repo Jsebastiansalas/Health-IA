@@ -59,6 +59,16 @@ Si algún día se necesita un modelo mayor hay que cambiar la columna y el índi
 
 **Verificación al arrancar.** El agente comprueba en segundo plano que el modelo de embeddings por defecto responde con la dimensión declarada (una llamada real, un vector) y que el LLM principal y los de respaldo existen en el proveedor (consulta de su ficha, sin gastar tokens). Un modelo retirado o sin API key queda en el log como error y en la métrica `medtender_modelo_disponible{tipo,modelo}` (1/0) para alertar. **No impide arrancar.** Se desactiva con `VERIFICAR_MODELOS_AL_ARRANCAR=false`.
 
+## Fotos y escaneos de documentos
+Además de PDF se aceptan **JPG, PNG y HEIC** (la foto de un resultado, una orden o una historia clínica). El formato lo decide el **contenido** (firma binaria con Tika), nunca la extensión ni el tipo que declare el cliente; se guarda como `{id}.jpg|png|heic` y la columna `documentos.formato` (migración `V10`) le dice al agente cómo leerlo.
+
+- **Java:** antivirus como siempre; JPG y PNG se validan leyendo solo las dimensiones (rechaza corruptas y de más de 100 megapíxeles); HEIC lo decodifica el agente. Un GIF u otro formato se rechaza al instante («no es un PDF ni una imagen compatible»).
+- **Agente** (`pipeline/extraccion.py::extraer_imagen`): corrige la orientación EXIF (los móviles guardan la foto girada), reduce las fotos enormes (3200 px) y lee con el mismo OCR (con reintento por rotación y binarización). Una foto cuenta como una página.
+- **Calidad:** una foto con confianza de OCR menor a 45 % se rechaza con un mensaje que dice cómo repetirla («buena luz, sin sombras, recto y de frente»); entre 45 % y 85 % se indexa y sus citas llevan la etiqueta «OCR de baja confianza».
+- **Radiografías:** una imagen **sin texto** (p. ej. una radiografía) se rechaza con un mensaje claro: MedTender **no interpreta imágenes médicas**; hay que subir el informe escrito del radiólogo. Es una decisión de diseño, no una limitación temporal.
+- **Visor local:** abre la foto original desde tu carpeta y compara su huella; las HEIC no se pueden mostrar en la mayoría de navegadores (se avisa).
+- **Móvil:** el panel de documentos tiene un botón «Tomar una foto» que abre la cámara.
+
 ## Cuentas personales, consentimiento y supresión
 Además de las organizaciones (hospitales, clínicas, aseguradoras) hay **cuentas personales** para pacientes y familias (`POST /api/v1/auth/registro-personal`, interruptor `REGISTRO_PERSONAL_ABIERTO`): un tenant de una sola persona, con borrado inmediato del PDF (`tenants.tipo = PERSONAL`, migración `V9`).
 

@@ -105,6 +105,7 @@ class Documento(Base):
     tamano_bytes: Mapped[int] = mapped_column(BigInteger)
     total_paginas: Mapped[int | None] = mapped_column(Integer)
     estado_indexacion: Mapped[str] = mapped_column(String(40))
+    formato: Mapped[str] = mapped_column(String(10), server_default="PDF")  # migración V10
     ocr_version: Mapped[str] = mapped_column(String(30), server_default="tesseract-5.x-v1")
     extractor_version: Mapped[str] = mapped_column(
         String(30), server_default="pdfium-pdfplumber-v1"

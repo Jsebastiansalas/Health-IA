@@ -1,7 +1,7 @@
-"""Directorio aislado donde vive temporalmente cada PDF mientras se indexa.
+"""Directorio aislado donde vive temporalmente cada documento (PDF o foto) mientras se indexa.
 
-El nombre del archivo es siempre {documento_id}.pdf: nunca se usa el nombre original del
-cliente para construir rutas.
+El nombre del archivo es siempre {documento_id}{extensión del formato real}: nunca se usa el
+nombre original del cliente para construir rutas.
 """
 
 import logging
@@ -14,6 +14,7 @@ from app.core.config import get_settings
 log = logging.getLogger(__name__)
 
 SUFIJO_PARCIAL = ".part"
+EXTENSIONES = {"PDF": ".pdf", "JPG": ".jpg", "PNG": ".png", "HEIC": ".heic"}
 
 
 def directorio() -> Path:
@@ -24,8 +25,12 @@ def directorio() -> Path:
     return d
 
 
+def ruta_documento(documento_id: uuid.UUID, formato: str = "PDF") -> Path:
+    return directorio() / f"{documento_id}{EXTENSIONES[formato]}"
+
+
 def ruta_pdf(documento_id: uuid.UUID) -> Path:
-    return directorio() / f"{documento_id}.pdf"
+    return ruta_documento(documento_id, "PDF")
 
 
 def ruta_parcial(documento_id: uuid.UUID) -> Path:
@@ -41,8 +46,16 @@ def borrar(ruta: Path) -> bool:
         return False
 
 
+def borrar_documento(documento_id: uuid.UUID) -> bool:
+    """Borra el documento en cualquier formato (y su parcial). True si alguno existía."""
+    alguno = False
+    for formato in EXTENSIONES:
+        alguno |= borrar(ruta_documento(documento_id, formato))
+    return borrar(ruta_parcial(documento_id)) or alguno
+
+
 def documento_id_de(ruta: Path) -> uuid.UUID | None:
-    nombre = ruta.name.removesuffix(SUFIJO_PARCIAL).removesuffix(".pdf")
+    nombre = ruta.name.split(".", 1)[0]  # {id}.pdf, {id}.png, {id}.part…
     try:
         return uuid.UUID(nombre)
     except ValueError:

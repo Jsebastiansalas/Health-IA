@@ -85,7 +85,7 @@ export function ConsolaRag({
             <p className="mt-2 max-w-lg text-tinta-2">
               {hayIndice
                 ? "Cada respuesta cita documento, página y sección. Si la evidencia no alcanza, el sistema lo dice."
-                : "Sube un PDF y espera a que termine el proceso: cuando el original se elimine del servidor, podrás consultarlo aquí."}
+                : "Sube un documento (PDF o foto) y espera a que termine el proceso: cuando el original se elimine del servidor, podrás consultarlo aquí."}
             </p>
             {hayIndice && (
               <ul className="mt-5 max-w-xl divide-y divide-tinta/12 border-y border-tinta/12">

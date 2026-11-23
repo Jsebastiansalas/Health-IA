@@ -39,7 +39,7 @@ export function PaginaRegistro() {
           <h1 className="text-[clamp(2.2rem,3.2vw,3.2rem)]">Entiende los papeles que te dan en el hospital.</h1>
           <ul className="mt-8 space-y-3.5 text-[1.02rem]">
             {[
-              "Sube tus resultados, historia clínica u órdenes, en PDF.",
+              "Sube tus resultados, historia clínica u órdenes, en PDF o con una foto.",
               "Pregunta qué dicen, con la cita exacta del documento.",
               "Consulta los efectos de un medicamento, con su fuente.",
               "Borras tu historial y tu cuenta cuando quieras.",

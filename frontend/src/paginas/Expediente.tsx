@@ -115,7 +115,7 @@ export function PaginaExpediente() {
         </p>
         <dl className="mt-4 flex flex-wrap gap-x-7 gap-y-2" aria-label="Resumen del expediente">
           <Cifra valor={documentos?.length ?? "—"} etiqueta="documentos" />
-          <Cifra valor={documentos ? indexados.length : "—"} etiqueta="indexados (PDF eliminado)" />
+          <Cifra valor={documentos ? indexados.length : "—"} etiqueta="indexados (original eliminado)" />
           <Cifra valor={documentos ? fragmentos.toLocaleString("es-CO") : "—"} etiqueta="fragmentos consultables" />
           <Cifra valor={expediente.embedding_model_activo} etiqueta="modelo del índice" />
         </dl>

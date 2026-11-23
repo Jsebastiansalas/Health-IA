@@ -66,4 +66,56 @@ public final class PdfsDePrueba {
             throw new IllegalStateException(e);
         }
     }
+
+    // ---------- imagenes ----------
+
+    private static byte[] imagen(String formato, int ancho, int alto) {
+        try {
+            var img = new java.awt.image.BufferedImage(ancho, alto, java.awt.image.BufferedImage.TYPE_INT_RGB);
+            var g = img.createGraphics();
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, ancho, alto);
+            g.setColor(java.awt.Color.BLACK);
+            // Distinta cada vez: el contenido cambia el SHA-256 y evita la deteccion de duplicados.
+            g.drawString("Resultado " + UUID.randomUUID(), 10, alto / 2);
+            g.dispose();
+            var salida = new ByteArrayOutputStream();
+            javax.imageio.ImageIO.write(img, formato, salida);
+            return salida.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public static byte[] png() {
+        return imagen("png", 320, 200);
+    }
+
+    public static byte[] jpg() {
+        return imagen("jpg", 320, 200);
+    }
+
+    /** Firma PNG verdadera seguida de basura: Tika la detecta como PNG pero no se puede leer. */
+    public static byte[] pngCorrupto() {
+        byte[] firma = {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A};
+        byte[] basura = ("no-es-una-imagen-" + UUID.randomUUID()).repeat(20).getBytes(StandardCharsets.UTF_8);
+        var salida = new ByteArrayOutputStream();
+        salida.writeBytes(firma);
+        salida.writeBytes(basura);
+        return salida.toByteArray();
+    }
+
+    /** Un GIF: es una imagen, pero no un formato soportado. */
+    public static byte[] gif() {
+        return imagen("gif", 40, 40);
+    }
+
+    /** Cabecera ISO-BMFF de un HEIC (caja ftyp con la marca heic). Basta para que se reconozca el formato. */
+    public static byte[] cabeceraHeic() {
+        byte[] ftyp = {0, 0, 0, 0x18, 'f', 't', 'y', 'p', 'h', 'e', 'i', 'c', 0, 0, 0, 0, 'm', 'i', 'f', '1', 'h', 'e', 'i', 'c'};
+        var salida = new ByteArrayOutputStream();
+        salida.writeBytes(ftyp);
+        salida.writeBytes(("relleno-" + UUID.randomUUID()).getBytes(StandardCharsets.UTF_8));
+        return salida.toByteArray();
+    }
 }

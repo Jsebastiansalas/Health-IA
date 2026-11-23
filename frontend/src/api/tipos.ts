@@ -59,8 +59,12 @@ export interface ActaPurga {
   purged_at: string;
 }
 
+export type FormatoDocumento = "PDF" | "JPG" | "PNG" | "HEIC";
+
 export interface Documento {
   id: string;
+  /** Formato real del archivo; ausente en respuestas anteriores al sprint 26 (son PDF). */
+  formato?: FormatoDocumento;
   expediente_id: string;
   nombre_archivo_original: string;
   tipo_documento: TipoDocumento;

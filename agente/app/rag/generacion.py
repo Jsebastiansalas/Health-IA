@@ -167,7 +167,7 @@ def verificacion_visual(metadata: dict, umbral_ocr: float) -> tuple[bool, str | 
     if not motivos:
         return False, None
     return True, (
-        "Verifique en el PDF original de su PC: el fragmento "
+        "Verifique en el original de su equipo: el fragmento "
         + ", ".join(motivos)
         + ". El valor probatorio depende del documento original."
     )

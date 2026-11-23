@@ -61,6 +61,7 @@ async def subir(
     tipo: str = "PLIEGO",
     numero_adenda: int | None = None,
     nombre: str = "Pliego_Hospital.pdf",
+    formato: str = "PDF",
 ) -> Respuesta:
     """Hace lo que la API Java deja listo antes de entregar un documento al agente: el PDF en el
     directorio efímero como {id}.pdf y la fila del documento en estado EN_COLA."""
@@ -73,7 +74,7 @@ async def subir(
 
     doc_id = uuid.uuid4()
     try:
-        paginas = len(PdfReader(io.BytesIO(contenido)).pages)
+        paginas = len(PdfReader(io.BytesIO(contenido)).pages) if formato == "PDF" else 1
     except Exception:
         paginas = None
     url = os.environ["TEST_DATABASE_ADMIN_URL"]  # propietario: prepara datos sin RLS
@@ -81,9 +82,9 @@ async def subir(
         fila = conn.execute(
             "INSERT INTO documentos (id, tenant_id, expediente_id, nombre_archivo_original, "
             "tipo_documento, numero_adenda, sha256_original, tamano_bytes, total_paginas, "
-            "estado_indexacion, embedding_model) "
+            "estado_indexacion, embedding_model, formato) "
             "SELECT %s, e.tenant_id, e.id, %s, %s, %s, %s, %s, %s, 'EN_COLA', "
-            "e.embedding_model_activo FROM expedientes e WHERE e.id = %s RETURNING tenant_id",
+            "e.embedding_model_activo, %s FROM expedientes e WHERE e.id = %s RETURNING tenant_id",
             (
                 doc_id,
                 nombre,
@@ -92,11 +93,13 @@ async def subir(
                 hashlib.sha256(contenido).hexdigest(),
                 len(contenido),
                 paginas,
+                formato,
                 uuid.UUID(expediente_id),
             ),
         ).fetchone()
     assert fila is not None, "expediente inexistente"
-    (Path(os.environ["EPHEMERAL_DIR"]) / f"{doc_id}.pdf").write_bytes(contenido)
+    extension = {"PDF": ".pdf", "JPG": ".jpg", "PNG": ".png", "HEIC": ".heic"}[formato]
+    (Path(os.environ["EPHEMERAL_DIR"]) / f"{doc_id}{extension}").write_bytes(contenido)
     return Respuesta(
         202, {"id": str(doc_id), "estado_indexacion": "EN_COLA", "tenant_id": str(fila[0])}
     )
