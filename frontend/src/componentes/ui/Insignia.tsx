@@ -4,12 +4,12 @@ import { cn } from "../../lib/cn";
 
 /** Etiqueta de estado: pequeña, de borde completo y un solo color por significado. */
 const insignia = cva(
-  "inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-xs font-medium",
+  "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium",
   {
     variants: {
       tono: {
         neutro: "border-borde bg-panel-2 text-texto-2",
-        accion: "border-primario/35 bg-primario/10 text-primario",
+        accion: "border-primario/35 bg-primario/10 text-primario-osc",
         marca: "border-cita-borde bg-cita text-cita-tx",
         ok: "border-ok/35 bg-ok/10 text-ok",
         aviso: "border-aviso/40 bg-aviso/10 text-aviso",

@@ -39,7 +39,7 @@ components:
   campo: "alto 40, fondo panel, borde borde, 8px; foco con borde primario y halo del 22 %"
   insignia: "6px, borde completo, un color por significado"
   panel: "fondo panel, borde 1px borde, 12px, sin sombra"
-  nav: "barra superior sticky de 56 px; el elemento activo lleva una raya de 2px en primario"
+  nav: "barra superior sticky de 48 px; el elemento activo lleva una raya de 2px en primario"
 ---
 
 # Design System: MedTender
@@ -92,9 +92,9 @@ Plano. Los paneles se separan por contraste y borde; `shadow-lg` solo en menús 
 - **Botón:** primario (relleno primario), secundario (borde), fantasma, peligro; animación de 300 ms con la curva `cubic-bezier(0.22, 1, 0.36, 1)` y `active:scale-[0.98]`.
 - **Campo:** etiqueta visible arriba, alto 40, foco con borde primario y halo.
 - **Insignia:** pequeña, de borde completo; el relleno sólido amarillo es solo para la cita.
-- **Barra superior:** sticky de 56 px, translúcida con desenfoque; navegación con icono (en móvil solo el icono) y menú de usuario. Enlace «Saltar al contenido».
-- **Banner del caso:** panel con código en mono, título, entidad, insignias de estado y permiso, y una lista de cifras.
-- **Tabla de expedientes:** panel con cabecera y filas; en `lg` es una rejilla de cinco columnas y por debajo, tarjetas apiladas.
+- **Barra superior:** sticky de 48 px, translúcida con desenfoque; navegación con icono (en móvil solo el icono) y menú de usuario. Enlace «Saltar al contenido».
+- **Banner del caso:** panel con título, entidad y tipo, insignias de estado y permiso, la acción principal «Cargar documento» arriba a la derecha y una sola línea de resumen. La acción destructiva (borrar historial) vive aislada al pie de la página.
+- **Tablas** (expedientes y fuentes de medicamentos): en `lg` son tablas o rejillas y por debajo tarjetas apiladas con la etiqueta de cada dato; nunca hay desplazamiento horizontal.
 - **Portada:** barra flotante centrada y translúcida; titular con degradado de texto (máximo 680 px); ejemplo ilustrativo de respuesta con cita; lema que se revela palabra por palabra; cómo funciona en tres pasos; beneficios; preguntas frecuentes; mismo llamado al cierre. Dos portadas con una oferta cada una: `/` (organizaciones) y `/personas`.
 - **Iconos:** Phosphor, importados desde `src/iconos.tsx`.
 

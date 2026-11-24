@@ -36,7 +36,7 @@ export function CruceMedicamentos({
     return (
       <div>
         <Insignia tono="aviso" className="mb-4">
-          <SearchX className="size-3.5" aria-hidden />
+          <SearchX className="size-4" aria-hidden />
           Sin medicamentos en tus documentos
         </Insignia>
         <p className="text-sm leading-relaxed">{r.respuestaAnalitica}</p>
@@ -116,7 +116,7 @@ export function CruceMedicamentos({
 
       {r.avisoGeneral && (
         <p className="flex items-start gap-2 text-xs leading-relaxed text-texto-3">
-          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
           {r.avisoGeneral}
         </p>
       )}

@@ -143,7 +143,7 @@ export function VisorLocal({
       <header className="flex items-start justify-between gap-4 border-b border-borde px-4 py-4">
         <div className="min-w-0">
           <p className="flex items-center gap-2 text-xs font-medium text-primario">
-            <FolderOpen className="size-3.5" aria-hidden />
+            <FolderOpen className="size-4" aria-hidden />
             Original en tu equipo · {etiquetaDocumento(cita.tipoDocumento, cita.numeroAdenda)} ·{" "}
             {paginas(cita.paginaInicio, cita.paginaFin)}
           </p>
@@ -155,13 +155,13 @@ export function VisorLocal({
         <div className="flex shrink-0 items-center gap-2">
           {estado.fase === "listo" && (
             <Insignia tono="ok" className="hidden sm:inline-flex">
-              <BadgeCheck className="size-3.5" aria-hidden />
+              <BadgeCheck className="size-4" aria-hidden />
               SHA-256 coincide
             </Insignia>
           )}
           {estado.fase === "distinto" && (
             <Insignia tono="peligro" className="hidden sm:inline-flex">
-              <ShieldAlert className="size-3.5" aria-hidden />
+              <ShieldAlert className="size-4" aria-hidden />
               No coincide
             </Insignia>
           )}
@@ -237,8 +237,8 @@ function Fase({
   }[tono];
   return (
     <div className="mx-auto max-w-lg text-center">
-      <div className={cn("mx-auto grid size-24 place-items-center rounded-3xl border", colores)}>
-        <Icono className="size-11" strokeWidth={1.4} aria-hidden />
+      <div className={cn("mx-auto grid size-24 place-items-center rounded-xl border", colores)}>
+        <Icono className="size-10" strokeWidth={1.4} aria-hidden />
       </div>
       <h3 className="mt-8 text-3xl font-semibold leading-tight">{titulo}</h3>
       {children}
@@ -512,25 +512,25 @@ function LectorPdf({ pdf, cita }: { pdf: PdfLocal; cita: Cita }) {
           )}
         </p>
         <div className="flex items-center gap-2">
-          <Boton tamano="icono" variante="fantasma" className="size-9" onClick={() => setZoom((z) => Math.max(0, z - 1))} disabled={zoom === 0} aria-label="Alejar">
-            <ZoomOut className="size-[1.1rem]" aria-hidden />
+          <Boton tamano="icono" variante="fantasma" className="size-8" onClick={() => setZoom((z) => Math.max(0, z - 1))} disabled={zoom === 0} aria-label="Alejar">
+            <ZoomOut className="size-4" aria-hidden />
           </Boton>
           <span className="num w-12 text-center text-sm text-texto-2">{Math.round(ZOOMS[zoom]! * 100)} %</span>
-          <Boton tamano="icono" variante="fantasma" className="size-9" onClick={() => setZoom((z) => Math.min(ZOOMS.length - 1, z + 1))} disabled={zoom === ZOOMS.length - 1} aria-label="Acercar">
-            <ZoomIn className="size-[1.1rem]" aria-hidden />
+          <Boton tamano="icono" variante="fantasma" className="size-8" onClick={() => setZoom((z) => Math.min(ZOOMS.length - 1, z + 1))} disabled={zoom === ZOOMS.length - 1} aria-label="Acercar">
+            <ZoomIn className="size-4" aria-hidden />
           </Boton>
-          <Boton tamano="icono" variante="fantasma" className="size-9" onClick={() => setZoom(2)} aria-label="Ajustar al ancho">
+          <Boton tamano="icono" variante="fantasma" className="size-8" onClick={() => setZoom(2)} aria-label="Ajustar al ancho">
             <Maximize2 className="size-4" aria-hidden />
           </Boton>
           <span className="mx-2 h-5 w-px bg-texto/10" aria-hidden />
-          <Boton tamano="icono" variante="secundario" className="size-9" disabled={pagina <= 1} onClick={() => irA(pagina - 1)} aria-label="Página anterior">
-            <ChevronLeft className="size-[1.1rem]" aria-hidden />
+          <Boton tamano="icono" variante="secundario" className="size-8" disabled={pagina <= 1} onClick={() => irA(pagina - 1)} aria-label="Página anterior">
+            <ChevronLeft className="size-4" aria-hidden />
           </Boton>
           <span className="num min-w-16 text-center text-sm">
             {pagina} / {total || "…"}
           </span>
-          <Boton tamano="icono" variante="secundario" className="size-9" disabled={pagina >= total} onClick={() => irA(pagina + 1)} aria-label="Página siguiente">
-            <ChevronRight className="size-[1.1rem]" aria-hidden />
+          <Boton tamano="icono" variante="secundario" className="size-8" disabled={pagina >= total} onClick={() => irA(pagina + 1)} aria-label="Página siguiente">
+            <ChevronRight className="size-4" aria-hidden />
           </Boton>
         </div>
       </div>

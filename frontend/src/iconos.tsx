@@ -51,6 +51,8 @@ export {
   User as UserRound,
   X,
   List,
+  Plus,
+  UploadSimple,
   Camera,
   Checks as CheckCheck,
   Clock,

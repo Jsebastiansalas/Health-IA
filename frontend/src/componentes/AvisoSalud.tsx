@@ -16,7 +16,7 @@ export function AvisoSalud({ className }: { className?: string }) {
         <b className="font-semibold text-texto">Información de apoyo, no atención médica.</b> Explica y cita lo que dicen tus documentos y las
         fuentes; no diagnostica ni receta, y no sustituye a un profesional de la salud.{" "}
         <span className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-texto">
-          <Phone className="size-3.5" aria-hidden />
+          <Phone className="size-4" aria-hidden />
           En una urgencia, llama al 123.
         </span>
       </p>

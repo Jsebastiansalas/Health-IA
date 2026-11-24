@@ -68,14 +68,14 @@ export function PaginaMedicamentos() {
   return (
     <section aria-labelledby="titulo-med" className="mx-auto flex min-h-[78vh] max-w-5xl flex-col">
       <header className="mb-8">
-        <h1 id="titulo-med" className="text-3xl sm:text-4xl">
+        <h1 id="titulo-med" className="text-3xl font-semibold leading-9">
           Medicamentos
         </h1>
         <p className="mt-3 max-w-2xl text-texto-2">
           Pregunta por cualquier medicamento con registro en Colombia: titular, registro sanitario, vigencia, presentaciones,
           equivalentes y precio máximo regulado. Cada dato lleva su fuente.
         </p>
-        <p className="etiqueta mt-3">
+        <p className="mt-3 text-sm text-texto-3">
           {cargada
             ? `Datos de INVIMA (datos.gov.co, CC BY-SA 4.0) · cargados el ${fecha(cargada)}`
             : fuentes
@@ -88,13 +88,12 @@ export function PaginaMedicamentos() {
       <div className="flex-1 space-y-8 pb-6" role="log" aria-live="polite" aria-label="Conversación">
         {vacio && (
           <div className="animate-aparecer">
-            <p className="max-w-xl text-2xl font-semibold leading-tight">Pregunta por un medicamento.</p>
-            <p className="mt-2 max-w-lg text-texto-2">
+            <p className="max-w-3xl text-base text-texto-2">
               Responde con la base oficial de INVIMA. Para efectos, contraindicaciones e interacciones, sube el prospecto de tu
               medicamento a tu expediente y pregúntale a la consola o usa «Ver advertencias de mis medicamentos»: se cita tu propio
               documento. No indica dosis ni dice qué medicamento tomar: eso lo decide tu médico o farmacéutico.
             </p>
-            <ul className="mt-4 max-w-2xl divide-y divide-borde border-y border-borde">
+            <ul className="mt-6 divide-y divide-borde border-y border-borde">
               {SUGERENCIAS.map((q) => (
                 <li key={q}>
                   <button
@@ -143,7 +142,7 @@ export function PaginaMedicamentos() {
         <div className="flex items-end gap-3">
           <textarea
             ref={campo}
-            className="max-h-40 min-h-[2.9rem] flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none"
+            className="max-h-40 min-h-12 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none"
             rows={2}
             maxLength={1000}
             aria-label="Tu pregunta sobre un medicamento"
@@ -158,12 +157,12 @@ export function PaginaMedicamentos() {
             type="submit"
             variante="primario"
             tamano="icono"
-            className="size-11 shrink-0"
+            className="size-10 shrink-0"
             disabled={pregunta.trim().length < 3}
             cargando={consultar.isPending}
             aria-label="Consultar"
           >
-            {!consultar.isPending && <SendHorizontal className="size-[1.15rem]" aria-hidden />}
+            {!consultar.isPending && <SendHorizontal className="size-5" aria-hidden />}
           </Boton>
         </div>
       </form>
@@ -202,7 +201,7 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
         {r.urgencia && <AvisoUrgencia mensaje={r.urgencia.mensaje} />}
         {r.sinEvidencia && !r.limiteClinico && (
           <Insignia tono="aviso" className="mb-4">
-            <SearchX className="size-3.5" aria-hidden />
+            <SearchX className="size-4" aria-hidden />
             Sin evidencia suficiente
           </Insignia>
         )}
@@ -215,7 +214,7 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
                   <button
                     type="button"
                     onClick={() => irA(id)}
-                    className="mx-0.5 inline-grid h-5 min-w-5 -translate-y-0.5 place-items-center rounded-md bg-cita px-2 align-middle text-xs font-semibold text-cita-tx transition-colors hover:bg-primario hover:text-primario-tx"
+                    className="mx-0.5 inline-grid h-5 min-w-5 -translate-y-0.5 place-items-center rounded-md bg-cita px-2 align-middle text-sm font-semibold text-cita-tx transition-colors hover:bg-primario hover:text-primario-tx"
                     aria-label={`Ir a la fuente ${id}`}
                   >
                     {children}
@@ -238,7 +237,7 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
             ))}
           </ul>
         )}
-        <p className="mt-4 border-t border-borde pt-4 text-xs leading-relaxed text-texto-3">{r.aviso}</p>
+        <p className="mt-4 border-t border-borde pt-4 text-sm leading-relaxed text-texto-3">{r.aviso}</p>
         <FuentesOficiales fuentes={r.fuentesOficiales} />
       </div>
 
@@ -247,17 +246,17 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
   );
 }
 
-const th = "px-3 py-2 text-left text-xs font-medium text-texto-3";
-const td = "px-3 py-3 align-top";
+const th = "px-3 py-2 text-left text-sm font-medium text-texto-3";
+const td = "block px-4 py-1 align-top before:mr-2 before:text-sm before:text-texto-3 before:content-[attr(data-etiqueta)] lg:table-cell lg:px-3 lg:py-3 lg:before:hidden";
 
 /** Marcador de la fuente: el mismo amarillo que la referencia [R1] dentro de la respuesta. */
 function Marcador({ id }: { id: string }) {
-  return <span className="inline-grid h-6 min-w-6 place-items-center rounded-md bg-cita px-2 text-xs font-semibold text-cita-tx">{id}</span>;
+  return <span className="inline-grid h-6 min-w-6 place-items-center rounded-md bg-cita px-2 text-sm font-semibold text-cita-tx">{id}</span>;
 }
 
 function EnlaceFuente({ c }: { c: CitaMedicamento }) {
   return (
-    <div className="min-w-[7rem] text-xs leading-snug text-texto-3">
+    <div className="min-w-[7rem] text-sm leading-snug text-texto-3">
       {c.fuente.conjunto}
       {c.fuente.cargadoAt ? <span className="block">cargado el {fecha(c.fuente.cargadoAt)}</span> : null}
       {c.fuente.enlace && (
@@ -283,7 +282,7 @@ function EnlaceFuente({ c }: { c: CitaMedicamento }) {
 export function FuentesOficiales({ fuentes }: { fuentes?: FuenteOficial[] }) {
   if (!fuentes?.length) return null;
   return (
-    <p className="mt-2 text-xs leading-relaxed text-texto-3">
+    <p className="mt-2 text-sm leading-relaxed text-texto-3">
       Para saber más:{" "}
       {fuentes.map((f, i) => (
         <span key={f.url}>
@@ -306,10 +305,10 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
   return (
     <div className="space-y-4">
       {registros.length > 0 && (
-        <section aria-label="Registros sanitarios citados" className="panel overflow-x-auto">
-          <table className="w-full min-w-[46rem] border-collapse text-xs">
-            <caption className="px-3 pb-1 pt-3 text-left text-xs font-semibold">Registros sanitarios citados</caption>
-            <thead>
+        <section aria-label="Registros sanitarios citados" className="panel">
+          <table className="block w-full border-collapse text-sm lg:table">
+            <caption className="px-3 pb-1 pt-3 text-left text-sm font-semibold">Registros sanitarios citados</caption>
+            <thead className="hidden lg:table-header-group">
               <tr>
                 <th className={th} scope="col">Ref.</th>
                 <th className={th} scope="col">Producto</th>
@@ -320,23 +319,23 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
                 <th className={th} scope="col">Fuente</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="block lg:table-row-group">
               {registros.map((c) => (
-                <tr key={c.id} id={`${base}-${c.id}`} className={fila(c.id)}>
-                  <th scope="row" className={cn(td, "font-normal")}><Marcador id={c.id} /></th>
-                  <td className={td}>
+                <tr key={c.id} id={`${base}-${c.id}`} className={cn(fila(c.id), "block pb-3 lg:table-row lg:pb-0")}>
+                  <th scope="row" className="block px-4 pb-1 pt-3 text-left font-normal lg:table-cell lg:p-3"><Marcador id={c.id} /></th>
+                  <td className={td} data-etiqueta="Producto: ">
                     <span className="block font-medium">{c.producto ?? "Sin nombre"}</span>
                     <span className="etiqueta block">CUM {c.cum}</span>
-                    <span className="block text-xs text-texto-2">
+                    <span className="block text-sm text-texto-2">
                       {[c.formaFarmaceutica, c.viaAdministracion].filter(Boolean).join(" · ")}
                       {c.presentaciones > 1 ? ` · ${c.presentaciones} presentaciones` : ""}
                     </span>
                   </td>
-                  <td className={td}>
+                  <td className={td} data-etiqueta="Titular: ">
                     {c.titular ?? "—"}
-                    <span className="num block text-xs text-texto-2">{c.registroSanitario ?? ""}</span>
+                    <span className="num block text-sm text-texto-2">{c.registroSanitario ?? ""}</span>
                   </td>
-                  <td className={td}>
+                  <td className={td} data-etiqueta="Principio activo: ">
                     {c.principiosActivos.length
                       ? c.principiosActivos
                           .map((p) => [p.nombre, [p.cantidad, p.unidad].filter(Boolean).join(" ")].filter(Boolean).join(" "))
@@ -344,11 +343,11 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
                       : "—"}
                     {c.atc ? <span className="etiqueta block">ATC {c.atc}</span> : null}
                   </td>
-                  <td className={td}>
+                  <td className={td} data-etiqueta="Estado: ">
                     <Insignia tono={ESTADO_TONO[c.conjunto]}>{c.estadoRegistro ?? c.conjunto}</Insignia>
                   </td>
-                  <td className={cn(td, "num whitespace-nowrap")}>{c.fechaVencimiento ? dia(c.fechaVencimiento) : "—"}</td>
-                  <td className={td}><EnlaceFuente c={c} /></td>
+                  <td className={cn(td, "num whitespace-nowrap")} data-etiqueta="Vence: ">{c.fechaVencimiento ? dia(c.fechaVencimiento) : "—"}</td>
+                  <td className={td} data-etiqueta="Fuente: "><EnlaceFuente c={c} /></td>
                 </tr>
               ))}
             </tbody>
@@ -357,36 +356,36 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
       )}
 
       {precios.length > 0 && (
-        <section aria-label="Precios máximos regulados citados" className="panel overflow-x-auto">
-          <table className="w-full min-w-[40rem] border-collapse text-xs">
-            <caption className="px-3 pb-1 pt-3 text-left text-xs font-semibold">Precio máximo regulado</caption>
-            <thead>
+        <section aria-label="Precios máximos regulados citados" className="panel">
+          <table className="block w-full border-collapse text-sm lg:table">
+            <caption className="px-3 pb-1 pt-3 text-left text-sm font-semibold">Precio máximo regulado</caption>
+            <thead className="hidden lg:table-header-group">
               <tr>
                 <th className={th} scope="col">Ref.</th>
                 <th className={th} scope="col">Medicamento</th>
-                <th className={cn(th, "text-right")} scope="col">Institucional</th>
-                <th className={cn(th, "text-right")} scope="col">Comercial</th>
-                <th className={cn(th, "text-right")} scope="col">Final comercial</th>
+                <th className={cn(th, "lg:text-right")} scope="col">Institucional</th>
+                <th className={cn(th, "lg:text-right")} scope="col">Comercial</th>
+                <th className={cn(th, "lg:text-right")} scope="col">Final comercial</th>
                 <th className={th} scope="col">Circular · desde</th>
                 <th className={th} scope="col">Fuente</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="block lg:table-row-group">
               {precios.map((c) => (
-                <tr key={c.id} id={`${base}-${c.id}`} className={fila(c.id)}>
-                  <th scope="row" className={cn(td, "font-normal")}><Marcador id={c.id} /></th>
-                  <td className={td}>
+                <tr key={c.id} id={`${base}-${c.id}`} className={cn(fila(c.id), "block pb-3 lg:table-row lg:pb-0")}>
+                  <th scope="row" className="block px-4 pb-1 pt-3 text-left font-normal lg:table-cell lg:p-3"><Marcador id={c.id} /></th>
+                  <td className={td} data-etiqueta="Medicamento: ">
                     <span className="block font-medium">{c.medicamento ?? c.cum}</span>
                     <span className="etiqueta block">CUM {c.cum}</span>
                   </td>
-                  <td className={cn(td, "num text-right")}>{plata(c.precioInstitucional)}</td>
-                  <td className={cn(td, "num text-right")}>{plata(c.precioComercial)}</td>
-                  <td className={cn(td, "num text-right font-semibold")}>{plata(c.precioFinalComercial)}</td>
-                  <td className={td}>
+                  <td className={cn(td, "num lg:text-right")} data-etiqueta="Institucional: ">{plata(c.precioInstitucional)}</td>
+                  <td className={cn(td, "num lg:text-right")} data-etiqueta="Comercial: ">{plata(c.precioComercial)}</td>
+                  <td className={cn(td, "num font-semibold lg:text-right")} data-etiqueta="Final comercial: ">{plata(c.precioFinalComercial)}</td>
+                  <td className={td} data-etiqueta="Circular: ">
                     {c.circular ?? "—"}
-                    <span className="block text-xs text-texto-2">{c.vigenciaDesde ? dia(c.vigenciaDesde) : ""}</span>
+                    <span className="block text-sm text-texto-2">{c.vigenciaDesde ? dia(c.vigenciaDesde) : ""}</span>
                   </td>
-                  <td className={td}><EnlaceFuente c={c} /></td>
+                  <td className={td} data-etiqueta="Fuente: "><EnlaceFuente c={c} /></td>
                 </tr>
               ))}
             </tbody>
@@ -412,10 +411,10 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
               ? `Tu prospecto: ${c.nombreArchivo ?? "documento"} · pág. ${c.paginaInicio ?? "—"}`
               : `Ficha técnica de ${c.medicamento ?? "—"} (principio activo: ${c.principioActivo ?? "—"}) · registro ${c.registro ?? "—"}`}
           </p>
-          <blockquote className="mt-3 max-h-64 overflow-y-auto whitespace-pre-line border-l-2 border-primario/40 pl-4 text-sm leading-relaxed text-texto-2">
+          <blockquote className="mt-3 max-h-64 overflow-y-auto whitespace-pre-line rounded-lg bg-panel-2 p-4 text-sm leading-relaxed text-texto-2">
             {c.extractoLiteral}
           </blockquote>
-          {c.extractoTruncado && <p className="mt-1 text-xs text-texto-3">Extracto recortado: la sección completa está en la fuente.</p>}
+          {c.extractoTruncado && <p className="mt-1 text-sm text-texto-3">Extracto recortado: la sección completa está en la fuente.</p>}
           <div className="mt-3 border-t border-borde pt-3"><EnlaceFuente c={c} /></div>
         </section>
       ))}
@@ -431,7 +430,7 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
             <Marcador id={c.id} />
             <p className="text-base font-semibold">{c.registrosSanitarios} registros sanitarios</p>
           </div>
-          <dl className="mt-3 grid gap-x-8 gap-y-1 text-xs sm:grid-cols-2">
+          <dl className="mt-3 grid gap-x-8 gap-y-1 text-sm sm:grid-cols-2">
             <div className="flex justify-between gap-4"><dt className="text-texto-3">Presentaciones (CUM)</dt><dd className="num">{c.coincidenciasCum}</dd></div>
             <div className="flex justify-between gap-4"><dt className="text-texto-3">Titulares distintos</dt><dd className="num">{c.titularesDistintos}</dd></div>
             {c.porConjunto.map((x) => (

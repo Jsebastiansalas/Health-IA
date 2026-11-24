@@ -69,14 +69,14 @@ export function PaginaExpedientes() {
         </div>
         {puedeCrear && (
           <Boton variante="primario" onClick={() => setCreando(true)}>
-            <FilePlus2 className="size-[1.1rem]" aria-hidden />
+            <FilePlus2 className="size-4" aria-hidden />
             Abrir expediente
           </Boton>
         )}
       </div>
 
       <div className="mb-8 flex flex-wrap items-center gap-3">
-        <div className="group flex h-11 w-full items-center gap-3 rounded-lg border border-borde bg-panel px-3 transition-[border-color] focus-within:border-primario sm:w-96">
+        <div className="group flex h-10 w-full items-center gap-3 rounded-lg border border-borde bg-panel px-3 transition-[border-color] focus-within:border-primario sm:w-96">
           <Search className="size-4 text-texto-3 group-focus-within:text-primario" aria-hidden />
           <input
             ref={buscador}
@@ -86,7 +86,7 @@ export function PaginaExpedientes() {
             aria-label="Buscar expedientes"
             className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none"
           />
-          <kbd className="hidden rounded-lg border border-borde px-2 font-mono text-xs text-texto-3 sm:block" aria-hidden>
+          <kbd className="hidden rounded-lg border border-borde px-2 font-mono text-sm text-texto-3 sm:block" aria-hidden>
             /
           </kbd>
         </div>
@@ -99,9 +99,9 @@ export function PaginaExpedientes() {
                 onClick={() => setEstado(valor)}
                 aria-pressed={estado === valor}
                 className={cn(
-                  "rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                  "rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
                   estado === valor
-                    ? "border-primario/50 bg-primario/12 text-primario"
+                    ? "border-primario/50 bg-primario/12 text-primario-osc"
                     : "border-borde text-texto-2 hover:border-borde hover:text-texto",
                 )}
               >
@@ -164,7 +164,7 @@ export function PaginaExpedientes() {
       {visibles.length > 0 && (
         <div className="panel overflow-hidden">
           <div
-            className="hidden grid-cols-[8.5rem_minmax(0,1fr)_9rem_6.5rem_7.5rem] gap-x-4 border-b border-borde px-4 py-3 text-xs font-medium text-texto-3 lg:grid"
+            className="hidden grid-cols-[8.5rem_minmax(0,1fr)_9rem_6.5rem_7.5rem] gap-x-4 border-b border-borde px-4 py-3 text-sm font-medium text-texto-3 lg:grid"
             aria-hidden
           >
             <span>Código</span>
@@ -180,21 +180,21 @@ export function PaginaExpedientes() {
                   to={`/expedientes/${e.id}`}
                   className="group grid gap-x-4 gap-y-1 px-4 py-4 transition-colors hover:bg-panel-2 focus-visible:bg-panel-2 lg:grid-cols-[8.5rem_minmax(0,1fr)_9rem_6.5rem_7.5rem] lg:items-center"
                 >
-                  <span className="font-mono text-xs text-texto">{e.codigo_expediente}</span>
+                  <span className="font-mono text-sm text-texto">{e.codigo_expediente}</span>
                   <span className="min-w-0">
                     <span className="block text-base font-semibold leading-snug [overflow-wrap:anywhere] group-hover:text-primario">
                       {e.titulo}
                     </span>
-                    <span className="mt-0.5 block truncate text-xs text-texto-2">
+                    <span className="mt-0.5 block truncate text-sm text-texto-2">
                       {e.entidad_contratante ?? "Entidad no registrada"}
                       {e.mi_permiso ? ` · ${PERMISO[e.mi_permiso]}` : ""}
                     </span>
                   </span>
-                  <span className="text-xs text-texto-2">{TIPOS_EXPEDIENTE[e.tipo_expediente]}</span>
+                  <span className="text-sm text-texto-2">{TIPOS_EXPEDIENTE[e.tipo_expediente]}</span>
                   <span>
                     <Insignia tono={e.estado === "ABIERTO" ? "accion" : "neutro"}>{e.estado}</Insignia>
                   </span>
-                  <span className="num text-xs text-texto-3 lg:text-right">{dia(e.created_at)}</span>
+                  <span className="num text-sm text-texto-3 lg:text-right">{dia(e.created_at)}</span>
                 </Link>
               </li>
             ))}
@@ -247,14 +247,14 @@ function NuevoExpediente({ alCrear }: { alCrear: () => void }) {
       <Campo etiqueta="Título" required maxLength={250} placeholder="Suministro de medicamentos oncológicos"
         value={datos.titulo} onChange={cambiar("titulo")} />
       <div>
-        <label htmlFor="tipo-expediente" className="mb-2 block text-xs font-medium text-texto-2">
+        <label htmlFor="tipo-expediente" className="mb-2 block text-sm font-medium text-texto-2">
           Tipo de expediente
         </label>
         <select
           id="tipo-expediente"
           value={datos.tipo_expediente}
           onChange={cambiar("tipo_expediente")}
-          className="h-11 w-full rounded-lg border border-borde bg-panel px-3 text-sm outline-none transition-[border-color,box-shadow] focus:border-primario focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--primario)_22%,transparent)]"
+          className="h-10 w-full rounded-lg border border-borde bg-panel px-3 text-sm outline-none transition-[border-color,box-shadow] focus:border-primario focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--primario)_22%,transparent)]"
         >
           {Object.entries(TIPOS_EXPEDIENTE).map(([v, t]) => (
             <option key={v} value={v} className="bg-panel">

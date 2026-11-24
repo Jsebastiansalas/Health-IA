@@ -35,7 +35,7 @@ export function Dialogo({ abierto, alCambiar, titulo, descripcion, children, tip
               )}
             </div>
             <Dialog.Close
-              className="grid size-9 shrink-0 place-items-center rounded-lg text-texto-2 transition-colors hover:bg-texto/10 hover:text-texto"
+              className="grid size-8 shrink-0 place-items-center rounded-lg text-texto-2 transition-colors hover:bg-texto/10 hover:text-texto"
               aria-label="Cerrar"
             >
               <X className="size-5" />

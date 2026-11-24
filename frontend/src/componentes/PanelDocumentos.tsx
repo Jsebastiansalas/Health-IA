@@ -79,14 +79,14 @@ export function PanelDocumentos({
       <ul className="mt-4 space-y-3">
         {isLoading && (
           <li aria-busy>
-            <Esqueleto className="h-32 rounded-3xl" />
+            <Esqueleto className="h-32 rounded-xl" />
           </li>
         )}
         {documentos?.map((d) => (
           <FilaDocumento key={d.id} doc={d} expedienteId={expedienteId} puedeExplicar={puedeExplicar} alExplicar={alExplicar} />
         ))}
         {documentos?.length === 0 && (
-          <li className="rounded-3xl border border-dashed border-borde p-6 text-sm leading-relaxed text-texto-2">
+          <li className="rounded-xl border border-dashed border-borde p-6 text-sm leading-relaxed text-texto-2">
             Aún no hay documentos. Sube el pliego y sus adendas desde tu equipo: el original no queda guardado en el
             servidor.
           </li>
@@ -131,10 +131,10 @@ function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; cli
 
   const subiendo = progreso !== null;
   return (
-    <form onSubmit={enviar} className="panel space-y-4 p-4">
+    <form id="subida-documento" onSubmit={enviar} className="panel space-y-4 p-4">
       <label
         className={cn(
-          "relative block cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed p-6 text-center transition-[border-color,background-color,transform] duration-300",
+          "relative block cursor-pointer overflow-hidden rounded-xl border-2 border-dashed p-6 text-center transition-[border-color,background-color,transform] duration-300",
           arrastrando
             ? "scale-[1.01] border-primario bg-primario/12"
             : archivo
@@ -162,7 +162,7 @@ function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; cli
         />
         {archivo ? (
           <span className="flex items-center justify-center gap-3 text-left">
-            <span className="grid size-11 place-items-center rounded-xl bg-primario/15 text-primario">
+            <span className="grid size-10 place-items-center rounded-xl bg-primario/15 text-primario">
               <FileText className="size-6" strokeWidth={1.6} aria-hidden />
             </span>
             <span className="min-w-0">
@@ -173,7 +173,7 @@ function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; cli
         ) : (
           <span className="block">
             <UploadCloud
-              className={cn("mx-auto size-9 text-primario transition-transform", arrastrando && "-translate-y-1")}
+              className={cn("mx-auto size-8 text-primario transition-transform", arrastrando && "-translate-y-1")}
               strokeWidth={1.5}
               aria-hidden
             />
@@ -211,7 +211,7 @@ function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; cli
             id="tipo-doc"
             value={tipo}
             onChange={(e) => setTipo(e.target.value as TipoDocumento)}
-            className="h-11 w-full rounded-lg border border-borde bg-panel px-4 text-sm outline-none transition-[border-color,box-shadow] focus:border-texto"
+            className="h-10 w-full rounded-lg border border-borde bg-panel px-4 text-sm outline-none transition-[border-color,box-shadow] focus:border-texto"
           >
             {Object.entries(TIPOS_DOCUMENTO).map(([v, t]) => (
               <option key={v} value={v} className="bg-panel">
@@ -232,7 +232,7 @@ function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; cli
               max={999}
               value={numero}
               onChange={(e) => setNumero(Number(e.target.value))}
-              className="num h-11 w-full rounded-lg border border-borde bg-panel px-4 text-sm outline-none focus:border-texto"
+              className="num h-10 w-full rounded-lg border border-borde bg-panel px-4 text-sm outline-none focus:border-texto"
             />
           </div>
         )}
@@ -293,7 +293,7 @@ function FilaDocumento({
       <div className="flex items-start gap-4">
         <span
           className={cn(
-            "grid size-11 shrink-0 place-items-center rounded-xl border",
+            "grid size-10 shrink-0 place-items-center rounded-xl border",
             error ? "border-peligro/30 bg-peligro/10 text-peligro" : "border-primario/25 bg-primario/10 text-primario",
           )}
         >
@@ -315,7 +315,7 @@ function FilaDocumento({
         </div>
         {listo && (
           <Insignia tono="ok" className="shrink-0">
-            <Trash2 className="size-3.5" aria-hidden />
+            <Trash2 className="size-4" aria-hidden />
             Original eliminado
           </Insignia>
         )}
@@ -326,7 +326,7 @@ function FilaDocumento({
         )}
         {pendientePurga && (
           <Insignia tono="aviso" className="shrink-0">
-            <Clock className="size-3.5" aria-hidden />
+            <Clock className="size-4" aria-hidden />
             Purga pendiente
           </Insignia>
         )}
@@ -399,7 +399,7 @@ function Pipeline({ estado, progreso }: { estado: EstadoIndexacion; progreso: nu
           <span
             key={PASOS[i]!.estado}
             className={cn(
-              "h-1.5 flex-1 rounded-sm transition-colors duration-500",
+              "h-2 flex-1 rounded-sm transition-colors duration-500",
               e === "hecho" && "bg-primario",
               e === "actual" && "animate-pulse bg-primario/60",
               e === "pendiente" && "bg-texto/12",

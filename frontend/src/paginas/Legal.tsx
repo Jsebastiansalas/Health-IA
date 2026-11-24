@@ -8,7 +8,7 @@ function Hoja({ titulo, children }: { titulo: string; children: React.ReactNode 
   return (
     <div className="min-h-screen bg-fondo">
       <header className="border-b border-borde bg-panel">
-        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-6">
+        <div className="mx-auto flex h-12 max-w-3xl items-center justify-between px-6">
           <Link to="/" aria-label="MedTender, inicio">
             <Marca />
           </Link>

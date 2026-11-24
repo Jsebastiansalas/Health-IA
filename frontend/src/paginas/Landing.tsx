@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Check, FileText, List, ShieldCheck, X } from "../iconos";
+import { ArrowRight, Check, FileText, List, Plus, ShieldCheck, X } from "../iconos";
 import { Marca } from "../componentes/Marca";
 import { boton } from "../componentes/ui/Boton";
 import { Insignia } from "../componentes/ui/Insignia";
@@ -151,7 +151,7 @@ function Navegacion({ c }: { c: ContenidoLanding }) {
         </div>
       </header>
       {abierto && (
-        <div className="fixed inset-0 z-30 bg-fondo/95 px-6 pt-28 backdrop-blur-xl md:hidden" role="dialog" aria-label="Menú">
+        <div className="fixed inset-0 z-30 bg-fondo/95 px-6 pt-24 backdrop-blur-xl md:hidden" role="dialog" aria-label="Menú">
           <nav className="flex flex-col gap-2" aria-label="Secciones de la página">
             {[...ENLACES.map(([a, t]) => [a, t, false] as const), [c.alterna.a, c.alterna.texto, true] as const].map(([a, t, ruta], i) => {
               const clase = "block rounded-xl px-3 py-3 text-2xl font-semibold text-texto animate-[aparecer_500ms_var(--ease-salida)_both]";
@@ -211,7 +211,7 @@ export function Landing({ c }: { c: ContenidoLanding }) {
 
       <main id="principal">
         {/* Hero */}
-        <section className="mx-auto grid max-w-6xl items-center gap-12 px-6 pb-20 pt-40 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <section className="mx-auto grid max-w-6xl items-center gap-12 px-6 pb-20 pt-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div>
             <h1 className="max-w-[680px] bg-linear-to-r from-[#000000] to-[#666666] bg-clip-text text-5xl font-semibold leading-none text-transparent dark:from-white dark:to-[#9b9b9b] sm:text-6xl">
               {c.titular}
@@ -300,9 +300,7 @@ export function Landing({ c }: { c: ContenidoLanding }) {
                 <details key={q.p} className="group py-4">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-medium transition-colors duration-300 hover:text-primario">
                     {q.p}
-                    <span className="grid size-6 shrink-0 place-items-center text-texto-3 transition-transform duration-500 ease-[var(--ease-salida)] group-open:rotate-45" aria-hidden>
-                      +
-                    </span>
+                    <Plus className="size-5 shrink-0 text-texto-3 transition-transform duration-500 ease-[var(--ease-salida)] group-open:rotate-45" aria-hidden />
                   </summary>
                   <p className="mt-3 text-base text-texto-2">{q.r}</p>
                 </details>

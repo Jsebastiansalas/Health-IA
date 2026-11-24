@@ -97,7 +97,7 @@ function MenuUsuario() {
 
 const enlaceNav = ({ isActive }: { isActive: boolean }) =>
   cn(
-    "relative flex h-14 items-center gap-2 px-1 text-sm font-medium transition-colors duration-300",
+    "relative flex h-12 items-center gap-2 px-1 text-sm font-medium transition-colors duration-300",
     "after:absolute after:inset-x-1 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primario after:transition-opacity after:duration-300",
     isActive ? "text-texto after:opacity-100" : "text-texto-2 after:opacity-0 hover:text-texto",
   );
@@ -113,7 +113,7 @@ export function Marco({ children }: { children: ReactNode }) {
         Saltar al contenido
       </a>
       <header className="sticky top-0 z-30 border-b border-borde bg-panel/90 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-6 px-4 sm:px-8">
+        <div className="mx-auto flex h-12 max-w-[1400px] items-center gap-6 px-4 sm:px-8">
           <NavLink to="/" aria-label="MedTender, inicio" className="shrink-0">
             <Marca compacta className="sm:hidden" />
             <Marca className="hidden sm:inline-flex" />

@@ -100,7 +100,7 @@ export function PaginaIngreso() {
                   aria-label={verClave ? "Ocultar contraseña" : "Mostrar contraseña"}
                   aria-pressed={verClave}
                 >
-                  {verClave ? <EyeOff className="size-[1.05rem]" /> : <Eye className="size-[1.05rem]" />}
+                  {verClave ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               }
             />

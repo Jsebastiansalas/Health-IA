@@ -50,7 +50,7 @@ export function TarjetaCita({ cita, numero, alAbrir, resaltada = false, id }: Pr
         </span>
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-2 text-xs font-medium text-texto-2">
-            {adenda ? <ScrollText className="size-3.5 text-aviso" aria-hidden /> : <FileText className="size-3.5" aria-hidden />}
+            {adenda ? <ScrollText className="size-4 text-aviso" aria-hidden /> : <FileText className="size-4" aria-hidden />}
             <span>
               {etiquetaDocumento(cita.tipoDocumento, cita.numeroAdenda)} · {paginas(cita.paginaInicio, cita.paginaFin)}
             </span>
@@ -72,7 +72,7 @@ export function TarjetaCita({ cita, numero, alAbrir, resaltada = false, id }: Pr
         <div className="mt-3 border-t border-borde pt-3">
           <div className="flex flex-wrap items-center gap-2">
             <Insignia tono="peligro" title={cita.motivoVerificacionVisual ?? undefined}>
-              <Eye className="size-3.5" aria-hidden />
+              <Eye className="size-4" aria-hidden />
               Verificar original
             </Insignia>
             {(cita.tiposEvidencia ?? []).map((t) => (

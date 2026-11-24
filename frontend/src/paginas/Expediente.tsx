@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import * as Tabs from "@radix-ui/react-tabs";
-import { AlertTriangle, ArrowLeft, ChevronRight, FileStack, MessagesSquare, UserRound } from "../iconos";
+import { AlertTriangle, ArrowLeft, ChevronRight, FileStack, MessagesSquare, UploadSimple, UserRound } from "../iconos";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useParams } from "react-router-dom";
@@ -11,7 +11,7 @@ import { ConsolaRag } from "../componentes/ConsolaRag";
 import { Consentimiento } from "../componentes/Consentimiento";
 import { PanelDocumentos } from "../componentes/PanelDocumentos";
 import { BotonBorrarHistorial } from "../componentes/Privacidad";
-import { boton } from "../componentes/ui/Boton";
+import { Boton, boton } from "../componentes/ui/Boton";
 import { Esqueleto } from "../componentes/ui/Esqueleto";
 import { Insignia } from "../componentes/ui/Insignia";
 import { cn } from "../lib/cn";
@@ -23,15 +23,6 @@ import { useMediaQuery } from "../lib/useMediaQuery";
 const VisorLocal = lazy(() => import("../componentes/VisorLocal").then((m) => ({ default: m.VisorLocal })));
 
 const PERMISO: Record<string, string> = { ADMIN: "Administras", EDITOR: "Editas", LECTOR: "Consultas" };
-
-function Cifra({ valor, etiqueta }: { valor: string | number; etiqueta: string }) {
-  return (
-    <div className="min-w-0 pr-4 sm:px-4 sm:first:pl-0">
-      <dt className="text-xs text-texto-3">{etiqueta}</dt>
-      <dd className="num mt-0.5 truncate text-lg font-semibold">{valor}</dd>
-    </div>
-  );
-}
 
 export function PaginaExpediente() {
   const { id = "" } = useParams();
@@ -76,10 +67,10 @@ export function PaginaExpediente() {
     return (
       <div aria-busy aria-label="Abriendo expediente">
         <Esqueleto className="mb-4 h-5 w-48" />
-        <Esqueleto className="h-44 rounded-2xl" />
+        <Esqueleto className="h-44 rounded-xl" />
         <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
-          <Esqueleto className="h-96 rounded-2xl" />
-          <Esqueleto className="h-96 rounded-2xl" />
+          <Esqueleto className="h-96 rounded-xl" />
+          <Esqueleto className="h-96 rounded-xl" />
         </div>
       </div>
     );
@@ -104,30 +95,38 @@ export function PaginaExpediente() {
       <header className="panel mb-6 p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 max-w-4xl">
-            <p className="etiqueta">
-              {expediente.codigo_expediente} · {TIPOS_EXPEDIENTE[expediente.tipo_expediente]}
+            <h1 className="text-3xl font-semibold leading-9">{expediente.titulo}</h1>
+            <p className="mt-2 text-base text-texto-2">
+              {expediente.entidad_contratante ?? "Entidad no registrada"} · {TIPOS_EXPEDIENTE[expediente.tipo_expediente]}
             </p>
-            <h1 className="mt-2 text-3xl font-semibold leading-9">{expediente.titulo}</h1>
-            <p className="mt-2 text-base text-texto-2">{expediente.entidad_contratante ?? "Entidad no registrada"}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Insignia tono={expediente.estado === "ABIERTO" ? "accion" : "neutro"}>{expediente.estado}</Insignia>
             <Insignia>
-              <UserRound className="size-3.5" aria-hidden />
+              <UserRound className="size-4" aria-hidden />
               {expediente.mi_permiso ? PERMISO[expediente.mi_permiso] : "Sin permiso"}
             </Insignia>
-            {expediente.mi_permiso === "ADMIN" && <BotonBorrarHistorial expedienteId={id} />}
+            {puedeSubir && expediente.estado === "ABIERTO" && (
+              <Boton
+                variante="primario"
+                tamano="sm"
+                disabled={consentimiento.bloqueado}
+                onClick={() => {
+                  setPestana("folios");
+                  window.setTimeout(() => document.getElementById("subida-documento")?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+                }}
+              >
+                <UploadSimple className="size-4" aria-hidden />
+                Cargar documento
+              </Boton>
+            )}
           </div>
         </div>
-        <dl
-          className="mt-6 grid grid-cols-2 gap-y-4 border-t border-borde pt-4 sm:grid-cols-4 sm:divide-x sm:divide-borde"
-          aria-label="Resumen del expediente"
-        >
-          <Cifra valor={documentos?.length ?? "—"} etiqueta="Documentos" />
-          <Cifra valor={documentos ? indexados.length : "—"} etiqueta="Indexados, original eliminado" />
-          <Cifra valor={documentos ? fragmentos.toLocaleString("es-CO") : "—"} etiqueta="Fragmentos consultables" />
-          <Cifra valor={expediente.embedding_model_activo} etiqueta="Modelo del índice" />
-        </dl>
+        <p className="mt-4 border-t border-borde pt-4 text-sm text-texto-3" aria-label="Resumen del expediente">
+          <span className="num">{documentos?.length ?? "—"}</span> documentos ·{" "}
+          <span className="num">{documentos ? indexados.length : "—"}</span> indexados, con el original eliminado ·{" "}
+          <span className="num">{documentos ? fragmentos.toLocaleString("es-CO") : "—"}</span> fragmentos consultables
+        </p>
       </header>
 
       {consentimiento.correoPendiente && (
@@ -196,6 +195,12 @@ export function PaginaExpediente() {
           )}
         </div>
       </Tabs.Root>
+
+      {expediente.mi_permiso === "ADMIN" && (
+        <div className="mt-12 border-t border-borde pt-6">
+          <BotonBorrarHistorial expedienteId={id} />
+        </div>
+      )}
 
       {/* Portal: la página tiene una animación con transform, que convertiría el `fixed` del
           visor en relativo a ese contenedor. */}

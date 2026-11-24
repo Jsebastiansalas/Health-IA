@@ -24,7 +24,7 @@ export function Consentimiento({ version, aceptando, error, alAceptar }: { versi
       <ul className="mt-4 max-w-3xl space-y-3 text-sm leading-relaxed">
         {PUNTOS.map((p) => (
           <li key={p} className="flex gap-3">
-            <span className="mt-2 size-1.5 shrink-0 rounded-full bg-texto-3" aria-hidden />
+            <span className="mt-2 size-2 shrink-0 rounded-full bg-texto-3" aria-hidden />
             <span>{p}</span>
           </li>
         ))}

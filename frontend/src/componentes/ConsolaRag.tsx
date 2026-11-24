@@ -139,7 +139,7 @@ export function ConsolaRag({
           </div>
         )}
         {consultar.error && (
-          <p role="alert" className="flex items-start gap-3 rounded-2xl border border-peligro/35 bg-peligro/10 px-4 py-3 text-sm text-peligro">
+          <p role="alert" className="flex items-start gap-3 rounded-xl border border-peligro/35 bg-peligro/10 px-4 py-3 text-sm text-peligro">
             <AlertOctagon className="mt-0.5 size-4 shrink-0 text-peligro" aria-hidden />
             {(consultar.error as Error).message}
           </p>
@@ -154,7 +154,7 @@ export function ConsolaRag({
         <div className="flex items-end gap-3">
           <textarea
             ref={campo}
-            className="max-h-40 min-h-[2.9rem] flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none disabled:cursor-not-allowed"
+            className="max-h-40 min-h-12 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none disabled:cursor-not-allowed"
             rows={2}
             maxLength={2000}
             aria-label="Tu pregunta"
@@ -176,12 +176,12 @@ export function ConsolaRag({
             type="submit"
             variante="primario"
             tamano="icono"
-            className="size-11 shrink-0"
+            className="size-10 shrink-0"
             disabled={!hayIndice || bloqueado || pregunta.trim().length < 3}
             cargando={consultar.isPending}
             aria-label="Consultar"
           >
-            {!consultar.isPending && <SendHorizontal className="size-[1.15rem]" aria-hidden />}
+            {!consultar.isPending && <SendHorizontal className="size-5" aria-hidden />}
           </Boton>
         </div>
         <p className="mt-1 flex items-center gap-2 px-3 text-xs text-texto-3">
@@ -195,7 +195,7 @@ export function ConsolaRag({
 
 function AvatarIA() {
   return (
-    <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-xl border border-primario/25 bg-fondo">
+    <span className="mt-1 grid size-8 shrink-0 place-items-center rounded-xl border border-primario/25 bg-fondo">
       <Logotipo className="size-6" />
     </span>
   );
@@ -262,7 +262,7 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
               <>
             {r.sinEvidencia && !r.limiteClinico && (
               <Insignia tono="aviso" className="mb-4">
-                <SearchX className="size-3.5" aria-hidden />
+                <SearchX className="size-4" aria-hidden />
                 Sin evidencia suficiente
               </Insignia>
             )}
