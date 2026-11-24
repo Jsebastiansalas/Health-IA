@@ -23,8 +23,10 @@ public class ConsentimientoService {
     /**
      * Cambiar el texto de consentimiento exige subir esta version: todos deben aceptarlo de nuevo.
      * v2: el texto pasa a decir que los datos personales se enmascaran antes de enviarlos al proveedor.
+     * v3: pruebas cerradas con la versión gratuita de Gemini, respaldos de 14 días, registro de accesos sin
+     * vencimiento, documentos de terceros y menores, y responsable del tratamiento.
      */
-    public static final String VERSION_VIGENTE = "2026-11-v2";
+    public static final String VERSION_VIGENTE = "2026-11-v3";
 
     public record Estado(String version, boolean requerido, boolean aceptado, Instant aceptadoAt, TipoTenant tipoCuenta) {}
 
