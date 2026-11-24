@@ -5,6 +5,13 @@
 # DOMINIO=http://localhost         -> solo HTTP, sin TLS (pruebas locales detrás de otro proxy).
 {
 	email {$ACME_EMAIL}
+	# Detrás de un túnel o proxy privado (p. ej. Cloudflare Tunnel con cloudflared en el mismo equipo) la IP real
+	# del visitante viene en Cf-Connecting-Ip. Solo se confía en esa cabecera si la conexión llega desde un rango
+	# privado; una conexión directa desde internet (VPS con Caddy de cara al público) la ignora.
+	servers {
+		trusted_proxies static private_ranges
+		client_ip_headers Cf-Connecting-Ip X-Forwarded-For
+	}
 }
 
 {$DOMINIO} {
@@ -37,6 +44,8 @@
 		reverse_proxy api:8080 {
 			# Caddy pone en X-Forwarded-For la IP real del cliente (descarta la que envíe el cliente).
 			header_up X-Request-ID {http.request.uuid}
+			# Una sola IP (la del visitante), sin acumular saltos: la API toma la última de X-Forwarded-For.
+			header_up X-Forwarded-For {client_ip}
 			flush_interval -1
 			transport http {
 				read_timeout 5m

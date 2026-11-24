@@ -173,3 +173,19 @@ def test_la_respuesta_que_cita_la_dosis_del_documento_se_conserva():
         garantias.sin_posologia_inventada(dict(cuerpo))["respuestaAnalitica"]
         == cuerpo["respuestaAnalitica"]
     )
+
+
+def test_un_hallazgo_no_suena_a_orden_del_asistente():
+    assert (
+        garantias.atribuir_al_documento("Debe tomar una tableta cada 12 horas.")
+        == "El documento indica que debe tomar una tableta cada 12 horas."
+    )
+    assert garantias.atribuir_al_documento("Tiene que volver en 8 días.").startswith(
+        "El documento indica que tiene"
+    )
+    # lo que ya está en forma de dato no se toca
+    assert (
+        garantias.atribuir_al_documento("Losartán 50 mg cada 12 horas.")
+        == "Losartán 50 mg cada 12 horas."
+    )
+    assert garantias.atribuir_al_documento("El control es en un mes.") == "El control es en un mes."

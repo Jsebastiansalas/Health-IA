@@ -51,7 +51,10 @@ Reglas obligatorias:
 2. "hallazgos": los puntos importantes DEL DOCUMENTO (datos, resultados, indicaciones, fechas,
    plazos, requisitos), cada uno en una frase sencilla. Cada hallazgo lleva el id del fragmento
    ("F2") y un extracto copiado LITERALMENTE de ese fragmento (máximo 300 caracteres). No incluyas
-   nada que no esté escrito en el documento.
+   nada que no esté escrito en el documento. Si el documento trae el rango de referencia o una marca
+   (ALTO, BAJO, *) junto a un valor, inclúyelo en el mismo punto, tal como está escrito.
+   Cuando el documento indique una dosis o una indicación, preséntala como lo que el documento
+   dice («El documento indica…»), nunca como una orden tuya («debe tomar»).
 3. Los términos técnicos los explica aparte un glosario revisado: NO los expliques tú y
    NO digas qué significa para esta persona un valor, si es normal o anormal, ni qué
    enfermedad o problema tiene.
@@ -154,7 +157,7 @@ def ensamblar_explicacion(
             tipos = generacion.tipos_evidencia(parte.metadata, umbral_ocr)
             citas.append(CitaFinal(parte, extracto, ajustado, requiere, motivo, tipos))
             indice[clave] = len(citas)
-        hallazgos.append({"texto": texto, "cita": indice[clave]})
+        hallazgos.append({"texto": garantias.atribuir_al_documento(texto), "cita": indice[clave]})
 
     # La capa «qué significan» sale del glosario curado, buscado en el texto del propio documento.
     terminos = glosario.terminos_en([e.contenido_texto for e in evidencias])
