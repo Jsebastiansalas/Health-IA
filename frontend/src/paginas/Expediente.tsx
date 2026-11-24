@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import * as Tabs from "@radix-ui/react-tabs";
-import { AlertTriangle, ArrowLeft, ChevronRight, FileStack, MessagesSquare, UserRound } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ChevronRight, FileStack, MessagesSquare, UserRound } from "../iconos";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useParams } from "react-router-dom";
@@ -26,9 +26,9 @@ const PERMISO: Record<string, string> = { ADMIN: "Administras", EDITOR: "Editas"
 
 function Cifra({ valor, etiqueta }: { valor: string | number; etiqueta: string }) {
   return (
-    <div className="flex items-baseline gap-1.5">
-      <dd className="num text-[1.05rem] font-semibold">{valor}</dd>
-      <dt className="text-[0.82rem] text-tinta-3">{etiqueta}</dt>
+    <div className="min-w-0 pr-4 sm:px-4 sm:first:pl-0">
+      <dt className="text-xs text-texto-3">{etiqueta}</dt>
+      <dd className="num mt-0.5 truncate text-lg font-semibold">{valor}</dd>
     </div>
   );
 }
@@ -59,12 +59,12 @@ export function PaginaExpediente() {
 
   if (error) {
     return (
-      <div role="alert" className="folio flex max-w-xl items-start gap-4 p-7">
+      <div role="alert" className="panel flex max-w-xl items-start gap-4 p-8">
         <AlertTriangle className="mt-1 size-6 shrink-0 text-peligro" aria-hidden />
         <div>
           <h1 className="text-2xl font-semibold">Expediente no disponible</h1>
-          <p className="mt-2 text-tinta-2">{(error as Error).message}</p>
-          <Link to="/" className={boton({ tamano: "md" }) + " mt-5"}>
+          <p className="mt-2 text-texto-2">{(error as Error).message}</p>
+          <Link to="/" className={boton({ tamano: "md" }) + " mt-4"}>
             <ArrowLeft className="size-4" aria-hidden />
             Volver a expedientes
           </Link>
@@ -93,38 +93,41 @@ export function PaginaExpediente() {
 
   return (
     <div className="animate-aparecer">
-      <nav aria-label="Ruta" className="mb-5 flex items-center gap-1.5 text-sm text-tinta-3">
-        <Link to="/" className="rounded-md transition-colors hover:text-accion">
+      <nav aria-label="Ruta" className="mb-4 flex items-center gap-2 text-sm text-texto-3">
+        <Link to="/" className="rounded-lg transition-colors hover:text-primario">
           Expedientes
         </Link>
         <ChevronRight className="size-4" aria-hidden />
-        <span className="font-mono text-tinta-2">{expediente.codigo_expediente}</span>
+        <span className="font-mono text-texto-2">{expediente.codigo_expediente}</span>
       </nav>
 
-      <header className="mb-7 border-b border-tinta/15 pb-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <Insignia tono={expediente.estado === "ABIERTO" ? "accion" : "neutro"}>{expediente.estado}</Insignia>
-          <Insignia>
-            <UserRound className="size-3.5" aria-hidden />
-            {expediente.mi_permiso ? PERMISO[expediente.mi_permiso] : "Sin permiso"}
-          </Insignia>
-        </div>
-        <h1 className="mt-3 max-w-4xl text-3xl font-semibold leading-[1.1] sm:text-4xl">{expediente.titulo}</h1>
-        <p className="mt-2 text-tinta-2">
-          <span className="font-mono text-tinta">{expediente.codigo_expediente}</span> ·{" "}
-          {expediente.entidad_contratante ?? "Entidad no registrada"} · {TIPOS_EXPEDIENTE[expediente.tipo_expediente]}
-        </p>
-        <dl className="mt-4 flex flex-wrap gap-x-7 gap-y-2" aria-label="Resumen del expediente">
-          <Cifra valor={documentos?.length ?? "—"} etiqueta="documentos" />
-          <Cifra valor={documentos ? indexados.length : "—"} etiqueta="indexados (original eliminado)" />
-          <Cifra valor={documentos ? fragmentos.toLocaleString("es-CO") : "—"} etiqueta="fragmentos consultables" />
-          <Cifra valor={expediente.embedding_model_activo} etiqueta="modelo del índice" />
-        </dl>
-        {expediente.mi_permiso === "ADMIN" && (
-          <div className="mt-4 -ml-3">
-            <BotonBorrarHistorial expedienteId={id} />
+      <header className="panel mb-6 p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 max-w-4xl">
+            <p className="etiqueta">
+              {expediente.codigo_expediente} · {TIPOS_EXPEDIENTE[expediente.tipo_expediente]}
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold leading-9">{expediente.titulo}</h1>
+            <p className="mt-2 text-base text-texto-2">{expediente.entidad_contratante ?? "Entidad no registrada"}</p>
           </div>
-        )}
+          <div className="flex flex-wrap items-center gap-2">
+            <Insignia tono={expediente.estado === "ABIERTO" ? "accion" : "neutro"}>{expediente.estado}</Insignia>
+            <Insignia>
+              <UserRound className="size-3.5" aria-hidden />
+              {expediente.mi_permiso ? PERMISO[expediente.mi_permiso] : "Sin permiso"}
+            </Insignia>
+            {expediente.mi_permiso === "ADMIN" && <BotonBorrarHistorial expedienteId={id} />}
+          </div>
+        </div>
+        <dl
+          className="mt-6 grid grid-cols-2 gap-y-4 border-t border-borde pt-4 sm:grid-cols-4 sm:divide-x sm:divide-borde"
+          aria-label="Resumen del expediente"
+        >
+          <Cifra valor={documentos?.length ?? "—"} etiqueta="Documentos" />
+          <Cifra valor={documentos ? indexados.length : "—"} etiqueta="Indexados, original eliminado" />
+          <Cifra valor={documentos ? fragmentos.toLocaleString("es-CO") : "—"} etiqueta="Fragmentos consultables" />
+          <Cifra valor={expediente.embedding_model_activo} etiqueta="Modelo del índice" />
+        </dl>
       </header>
 
       {consentimiento.correoPendiente && (
@@ -146,7 +149,7 @@ export function PaginaExpediente() {
       )}
 
       <Tabs.Root value={pestana} onValueChange={setPestana}>
-        <Tabs.List className="folio mb-5 grid grid-cols-2 gap-1 rounded-md p-1 xl:hidden" aria-label="Secciones del expediente">
+        <Tabs.List className="mb-6 flex gap-6 border-b border-borde xl:hidden" aria-label="Secciones del expediente">
           {[
             ["folios", "Documentos", FileStack],
             ["consulta", "Consulta", MessagesSquare],
@@ -156,7 +159,7 @@ export function PaginaExpediente() {
               <Tabs.Trigger
                 key={valor as string}
                 value={valor as string}
-                className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-tinta-2 transition-colors data-[state=active]:bg-accion/14 data-[state=active]:text-accion"
+                className="relative flex h-12 items-center gap-2 px-1 text-sm font-medium text-texto-2 transition-colors duration-300 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-primario after:opacity-0 after:transition-opacity after:duration-300 data-[state=active]:text-texto data-[state=active]:after:opacity-100"
               >
                 <I className="size-4" aria-hidden />
                 {texto as string}
@@ -186,7 +189,7 @@ export function PaginaExpediente() {
           </Tabs.Content>
           {acoplada && citaAbierta && (
             <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] xl:block">
-              <Suspense fallback={<div className="folio grid h-full place-items-center text-tinta-2">Abriendo visor…</div>}>
+              <Suspense fallback={<div className="panel grid h-full place-items-center text-texto-2">Abriendo visor…</div>}>
                 <VisorLocal cita={citaAbierta} alCerrar={() => setCitaAbierta(null)} acoplado />
               </Suspense>
             </aside>

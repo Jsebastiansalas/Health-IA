@@ -1,4 +1,4 @@
-import { BookOpen, MessageCircleQuestion, SearchX, TriangleAlert } from "lucide-react";
+import { BookOpen, MessageCircleQuestion, SearchX, TriangleAlert } from "../iconos";
 import type { RespuestaConsulta } from "../api/tipos";
 import { AvisoUrgencia } from "./AvisoSalud";
 import { Insignia } from "./ui/Insignia";
@@ -22,11 +22,11 @@ export function ExplicacionDocumento({
   if (r.sinEvidencia) {
     return (
       <div>
-        <Insignia tono="aviso" className="mb-3.5">
+        <Insignia tono="aviso" className="mb-4">
           <SearchX className="size-3.5" aria-hidden />
           Sin evidencia suficiente
         </Insignia>
-        <p className="text-[0.98rem] leading-relaxed">
+        <p className="text-sm leading-relaxed">
           {r.deQueTrata || "No pude explicar este documento con lo que dice su texto. Prueba con una foto más nítida o con el PDF."}
         </p>
       </div>
@@ -34,10 +34,10 @@ export function ExplicacionDocumento({
   }
 
   return (
-    <div className="space-y-6 text-[0.98rem] leading-relaxed">
+    <div className="space-y-6 text-sm leading-relaxed">
       {r.deQueTrata && (
         <section aria-labelledby={`trata-${r.consultaId}`}>
-          <h3 id={`trata-${r.consultaId}`} className="mb-1.5 text-sm font-semibold text-accion">
+          <h3 id={`trata-${r.consultaId}`} className="mb-2 text-sm font-semibold text-primario">
             De qué trata
           </h3>
           <p>{r.deQueTrata}</p>
@@ -54,18 +54,18 @@ export function ExplicacionDocumento({
 
       {hallazgos.length > 0 && (
         <section aria-labelledby={`dice-${r.consultaId}`}>
-          <h3 id={`dice-${r.consultaId}`} className="mb-1.5 text-sm font-semibold text-accion">
+          <h3 id={`dice-${r.consultaId}`} className="mb-2 text-sm font-semibold text-primario">
             Lo que dice el documento
           </h3>
           <ul className="space-y-2">
             {hallazgos.map((h, i) => (
-              <li key={i} className="ml-5 list-disc">
+              <li key={i} className="ml-4 list-disc">
                 {h.texto}
                 {h.cita != null && (
                   <button
                     type="button"
                     onClick={() => alIrACita(h.cita!)}
-                    className="mx-1 inline-grid size-5 -translate-y-0.5 place-items-center rounded-md bg-marca align-middle text-[0.7rem] font-bold text-marca-tx transition-colors hover:bg-accion hover:text-accion-tx"
+                    className="mx-1 inline-grid size-5 -translate-y-0.5 place-items-center rounded-lg bg-cita align-middle text-xs font-semibold text-cita-tx transition-colors hover:bg-primario hover:text-primario-tx"
                     aria-label={`Ir a la cita ${h.cita}`}
                   >
                     {h.cita}
@@ -78,22 +78,22 @@ export function ExplicacionDocumento({
       )}
 
       {terminos.length > 0 && (
-        <section aria-labelledby={`terminos-${r.consultaId}`} className="rounded-md border border-tinta/12 bg-folio-2 p-4">
+        <section aria-labelledby={`terminos-${r.consultaId}`} className="rounded-lg border border-borde bg-panel-2 p-4">
           <h3 id={`terminos-${r.consultaId}`} className="flex items-center gap-2 text-sm font-semibold">
-            <BookOpen className="size-4 text-accion" aria-hidden />
+            <BookOpen className="size-4 text-primario" aria-hidden />
             Qué significan estos términos
           </h3>
-          <p className="mb-3 mt-0.5 text-[0.8rem] text-tinta-3">
+          <p className="mb-3 mt-0.5 text-xs text-texto-3">
             Explicación general de las palabras; no es un diagnóstico ni habla de tu caso.
           </p>
           {r.glosario && !r.glosario.revisado && (
-            <p className="mb-3 text-[0.76rem] text-tinta-3">Glosario de MedTender: {r.glosario.revision.toLowerCase()}.</p>
+            <p className="mb-3 text-xs text-texto-3">Glosario de MedTender: {r.glosario.revision.toLowerCase()}.</p>
           )}
-          <dl className="space-y-2.5">
+          <dl className="space-y-3">
             {terminos.map((t) => (
               <div key={t.termino}>
                 <dt className="font-semibold">{t.termino}</dt>
-                <dd className="text-tinta-2">{t.explicacion}</dd>
+                <dd className="text-texto-2">{t.explicacion}</dd>
               </div>
             ))}
           </dl>
@@ -102,13 +102,13 @@ export function ExplicacionDocumento({
 
       {preguntas.length > 0 && (
         <section aria-labelledby={`preguntas-${r.consultaId}`}>
-          <h3 id={`preguntas-${r.consultaId}`} className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-accion">
+          <h3 id={`preguntas-${r.consultaId}`} className="mb-2 flex items-center gap-2 text-sm font-semibold text-primario">
             <MessageCircleQuestion className="size-4" aria-hidden />
             Preguntas para llevarle a tu médico
           </h3>
-          <ul className="space-y-1.5">
+          <ul className="space-y-2">
             {preguntas.map((p) => (
-              <li key={p} className="ml-5 list-disc">
+              <li key={p} className="ml-4 list-disc">
                 {p}
               </li>
             ))}
@@ -117,7 +117,7 @@ export function ExplicacionDocumento({
       )}
 
       {r.avisoGeneral && (
-        <p className="flex items-start gap-2 text-[0.8rem] leading-relaxed text-tinta-3">
+        <p className="flex items-start gap-2 text-xs leading-relaxed text-texto-3">
           <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
           {r.avisoGeneral}
         </p>

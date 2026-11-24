@@ -11,7 +11,7 @@ import {
   Trash2,
   TriangleAlert,
   UploadCloud,
-} from "lucide-react";
+} from "../iconos";
 import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { api, post, subirDocumento } from "../api/cliente";
@@ -59,7 +59,7 @@ export function PanelDocumentos({
         <h2 id="titulo-folios" className="text-xl font-semibold">
           Documentos
         </h2>
-        <span className="num text-sm text-tinta-3">{documentos?.length ?? 0} cargados</span>
+        <span className="num text-sm text-texto-3">{documentos?.length ?? 0} cargados</span>
       </div>
       {puedeSubir && <FormularioSubida expedienteId={expedienteId} clinico={clinico} />}
       {documentos?.some((d) => d.estado_indexacion === "INDEXADO_Y_PURGADO" || d.estado_indexacion === "INDEXADO_PENDIENTE_PURGA") && (
@@ -68,7 +68,7 @@ export function PanelDocumentos({
             {!cruce.isPending && <Pill className="size-4" aria-hidden />}
             {cruce.isPending ? "Revisando tus medicamentos…" : "Ver advertencias de mis medicamentos"}
           </Boton>
-          <p className="mt-1.5 text-[0.76rem] text-tinta-3">Cruza los medicamentos de tus documentos con sus fichas técnicas. No indica qué tomar.</p>
+          <p className="mt-2 text-xs text-texto-3">Cruza los medicamentos de tus documentos con sus fichas técnicas. No indica qué tomar.</p>
           {cruce.error && (
             <p role="alert" className="mt-2 text-sm text-peligro">
               {(cruce.error as Error).message}
@@ -86,7 +86,7 @@ export function PanelDocumentos({
           <FilaDocumento key={d.id} doc={d} expedienteId={expedienteId} puedeExplicar={puedeExplicar} alExplicar={alExplicar} />
         ))}
         {documentos?.length === 0 && (
-          <li className="rounded-3xl border border-dashed border-tinta/14 p-6 text-sm leading-relaxed text-tinta-2">
+          <li className="rounded-3xl border border-dashed border-borde p-6 text-sm leading-relaxed text-texto-2">
             Aún no hay documentos. Sube el pliego y sus adendas desde tu equipo: el original no queda guardado en el
             servidor.
           </li>
@@ -131,15 +131,15 @@ function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; cli
 
   const subiendo = progreso !== null;
   return (
-    <form onSubmit={enviar} className="folio space-y-4 p-5">
+    <form onSubmit={enviar} className="panel space-y-4 p-4">
       <label
         className={cn(
           "relative block cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed p-6 text-center transition-[border-color,background-color,transform] duration-300",
           arrastrando
-            ? "scale-[1.01] border-accion bg-accion/12"
+            ? "scale-[1.01] border-primario bg-primario/12"
             : archivo
-              ? "border-accion/60 bg-accion/[0.07]"
-              : "border-tinta/16 bg-mesa hover:border-accion/50 hover:bg-accion/[0.05]",
+              ? "border-primario/60 bg-primario/[0.07]"
+              : "border-borde bg-fondo hover:border-primario/50 hover:bg-primario/[0.05]",
         )}
         onDragOver={(e) => {
           e.preventDefault();
@@ -162,7 +162,7 @@ function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; cli
         />
         {archivo ? (
           <span className="flex items-center justify-center gap-3 text-left">
-            <span className="grid size-11 place-items-center rounded-xl bg-accion/15 text-accion">
+            <span className="grid size-11 place-items-center rounded-xl bg-primario/15 text-primario">
               <FileText className="size-6" strokeWidth={1.6} aria-hidden />
             </span>
             <span className="min-w-0">
@@ -173,14 +173,14 @@ function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; cli
         ) : (
           <span className="block">
             <UploadCloud
-              className={cn("mx-auto size-9 text-accion transition-transform", arrastrando && "-translate-y-1")}
+              className={cn("mx-auto size-9 text-primario transition-transform", arrastrando && "-translate-y-1")}
               strokeWidth={1.5}
               aria-hidden
             />
             <span className="mt-2 block font-medium">
               {arrastrando ? "Suelta el documento aquí" : "Arrastra un PDF o una foto, o elígelo en tu equipo"}
             </span>
-            <span className="mt-1 block text-xs text-tinta-3">PDF, JPG, PNG o HEIC. Se lee, se indexa y el original se elimina del servidor</span>
+            <span className="mt-1 block text-xs text-texto-3">PDF, JPG, PNG o HEIC. Se lee, se indexa y el original se elimina del servidor</span>
           </span>
         )}
       </label>
@@ -204,17 +204,17 @@ function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; cli
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[11rem] flex-1">
-          <label htmlFor="tipo-doc" className="mb-1.5 block text-[0.8rem] font-medium text-tinta-2">
+          <label htmlFor="tipo-doc" className="mb-2 block text-xs font-medium text-texto-2">
             Tipo de documento
           </label>
           <select
             id="tipo-doc"
             value={tipo}
             onChange={(e) => setTipo(e.target.value as TipoDocumento)}
-            className="h-11 w-full rounded-md border border-tinta/35 bg-folio px-5 text-sm outline-none transition-[border-color,box-shadow] focus:border-tinta"
+            className="h-11 w-full rounded-lg border border-borde bg-panel px-4 text-sm outline-none transition-[border-color,box-shadow] focus:border-texto"
           >
             {Object.entries(TIPOS_DOCUMENTO).map(([v, t]) => (
-              <option key={v} value={v} className="bg-folio">
+              <option key={v} value={v} className="bg-panel">
                 {t}
               </option>
             ))}
@@ -222,7 +222,7 @@ function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; cli
         </div>
         {tipo === "ADENDA" && (
           <div className="w-24">
-            <label htmlFor="n-adenda" className="mb-1.5 block text-[0.8rem] font-medium text-tinta-2">
+            <label htmlFor="n-adenda" className="mb-2 block text-xs font-medium text-texto-2">
               N° adenda
             </label>
             <input
@@ -232,7 +232,7 @@ function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; cli
               max={999}
               value={numero}
               onChange={(e) => setNumero(Number(e.target.value))}
-              className="num h-11 w-full rounded-md border border-tinta/35 bg-folio px-5 text-sm outline-none focus:border-tinta"
+              className="num h-11 w-full rounded-lg border border-borde bg-panel px-4 text-sm outline-none focus:border-texto"
             />
           </div>
         )}
@@ -243,7 +243,7 @@ function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; cli
 
       {subiendo && (
         <div
-          className="h-2 overflow-hidden rounded-full bg-tinta/10"
+          className="h-2 overflow-hidden rounded-full bg-texto/10"
           role="progressbar"
           aria-label="Progreso de carga"
           aria-valuemin={0}
@@ -251,13 +251,13 @@ function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; cli
           aria-valuenow={Math.round(progreso * 100)}
         >
           <div
-            className="h-full rounded-full bg-accion transition-[width] duration-200"
+            className="h-full rounded-full bg-primario transition-[width] duration-200"
             style={{ width: `${progreso * 100}%` }}
           />
         </div>
       )}
       {error && (
-        <p role="alert" className="flex items-start gap-2 rounded-xl border border-peligro/35 bg-peligro/10 px-3.5 py-3 text-sm text-peligro">
+        <p role="alert" className="flex items-start gap-2 rounded-xl border border-peligro/35 bg-peligro/10 px-4 py-3 text-sm text-peligro">
           <AlertOctagon className="mt-0.5 size-4 shrink-0 text-peligro" aria-hidden />
           {error}
         </p>
@@ -289,24 +289,24 @@ function FilaDocumento({
   const pendientePurga = doc.estado_indexacion === "INDEXADO_PENDIENTE_PURGA";
   const listo = doc.estado_indexacion === "INDEXADO_Y_PURGADO";
   return (
-    <li className="folio animate-aparecer p-4">
-      <div className="flex items-start gap-3.5">
+    <li className="panel animate-aparecer p-4">
+      <div className="flex items-start gap-4">
         <span
           className={cn(
             "grid size-11 shrink-0 place-items-center rounded-xl border",
-            error ? "border-peligro/30 bg-peligro/10 text-peligro" : "border-accion/25 bg-accion/10 text-accion",
+            error ? "border-peligro/30 bg-peligro/10 text-peligro" : "border-primario/25 bg-primario/10 text-primario",
           )}
         >
           <FileText className="size-5" strokeWidth={1.6} aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[0.78rem] font-medium text-accion/90">
+          <p className="text-xs font-medium text-primario/90">
             {etiquetaDocumento(doc.tipo_documento, doc.numero_adenda)}
           </p>
           <p className="truncate font-semibold" title={doc.nombre_archivo_original}>
             {doc.nombre_archivo_original}
           </p>
-          <p className="num mt-0.5 text-xs text-tinta-3" title={`SHA-256 ${doc.sha256_original}`}>
+          <p className="num mt-0.5 text-xs text-texto-3" title={`SHA-256 ${doc.sha256_original}`}>
             {tamano(doc.tamano_bytes)}
             {doc.total_paginas ? ` · ${doc.total_paginas} págs.` : ""}
             {doc.total_chunks_esperados ? ` · ${doc.total_chunks_esperados} fragmentos` : ""} ·{" "}
@@ -314,10 +314,10 @@ function FilaDocumento({
           </p>
         </div>
         {listo && (
-          <span className="inline-flex shrink-0 -rotate-2 items-center gap-1.5 rounded-[3px] border-2 border-accion/70 px-2 py-0.5 font-display text-[0.68rem] font-bold uppercase tracking-wider text-accion">
+          <Insignia tono="ok" className="shrink-0">
             <Trash2 className="size-3.5" aria-hidden />
             Original eliminado
-          </span>
+          </Insignia>
         )}
         {error && (
           <Insignia tono="peligro" className="shrink-0">
@@ -333,7 +333,7 @@ function FilaDocumento({
       </div>
 
       {error ? (
-        <p className="mt-4 flex items-start gap-2.5 rounded-xl border border-peligro/30 bg-peligro/10 px-3.5 py-3 text-sm text-peligro">
+        <p className="mt-4 flex items-start gap-3 rounded-xl border border-peligro/30 bg-peligro/10 px-4 py-3 text-sm text-peligro">
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-peligro" aria-hidden />
           {doc.motivo_error}
         </p>
@@ -342,8 +342,8 @@ function FilaDocumento({
       )}
 
       {doc.purged_at && !error && (
-        <p className="mt-3 flex items-center gap-2 text-xs text-tinta-2">
-          <CheckCheck className="size-4 text-accion" aria-hidden />
+        <p className="mt-3 flex items-center gap-2 text-xs text-texto-2">
+          <CheckCheck className="size-4 text-primario" aria-hidden />
           Copia temporal destruida el {fecha(doc.purged_at)}. El original permanece en tu equipo.
         </p>
       )}
@@ -372,7 +372,7 @@ function FilaDocumento({
         </div>
       )}
       {doc.aviso_ocr_desactualizado && (
-        <p className="mt-3 rounded-xl border border-aviso/30 bg-aviso/10 px-3.5 py-2.5 text-xs leading-relaxed text-aviso">
+        <p className="mt-3 rounded-xl border border-aviso/30 bg-aviso/10 px-4 py-3 text-xs leading-relaxed text-aviso">
           Este documento se leyó con un OCR anterior ({doc.ocr_version}). Vuelve a cargarlo desde tu equipo para mejorar
           la extracción de sus {doc.paginas_ocr} página(s) escaneadas.
         </p>
@@ -399,23 +399,23 @@ function Pipeline({ estado, progreso }: { estado: EstadoIndexacion; progreso: nu
           <span
             key={PASOS[i]!.estado}
             className={cn(
-              "h-1.5 flex-1 rounded-[2px] transition-colors duration-500",
-              e === "hecho" && "bg-accion",
-              e === "actual" && "animate-pulse bg-accion/60",
-              e === "pendiente" && "bg-tinta/12",
+              "h-1.5 flex-1 rounded-sm transition-colors duration-500",
+              e === "hecho" && "bg-primario",
+              e === "actual" && "animate-pulse bg-primario/60",
+              e === "pendiente" && "bg-texto/12",
             )}
           />
         ))}
       </div>
-      <p className="mt-2 flex items-center gap-2 text-[0.82rem] leading-snug text-tinta-2">
+      <p className="mt-2 flex items-center gap-2 text-xs leading-snug text-texto-2">
         {completo ? (
           <CheckCheck className="size-4 shrink-0 text-ok" aria-hidden />
         ) : (
-          <Loader2 className="size-4 shrink-0 animate-spin text-accion" aria-hidden />
+          <Loader2 className="size-4 shrink-0 animate-spin text-primario" aria-hidden />
         )}
-        <span className={cn(!completo && "text-tinta")}>
+        <span className={cn(!completo && "text-texto")}>
           {completo ? mostrado.descripcion : `Etapa ${indiceActual + 1} de ${PASOS.length} · ${mostrado.descripcion}`}
-          {vectorizando && <span className="num ml-1.5 font-semibold text-accion">{progreso}%</span>}
+          {vectorizando && <span className="num ml-2 font-semibold text-primario">{progreso}%</span>}
         </span>
       </p>
       <ol className="sr-only">

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertOctagon, ArrowUpRight, Check, Copy, CornerDownLeft, SendHorizontal, SearchX, TriangleAlert } from "lucide-react";
+import { AlertOctagon, ArrowUpRight, Check, Copy, CornerDownLeft, SendHorizontal, SearchX, TriangleAlert } from "../iconos";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
@@ -82,23 +82,23 @@ export function ConsolaRag({
         <h2 id="titulo-consulta" className="text-2xl font-semibold">
           Consulta del expediente
         </h2>
-        <span className="text-sm text-tinta-3">Respuestas solo con evidencia citada</span>
+        <span className="text-sm text-texto-3">Respuestas solo con evidencia citada</span>
       </div>
-      <AvisoSalud className="mb-5" />
+      <AvisoSalud className="mb-4" />
 
       <div className="flex-1 space-y-8 pb-6" role="log" aria-live="polite" aria-label="Conversación">
         {vacio && (
           <div className="animate-aparecer">
-            <p className="max-w-xl font-display text-2xl font-semibold leading-tight">
+            <p className="max-w-xl text-2xl font-semibold leading-tight">
               {hayIndice ? "Pregunta lo que necesites del expediente." : "Aún no hay documentos indexados."}
             </p>
-            <p className="mt-2 max-w-lg text-tinta-2">
+            <p className="mt-2 max-w-lg text-texto-2">
               {hayIndice
                 ? "Cada respuesta cita documento, página y sección. Si la evidencia no alcanza, el sistema lo dice."
                 : "Sube un documento (PDF o foto) y espera a que termine el proceso: cuando el original se elimine del servidor, podrás consultarlo aquí."}
             </p>
             {hayIndice && (
-              <ul className="mt-5 max-w-xl divide-y divide-tinta/12 border-y border-tinta/12">
+              <ul className="mt-4 max-w-xl divide-y divide-borde border-y border-borde">
                 {(clinico ? SUGERENCIAS_CLINICAS : SUGERENCIAS).map((q) => (
                   <li key={q}>
                     <button
@@ -106,10 +106,10 @@ export function ConsolaRag({
                         setPregunta(q);
                         campo.current?.focus();
                       }}
-                      className="group flex w-full items-center justify-between gap-4 py-3 text-left text-[0.95rem] text-tinta-2 transition-colors hover:text-tinta"
+                      className="group flex w-full items-center justify-between gap-4 py-3 text-left text-sm text-texto-2 transition-colors hover:text-texto"
                     >
                       {q}
-                      <ArrowUpRight className="size-4 shrink-0 text-tinta-3 transition-colors group-hover:text-accion" aria-hidden />
+                      <ArrowUpRight className="size-4 shrink-0 text-texto-3 transition-colors group-hover:text-primario" aria-hidden />
                     </button>
                   </li>
                 ))}
@@ -123,13 +123,13 @@ export function ConsolaRag({
         ))}
 
         {pendiente && (
-          <div className="space-y-5 animate-aparecer">
+          <div className="space-y-4 animate-aparecer">
             <Burbuja texto={pendiente} />
-            <div className="flex gap-3.5" aria-busy aria-label="Analizando el expediente">
+            <div className="flex gap-4" aria-busy aria-label="Analizando el expediente">
               <AvatarIA />
-              <div className="folio flex-1 p-5">
-                <p className="mb-4 text-sm font-medium text-accion">Analizando el expediente…</p>
-                <div className="space-y-2.5">
+              <div className="panel flex-1 p-4">
+                <p className="mb-4 text-sm font-medium text-primario">Analizando el expediente…</p>
+                <div className="space-y-3">
                   <Esqueleto className="h-3.5 w-[92%]" />
                   <Esqueleto className="h-3.5 w-[78%]" />
                   <Esqueleto className="h-3.5 w-[55%]" />
@@ -139,7 +139,7 @@ export function ConsolaRag({
           </div>
         )}
         {consultar.error && (
-          <p role="alert" className="flex items-start gap-2.5 rounded-2xl border border-peligro/35 bg-peligro/10 px-4 py-3 text-sm text-peligro">
+          <p role="alert" className="flex items-start gap-3 rounded-2xl border border-peligro/35 bg-peligro/10 px-4 py-3 text-sm text-peligro">
             <AlertOctagon className="mt-0.5 size-4 shrink-0 text-peligro" aria-hidden />
             {(consultar.error as Error).message}
           </p>
@@ -149,12 +149,12 @@ export function ConsolaRag({
 
       <form
         onSubmit={enviar}
-        className="folio sticky bottom-4 z-10 p-2.5"
+        className="panel sticky bottom-4 z-10 p-3"
       >
-        <div className="flex items-end gap-2.5">
+        <div className="flex items-end gap-3">
           <textarea
             ref={campo}
-            className="max-h-40 min-h-[2.9rem] flex-1 resize-none bg-transparent px-3 py-3 text-[0.95rem] outline-none disabled:cursor-not-allowed"
+            className="max-h-40 min-h-[2.9rem] flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none disabled:cursor-not-allowed"
             rows={2}
             maxLength={2000}
             aria-label="Tu pregunta"
@@ -184,7 +184,7 @@ export function ConsolaRag({
             {!consultar.isPending && <SendHorizontal className="size-[1.15rem]" aria-hidden />}
           </Boton>
         </div>
-        <p className="mt-1 flex items-center gap-1.5 px-3 text-[0.72rem] text-tinta-3">
+        <p className="mt-1 flex items-center gap-2 px-3 text-xs text-texto-3">
           <CornerDownLeft className="size-3" aria-hidden />
           Enter envía · Mayús + Enter salto de línea
         </p>
@@ -195,7 +195,7 @@ export function ConsolaRag({
 
 function AvatarIA() {
   return (
-    <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-xl border border-accion/25 bg-mesa">
+    <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-xl border border-primario/25 bg-fondo">
       <Logotipo className="size-6" />
     </span>
   );
@@ -204,7 +204,7 @@ function AvatarIA() {
 function Burbuja({ texto }: { texto: string }) {
   return (
     <div className="flex justify-end">
-      <p className="max-w-[85%] rounded-md bg-folio-2 px-5 py-3 text-[0.97rem] leading-relaxed text-tinta">
+      <p className="max-w-[85%] rounded-lg bg-panel-2 px-4 py-3 text-sm leading-relaxed text-texto">
         {texto}
       </p>
     </div>
@@ -239,7 +239,7 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
   }
 
   return (
-    <article className="space-y-5 animate-aparecer">
+    <article className="space-y-4 animate-aparecer">
       <Burbuja
         texto={
           r.modo === "explicar"
@@ -249,10 +249,10 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
               : (r.pregunta ?? "")
         }
       />
-      <div className="flex gap-3.5">
+      <div className="flex gap-4">
         <AvatarIA />
         <div className="min-w-0 flex-1">
-          <div className={cn("folio p-5 sm:p-6", r.sinEvidencia && !r.limiteClinico && "border-aviso/30")}>
+          <div className={cn("panel p-4 sm:p-6", r.sinEvidencia && !r.limiteClinico && "border-aviso/30")}>
             {r.urgencia && <AvisoUrgencia mensaje={r.urgencia.mensaje} />}
             {r.modo === "explicar" ? (
               <ExplicacionDocumento respuesta={r} alIrACita={irACita} />
@@ -261,12 +261,12 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
             ) : (
               <>
             {r.sinEvidencia && !r.limiteClinico && (
-              <Insignia tono="aviso" className="mb-3.5">
+              <Insignia tono="aviso" className="mb-4">
                 <SearchX className="size-3.5" aria-hidden />
                 Sin evidencia suficiente
               </Insignia>
             )}
-            <div className="space-y-3 text-[0.98rem] leading-relaxed [&_li]:ml-5 [&_li]:list-disc [&_strong]:font-semibold [&_strong]:text-tinta">
+            <div className="space-y-3 text-sm leading-relaxed [&_li]:ml-4 [&_li]:list-disc [&_strong]:font-semibold [&_strong]:text-texto">
               <ReactMarkdown
                 components={{
                   a: ({ href, children }) => {
@@ -275,7 +275,7 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
                       <button
                         type="button"
                         onClick={() => irACita(n)}
-                        className="mx-0.5 inline-grid size-5 -translate-y-0.5 place-items-center rounded-md bg-marca align-middle text-[0.7rem] font-bold text-marca-tx transition-colors hover:bg-accion hover:text-accion-tx"
+                        className="mx-0.5 inline-grid size-5 -translate-y-0.5 place-items-center rounded-lg bg-cita align-middle text-xs font-semibold text-cita-tx transition-colors hover:bg-primario hover:text-primario-tx"
                         aria-label={`Ir a la cita ${n}`}
                       >
                         {children}
@@ -291,11 +291,11 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
             )}
 
             {r.alertas.length > 0 && (
-              <ul className="mt-5 space-y-2">
+              <ul className="mt-4 space-y-2">
                 {r.alertas.map((a) => (
                   <li
                     key={a}
-                    className="flex gap-2.5 rounded-xl border border-aviso/30 bg-aviso/10 px-3.5 py-2.5 text-sm text-aviso"
+                    className="flex gap-3 rounded-xl border border-aviso/30 bg-aviso/10 px-4 py-3 text-sm text-aviso"
                   >
                     <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
                     <span>{a}</span>
@@ -304,18 +304,18 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
               </ul>
             )}
 
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-tinta/8 pt-3.5">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-borde pt-4">
               {r.limiteClinico ? (
                 <span />
               ) : (
-                <p className="font-mono text-[0.7rem] leading-relaxed text-tinta-3">
+                <p className="font-mono text-xs leading-relaxed text-texto-3">
                   {r.fragmentosRecuperados} {r.fragmentosRecuperados === 1 ? "fragmento recuperado" : "fragmentos recuperados"} ·{" "}
                   {r.modeloEmbeddings}
                   {r.modeloLlm ? ` · ${r.modeloLlm}` : ""} · {(r.latenciaMs / 1000).toFixed(1)} s
                 </p>
               )}
               <Boton tamano="sm" variante="fantasma" onClick={copiar}>
-                {copiado ? <Check className="size-4 text-accion" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+                {copiado ? <Check className="size-4 text-primario" aria-hidden /> : <Copy className="size-4" aria-hidden />}
                 {copiado ? "Copiada" : "Copiar"}
               </Boton>
             </div>

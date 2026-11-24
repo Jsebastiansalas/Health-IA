@@ -1,4 +1,4 @@
-import { MailCheck } from "lucide-react";
+import { MailCheck } from "../iconos";
 import { Boton } from "./ui/Boton";
 
 /** Cuenta personal con el correo sin confirmar: no puede subir ni consultar hasta abrir el enlace que se le envió. */
@@ -14,12 +14,12 @@ export function AvisoCorreo({
   alReenviar: () => void;
 }) {
   return (
-    <section aria-labelledby="titulo-correo" className="folio mb-7 p-6 sm:p-8">
-      <h2 id="titulo-correo" className="flex items-center gap-2.5 text-[1.4rem]">
-        <MailCheck className="size-6 text-accion" aria-hidden />
+    <section aria-labelledby="titulo-correo" className="panel mb-8 p-6 sm:p-8">
+      <h2 id="titulo-correo" className="flex items-center gap-3 text-xl">
+        <MailCheck className="size-6 text-primario" aria-hidden />
         Confirma tu correo
       </h2>
-      <p className="mt-2 max-w-2xl text-tinta-2">
+      <p className="mt-2 max-w-2xl text-texto-2">
         Te enviamos un enlace al registrarte. Ábrelo para activar tu cuenta: hasta entonces no puedes subir documentos ni hacer consultas. Si no
         lo encuentras, revisa la carpeta de correo no deseado o pide uno nuevo.
       </p>
@@ -33,7 +33,7 @@ export function AvisoCorreo({
           Enviamos un enlace nuevo.
         </p>
       )}
-      <div className="mt-5">
+      <div className="mt-4">
         <Boton onClick={alReenviar} cargando={reenviando}>
           Reenviar enlace
         </Boton>

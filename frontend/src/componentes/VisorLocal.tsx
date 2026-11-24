@@ -15,7 +15,7 @@ import {
   ZoomIn,
   ZoomOut,
   type LucideIcon,
-} from "lucide-react";
+} from "../iconos";
 import * as pdfjs from "pdfjs-dist";
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
@@ -140,27 +140,27 @@ export function VisorLocal({
 
   const contenido = (
     <>
-      <header className="flex items-start justify-between gap-4 border-b border-tinta/12 px-5 py-4">
+      <header className="flex items-start justify-between gap-4 border-b border-borde px-4 py-4">
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-[0.78rem] font-medium text-accion">
+          <p className="flex items-center gap-2 text-xs font-medium text-primario">
             <FolderOpen className="size-3.5" aria-hidden />
             Original en tu equipo · {etiquetaDocumento(cita.tipoDocumento, cita.numeroAdenda)} ·{" "}
             {paginas(cita.paginaInicio, cita.paginaFin)}
           </p>
-          <Titulo className="mt-0.5 truncate font-display text-xl font-semibold">{cita.nombreArchivo}</Titulo>
-          <p className="mt-1 truncate font-mono text-[0.7rem] text-tinta-3" title={cita.sha256Original}>
+          <Titulo className="mt-0.5 truncate text-xl font-semibold">{cita.nombreArchivo}</Titulo>
+          <p className="mt-1 truncate font-mono text-xs text-texto-3" title={cita.sha256Original}>
             SHA-256 registrado {cita.sha256Original}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {estado.fase === "listo" && (
-            <Insignia tono="ok" className="hidden animate-sello sm:inline-flex">
+            <Insignia tono="ok" className="hidden sm:inline-flex">
               <BadgeCheck className="size-3.5" aria-hidden />
               SHA-256 coincide
             </Insignia>
           )}
           {estado.fase === "distinto" && (
-            <Insignia tono="peligro" className="hidden animate-sello sm:inline-flex">
+            <Insignia tono="peligro" className="hidden sm:inline-flex">
               <ShieldAlert className="size-3.5" aria-hidden />
               No coincide
             </Insignia>
@@ -198,7 +198,7 @@ export function VisorLocal({
         ref={panel}
         tabIndex={-1}
         aria-label="Original en tu equipo"
-        className="folio flex h-full min-h-0 flex-col outline-none animate-aparecer"
+        className="panel flex h-full min-h-0 flex-col outline-none animate-aparecer"
       >
         {contenido}
       </section>
@@ -207,10 +207,10 @@ export function VisorLocal({
   return (
     <Dialog.Root open onOpenChange={(abierto) => !abierto && alCerrar()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-tinta/55" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-texto/55" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="folio fixed inset-y-0 right-0 z-50 flex w-full max-w-5xl flex-col outline-none data-[state=open]:animate-[aparecer_350ms_var(--ease-salida)] sm:inset-y-3 sm:right-3"
+          className="panel fixed inset-y-0 right-0 z-50 flex w-full max-w-5xl flex-col outline-none data-[state=open]:animate-[aparecer_350ms_var(--ease-salida)] sm:inset-y-3 sm:right-3"
         >
           {contenido}
         </Dialog.Content>
@@ -231,16 +231,16 @@ function Fase({
   children?: ReactNode;
 }) {
   const colores = {
-    accion: "border-accion/30 bg-accion/10 text-accion",
+    accion: "border-primario/30 bg-primario/10 text-primario",
     peligro: "border-peligro/35 bg-peligro/10 text-peligro",
     aviso: "border-aviso/35 bg-aviso/10 text-aviso",
   }[tono];
   return (
     <div className="mx-auto max-w-lg text-center">
-      <div className={cn("mx-auto grid size-24 place-items-center rounded-[2rem] border", colores)}>
+      <div className={cn("mx-auto grid size-24 place-items-center rounded-3xl border", colores)}>
         <Icono className="size-11" strokeWidth={1.4} aria-hidden />
       </div>
-      <h3 className="mt-7 text-3xl font-semibold leading-tight">{titulo}</h3>
+      <h3 className="mt-8 text-3xl font-semibold leading-tight">{titulo}</h3>
       {children}
     </div>
   );
@@ -260,7 +260,7 @@ function Indicaciones({
   alElegirArchivo: (f: File | undefined) => void;
 }) {
   const elegirManual = (
-    <label className="relative inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-tinta/12 bg-tinta/[0.06] px-4 text-sm font-semibold text-tinta transition-colors hover:border-tinta/25 hover:bg-tinta/[0.11] focus-within:outline focus-within:outline-2 focus-within:outline-accion">
+    <label className="relative inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-borde bg-texto/5 px-4 text-sm font-semibold text-texto transition-colors hover:border-borde hover:bg-texto/5 focus-within:outline focus-within:outline-2 focus-within:outline-primario">
       Elegir el PDF manualmente
       <input
         type="file"
@@ -271,12 +271,12 @@ function Indicaciones({
     </label>
   );
   const privacidad = (
-    <p className="mx-auto mt-9 flex max-w-sm items-start gap-2.5 text-left text-xs leading-relaxed text-tinta-3">
-      <ShieldCheck className="mt-0.5 size-4 shrink-0 text-accion" aria-hidden />
+    <p className="mx-auto mt-10 flex max-w-sm items-start gap-3 text-left text-xs leading-relaxed text-texto-3">
+      <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primario" aria-hidden />
       El archivo se lee en la memoria de este navegador y se compara por su huella SHA-256. No se sube al servidor.
     </p>
   );
-  const acciones = "mt-7 flex flex-wrap justify-center gap-3";
+  const acciones = "mt-8 flex flex-wrap justify-center gap-3";
 
   switch (estado.fase) {
     case "preparando":
@@ -284,7 +284,7 @@ function Indicaciones({
       return (
         <div className="w-full max-w-md" aria-busy>
           <Fase icono={FolderSearch} titulo="Buscando el original…">
-            <p className="mt-3 text-tinta-2">
+            <p className="mt-3 text-texto-2">
               {estado.fase === "buscando" && estado.revisados > 0
                 ? `Comparando huellas SHA-256… ${estado.revisados} PDF revisados`
                 : `Buscando «${cita.nombreArchivo}» en tu carpeta…`}
@@ -297,7 +297,7 @@ function Indicaciones({
       return (
         <div>
           <Fase icono={FolderOpen} titulo="Vincula tu carpeta local de PDFs">
-            <p className="mt-3 text-tinta-2">
+            <p className="mt-3 text-texto-2">
               Para ver la página citada, MedTender necesita leer el original desde tu computador. Elige la carpeta donde
               guardas los PDF del expediente; el navegador la recordará.
             </p>
@@ -321,7 +321,7 @@ function Indicaciones({
       return (
         <div>
           <Fase icono={LockKeyhole} tono="aviso" titulo={`Reactiva el acceso a «${estado.carpeta.name}»`}>
-            <p className="mt-3 text-tinta-2">Por seguridad, el navegador pide confirmar el acceso en cada visita.</p>
+            <p className="mt-3 text-texto-2">Por seguridad, el navegador pide confirmar el acceso en cada visita.</p>
             <div className={acciones}>
               <Boton variante="primario" tamano="lg" onClick={() => alReactivar(estado.carpeta)}>
                 Permitir lectura
@@ -338,7 +338,7 @@ function Indicaciones({
       return (
         <div>
           <Fase icono={SearchX} tono="aviso" titulo="No encontré el original">
-            <p className="mt-3 text-tinta-2">
+            <p className="mt-3 text-texto-2">
               Ningún PDF de la carpeta coincide por nombre ni por huella SHA-256 con «{cita.nombreArchivo}». Quizá está
               en otra carpeta o en otro equipo.
             </p>
@@ -356,17 +356,17 @@ function Indicaciones({
       return (
         <div>
           <Fase icono={ShieldAlert} tono="peligro" titulo="El archivo no es el mismo que se indexó">
-            <p className="mt-3 text-tinta-2">
+            <p className="mt-3 text-texto-2">
               «{estado.pdf.ruta}» tiene el nombre esperado pero su contenido cambió. Las citas corresponden a la versión
               indexada: revisarlas en otra versión podría llevar a conclusiones equivocadas.
             </p>
-            <dl className="mt-5 space-y-2 rounded-xl border border-tinta/10 bg-mesa p-4 text-left font-mono text-[0.7rem]">
+            <dl className="mt-4 space-y-2 rounded-xl border border-borde bg-fondo p-4 text-left font-mono text-xs">
               <div>
-                <dt className="text-tinta-3">Indexado</dt>
-                <dd className="break-all text-accion">{cita.sha256Original}</dd>
+                <dt className="text-texto-3">Indexado</dt>
+                <dd className="break-all text-primario">{cita.sha256Original}</dd>
               </div>
               <div>
-                <dt className="text-tinta-3">En tu equipo</dt>
+                <dt className="text-texto-3">En tu equipo</dt>
                 <dd className="break-all text-peligro">{estado.hashLocal}</dd>
               </div>
             </dl>
@@ -382,7 +382,7 @@ function Indicaciones({
     case "error":
       return (
         <Fase icono={OctagonAlert} tono="peligro" titulo="No se pudo abrir el original">
-          <p role="alert" className="mt-3 text-tinta-2">
+          <p role="alert" className="mt-3 text-texto-2">
             {estado.mensaje}
           </p>
         </Fase>
@@ -403,15 +403,15 @@ function LectorImagen({ pdf, cita }: { pdf: PdfLocal; cita: Cita }) {
     return () => URL.revokeObjectURL(u);
   }, [pdf.archivo]);
   return (
-    <div className="h-full min-h-0 overflow-auto px-6 py-5">
-      <blockquote className="mx-auto mb-4 max-w-3xl font-display text-[1rem] leading-[1.75]">
-        <span className="mb-1 block text-[0.72rem] font-medium text-tinta-3">Extracto citado (lo que leyó el OCR)</span>
+    <div className="h-full min-h-0 overflow-auto px-6 py-4">
+      <blockquote className="mx-auto mb-4 max-w-3xl text-base leading-[1.75]">
+        <span className="mb-1 block text-xs font-medium text-texto-3">Extracto citado (lo que leyó el OCR)</span>
         <span className="resaltado">«{cita.extractoLiteral}»</span>
       </blockquote>
       {url ? (
-        <img src={url} alt={`Foto original: ${pdf.ruta}`} className="mx-auto block max-w-full rounded-md bg-white" />
+        <img src={url} alt={`Foto original: ${pdf.ruta}`} className="mx-auto block max-w-full rounded-lg bg-white" />
       ) : (
-        <p className="mx-auto max-w-xl rounded-md border border-tinta/15 bg-folio-2 px-4 py-3 text-sm text-tinta-2">
+        <p className="mx-auto max-w-xl rounded-lg border border-borde bg-panel-2 px-4 py-3 text-sm text-texto-2">
           Este navegador no puede mostrar fotos HEIC. La huella coincide, así que es el original: ábrelo con el visor de
           fotos de tu equipo ({pdf.ruta}).
         </p>
@@ -503,26 +503,26 @@ function LectorPdf({ pdf, cita }: { pdf: PdfLocal; cita: Cita }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-tinta/8 px-5 py-3 sm:px-6">
-        <p className="min-w-0 text-sm text-tinta-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-borde px-4 py-3 sm:px-6">
+        <p className="min-w-0 text-sm text-texto-2">
           <span className="truncate">{pdf.ruta}</span>
-          {extractoEnPagina === true && <span className="ml-2 text-accion">· el extracto citado está en esta página</span>}
+          {extractoEnPagina === true && <span className="ml-2 text-primario">· el extracto citado está en esta página</span>}
           {extractoEnPagina === false && (
             <span className="ml-2 text-aviso">· el extracto no se ubicó automáticamente (texto escaneado o tabla)</span>
           )}
         </p>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <Boton tamano="icono" variante="fantasma" className="size-9" onClick={() => setZoom((z) => Math.max(0, z - 1))} disabled={zoom === 0} aria-label="Alejar">
             <ZoomOut className="size-[1.1rem]" aria-hidden />
           </Boton>
-          <span className="num w-12 text-center text-sm text-tinta-2">{Math.round(ZOOMS[zoom]! * 100)} %</span>
+          <span className="num w-12 text-center text-sm text-texto-2">{Math.round(ZOOMS[zoom]! * 100)} %</span>
           <Boton tamano="icono" variante="fantasma" className="size-9" onClick={() => setZoom((z) => Math.min(ZOOMS.length - 1, z + 1))} disabled={zoom === ZOOMS.length - 1} aria-label="Acercar">
             <ZoomIn className="size-[1.1rem]" aria-hidden />
           </Boton>
           <Boton tamano="icono" variante="fantasma" className="size-9" onClick={() => setZoom(2)} aria-label="Ajustar al ancho">
             <Maximize2 className="size-4" aria-hidden />
           </Boton>
-          <span className="mx-2 h-5 w-px bg-tinta/10" aria-hidden />
+          <span className="mx-2 h-5 w-px bg-texto/10" aria-hidden />
           <Boton tamano="icono" variante="secundario" className="size-9" disabled={pagina <= 1} onClick={() => irA(pagina - 1)} aria-label="Página anterior">
             <ChevronLeft className="size-[1.1rem]" aria-hidden />
           </Boton>
@@ -537,9 +537,9 @@ function LectorPdf({ pdf, cita }: { pdf: PdfLocal; cita: Cita }) {
 
       <div className="flex min-h-0 flex-1">
         {documento && total > 1 && <Miniaturas documento={documento} actual={pagina} alElegir={irA} />}
-        <div ref={contenedor} className="min-w-0 flex-1 overflow-auto px-6 py-5">
-          <blockquote className="mx-auto mb-4 max-w-3xl font-display text-[1rem] leading-[1.75]">
-            <span className="mb-1 block text-[0.72rem] font-medium text-tinta-3">Extracto citado</span>
+        <div ref={contenedor} className="min-w-0 flex-1 overflow-auto px-6 py-4">
+          <blockquote className="mx-auto mb-4 max-w-3xl text-base leading-[1.75]">
+            <span className="mb-1 block text-xs font-medium text-texto-3">Extracto citado</span>
             <span className="resaltado">«{cita.extractoLiteral}»</span>
           </blockquote>
           {!documento ? (
@@ -547,7 +547,7 @@ function LectorPdf({ pdf, cita }: { pdf: PdfLocal; cita: Cita }) {
               <Esqueleto className="aspect-[1/1.3] w-full rounded-lg" />
             </div>
           ) : (
-            <canvas ref={lienzo} className="mx-auto block rounded-md bg-white" />
+            <canvas ref={lienzo} className="mx-auto block rounded-lg bg-white" />
           )}
         </div>
       </div>
@@ -588,7 +588,7 @@ function Miniaturas({
   }, [documento, n]);
 
   return (
-    <nav aria-label="Miniaturas de páginas" className="hidden w-32 shrink-0 space-y-3 overflow-y-auto border-r border-tinta/8 p-3 md:block">
+    <nav aria-label="Miniaturas de páginas" className="hidden w-32 shrink-0 space-y-3 overflow-y-auto border-r border-borde p-3 md:block">
       {Array.from({ length: n }, (_, i) => (
         <button
           key={i}
@@ -597,11 +597,11 @@ function Miniaturas({
           aria-current={actual === i + 1 ? "page" : undefined}
           className={cn(
             "block w-full rounded-lg border-2 p-0.5 transition-colors",
-            actual === i + 1 ? "border-accion" : "border-transparent hover:border-tinta/25",
+            actual === i + 1 ? "border-primario" : "border-transparent hover:border-borde",
           )}
         >
           <canvas ref={(el) => void (lienzos.current[i] = el)} className="w-full rounded bg-white" />
-          <span className="num mt-1 block text-center text-[0.7rem] text-tinta-3">{i + 1}</span>
+          <span className="num mt-1 block text-center text-xs text-texto-3">{i + 1}</span>
         </button>
       ))}
     </nav>

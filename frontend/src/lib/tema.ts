@@ -1,29 +1,29 @@
 import { useCallback, useSyncExternalStore } from "react";
 
-export type Tema = "papel" | "nocturno";
+export type Tema = "claro" | "oscuro";
 
 const CLAVE = "medtender-tema";
 
-/** Tema guardado por el usuario; si no hay, el del sistema operativo. */
+/** Tema guardado por el usuario; si no hay, el claro. El oscuro es una opción, nunca el valor inicial. */
 export function temaInicial(): Tema {
   try {
     const guardado = localStorage.getItem(CLAVE);
-    if (guardado === "papel" || guardado === "nocturno") return guardado;
+    if (guardado === "claro" || guardado === "oscuro") return guardado;
   } catch {
-    /* almacenamiento bloqueado: se usa el del sistema */
+    /* almacenamiento bloqueado: se usa el claro */
   }
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "nocturno" : "papel";
+  return "claro";
 }
 
 export function temaActual(): Tema {
-  return document.documentElement.getAttribute("data-tema") === "nocturno" ? "nocturno" : "papel";
+  return document.documentElement.getAttribute("data-tema") === "oscuro" ? "oscuro" : "claro";
 }
 
 export function aplicarTema(tema: Tema): void {
   document.documentElement.setAttribute("data-tema", tema);
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", tema === "nocturno" ? "#0f121a" : "#e6e5df");
+    ?.setAttribute("content", tema === "oscuro" ? "#000000" : "#f4f7fa");
   try {
     localStorage.setItem(CLAVE, tema);
   } catch {
@@ -39,7 +39,7 @@ function suscribir(aviso: () => void) {
 
 /** Tema activo y función para alternarlo; se mantiene sincronizado entre componentes. */
 export function useTema() {
-  const tema = useSyncExternalStore(suscribir, temaActual, () => "papel" as Tema);
-  const alternar = useCallback(() => aplicarTema(temaActual() === "papel" ? "nocturno" : "papel"), []);
+  const tema = useSyncExternalStore(suscribir, temaActual, () => "claro" as Tema);
+  const alternar = useCallback(() => aplicarTema(temaActual() === "claro" ? "oscuro" : "claro"), []);
   return { tema, alternar };
 }

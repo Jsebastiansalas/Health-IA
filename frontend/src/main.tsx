@@ -10,6 +10,10 @@ import { ProveedorSesion, useSesion } from "./sesion";
 
 // Cada pantalla es su propio paquete: quien aún no ingresó no descarga la aplicación, y viceversa.
 const PaginaBienvenida = lazy(() => import("./paginas/Bienvenida").then((m) => ({ default: m.PaginaBienvenida })));
+const PaginaPersonas = lazy(() => import("./paginas/Bienvenida").then((m) => ({ default: m.PaginaPersonas })));
+const PaginaPrivacidad = lazy(() => import("./paginas/Legal").then((m) => ({ default: m.PaginaPrivacidad })));
+const PaginaTerminos = lazy(() => import("./paginas/Legal").then((m) => ({ default: m.PaginaTerminos })));
+const PaginaNoEncontrada = lazy(() => import("./paginas/Legal").then((m) => ({ default: m.PaginaNoEncontrada })));
 const PaginaRegistro = lazy(() => import("./paginas/Registro").then((m) => ({ default: m.PaginaRegistro })));
 const PaginaVerificarCorreo = lazy(() => import("./paginas/VerificarCorreo").then((m) => ({ default: m.PaginaVerificarCorreo })));
 const PaginaIngreso = lazy(() => import("./paginas/Ingreso").then((m) => ({ default: m.PaginaIngreso })));
@@ -34,8 +38,11 @@ function Rutas() {
         <Route path="/" element={<PaginaBienvenida />} />
         <Route path="/ingreso" element={<PaginaIngreso />} />
         <Route path="/registro" element={<PaginaRegistro />} />
+        <Route path="/personas" element={<PaginaPersonas />} />
         <Route path="/verificar-correo" element={<PaginaVerificarCorreo />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/privacidad" element={<PaginaPrivacidad />} />
+        <Route path="/terminos" element={<PaginaTerminos />} />
+        <Route path="*" element={<PaginaNoEncontrada />} />
       </Routes>
     );
   }
@@ -48,7 +55,9 @@ function Rutas() {
         <Route path="/verificar-correo" element={<PaginaVerificarCorreo />} />
         <Route path="/medicamentos" element={<PaginaMedicamentos />} />
         <Route path="/expedientes/:id" element={<PaginaExpediente />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/privacidad" element={<PaginaPrivacidad />} />
+        <Route path="/terminos" element={<PaginaTerminos />} />
+        <Route path="*" element={<PaginaNoEncontrada />} />
       </Routes>
     </Marco>
   );

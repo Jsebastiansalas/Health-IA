@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, LockKeyhole, Mail, UserRound } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, LockKeyhole, Mail, UserRound } from "../iconos";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Marca } from "../componentes/Marca";
@@ -30,14 +30,14 @@ export function PaginaRegistro() {
   }
 
   return (
-    <div className="grid min-h-[100svh] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-      <section className="relative m-3 hidden flex-col justify-between rounded-md bg-carpeta p-10 text-tinta lg:flex xl:p-14">
+    <div className="grid min-h-[100svh] grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <section className="relative m-3 hidden flex-col justify-between rounded-lg bg-marino p-10 text-white lg:flex xl:p-16">
         <Link to="/" aria-label="MedTender, volver al inicio" className="w-fit">
-          <Marca />
+          <Marca className="text-white" />
         </Link>
         <div className="max-w-lg">
-          <h1 className="text-[clamp(2.2rem,3.2vw,3.2rem)]">Entiende los papeles que te dan en el hospital.</h1>
-          <ul className="mt-8 space-y-3.5 text-[1.02rem]">
+          <h1 className="text-4xl font-semibold">Entiende los papeles que te dan en el hospital.</h1>
+          <ul className="mt-8 space-y-4 text-base">
             {[
               "Sube tus resultados, historia clínica u órdenes, en PDF o con una foto.",
               "Pregunta qué dicen, con la cita exacta del documento.",
@@ -54,16 +54,16 @@ export function PaginaRegistro() {
         <span aria-hidden />
       </section>
 
-      <section className="flex items-center justify-center px-5 py-10 sm:px-10">
-        <div className="folio w-full max-w-md p-8 sm:p-10">
-          <Link to="/" className="mb-7 inline-flex items-center gap-1.5 text-sm font-medium text-tinta-3 transition-colors hover:text-accion lg:hidden">
+      <section className="flex items-center justify-center px-4 py-10 sm:px-10">
+        <div className="panel w-full max-w-md p-8 sm:p-10">
+          <Link to="/" className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-texto-3 transition-colors hover:text-primario lg:hidden">
             <ArrowLeft className="size-4" aria-hidden />
             Inicio
           </Link>
-          <h2 className="font-display text-[1.7rem] font-semibold leading-tight">Crea tu cuenta personal</h2>
-          <p className="mt-2 text-[0.95rem] text-tinta-2">Para pacientes y familias. No necesitas una institución.</p>
+          <h2 className="text-2xl font-semibold leading-tight">Crea tu cuenta personal</h2>
+          <p className="mt-2 text-sm text-texto-2">Para pacientes y familias. No necesitas una institución.</p>
 
-          <form onSubmit={enviar} className="mt-8 space-y-5" noValidate>
+          <form onSubmit={enviar} className="mt-8 space-y-4" noValidate>
             <Campo etiqueta="Tu nombre" icono={UserRound} autoComplete="name" required autoFocus minLength={2} maxLength={150}
               value={nombre} onChange={(e) => setNombre(e.target.value)} />
             <Campo etiqueta="Correo electrónico" icono={Mail} type="email" autoComplete="username" required
@@ -81,7 +81,7 @@ export function PaginaRegistro() {
                 <button
                   type="button"
                   onClick={() => setVerClave((v) => !v)}
-                  className="grid size-8 place-items-center rounded-md text-tinta-3 transition-colors hover:bg-tinta/8 hover:text-tinta"
+                  className="grid size-8 place-items-center rounded-lg text-texto-3 transition-colors hover:bg-texto/8 hover:text-texto"
                   aria-label={verClave ? "Ocultar contraseña" : "Mostrar contraseña"}
                   aria-pressed={verClave}
                 >
@@ -90,7 +90,7 @@ export function PaginaRegistro() {
               }
             />
             {error && (
-              <div role="alert" className="flex items-start gap-2.5 rounded-md border border-peligro/40 bg-peligro/10 px-3.5 py-3 text-sm text-peligro">
+              <div role="alert" className="flex items-start gap-3 rounded-lg border border-peligro/40 bg-peligro/10 px-4 py-3 text-sm text-peligro">
                 <AlertCircle className="mt-0.5 size-4 shrink-0 text-peligro" aria-hidden />
                 {error}
               </div>
@@ -99,9 +99,9 @@ export function PaginaRegistro() {
               {enviando ? "Creando…" : "Crear cuenta"}
             </Boton>
           </form>
-          <p className="mt-6 text-center text-sm text-tinta-2">
+          <p className="mt-6 text-center text-sm text-texto-2">
             ¿Ya tienes cuenta?{" "}
-            <Link to="/ingreso" className="font-semibold text-accion underline underline-offset-4">
+            <Link to="/ingreso" className="font-semibold text-primario underline underline-offset-4">
               Ingresa
             </Link>
           </p>
