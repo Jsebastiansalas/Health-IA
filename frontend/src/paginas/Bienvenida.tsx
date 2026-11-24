@@ -1,328 +1,83 @@
-import { ArrowRight, ScrollText, SearchX } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
-import { EscenaExpediente, VisorDocumento } from "../arte/Folios";
-import { Marca } from "../componentes/Marca";
-import { boton } from "../componentes/ui/Boton";
-import { Insignia } from "../componentes/ui/Insignia";
-import { cn } from "../lib/cn";
+import { Landing, type ContenidoLanding } from "./Landing";
 
-/** Aparece al entrar en pantalla (una sola vez), con la misma curva que el resto de la interfaz. */
-function Revelar({ children, retraso = 0, className }: { children: ReactNode; retraso?: number; className?: string }) {
-  const quieto = useReducedMotion();
-  return (
-    <motion.div
-      className={className}
-      initial={quieto ? false : { opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.6, delay: retraso, ease: [0.16, 1, 0.3, 1] }}
-    >
-      {children}
-    </motion.div>
-  );
-}
+const ORGANIZACIONES: ContenidoLanding = {
+  titular: "Respuestas sobre tus expedientes de salud, con la fuente a la vista.",
+  subtitular:
+    "MedTender lee licitaciones médicas, historias clínicas y auditorías, y responde con el documento, la página y el texto exacto. Cuando los documentos no lo respaldan, lo dice.",
+  cta: { texto: "Ingresar a mi organización", a: "/ingreso" },
+  apoyo: "Cada respuesta se puede verificar abriendo el original desde tu propio equipo.",
+  pregunta: "¿Qué debe acreditar el oferente del monitor multiparamétrico?",
+  respuesta: "Debe acreditar registro sanitario INVIMA vigente y el certificado de calibración del equipo ofertado.",
+  fuente: { documento: "Ficha técnica, página 6", extracto: "El oferente deberá acreditar registro sanitario INVIMA vigente y certificado de calibración del equipo ofertado." },
+  lema: "Una respuesta sin fuente no es una respuesta. MedTender solo contesta con lo que dice tu documento, y cuando no alcanza, te lo dice.",
+  pasos: [
+    { titulo: "Sube el expediente", texto: "Pliegos, adendas, fichas técnicas e historias clínicas en PDF o en foto. Se leen, se indexan y el original se elimina del servidor." },
+    { titulo: "Pregunta como lo harías a un colega", texto: "Escribe la duda en tus palabras. Las adendas pesan más que el pliego base y se señalan como alerta." },
+    { titulo: "Verifica la fuente", texto: "Cada punto trae documento, página, texto literal y huella. Abre el original desde tu carpeta y compara." },
+  ],
+  beneficios: [
+    { titulo: "Citas que se pueden comprobar", texto: "El extracto es literal y se verifica contra el texto real; no se parafrasea la evidencia." },
+    { titulo: "Se abstiene cuando no hay evidencia", texto: "Si los documentos no respaldan la respuesta, MedTender lo dice en lugar de adivinar." },
+    { titulo: "Cada organización ve solo lo suyo", texto: "Los expedientes se aíslan por organización y por permisos de lectura, edición y administración." },
+    { titulo: "Medicamentos con datos abiertos", texto: "Consulta registros sanitarios, vigencias y precios regulados con los datos abiertos de INVIMA." },
+  ],
+  preguntas: [
+    { p: "¿Dónde se guardan mis documentos?", r: "El archivo original se elimina del servidor después de leerlo y queda un acta de purga con su huella. Guardamos fragmentos de texto para poder responder y citar." },
+    { p: "¿Qué pasa si el documento no responde mi pregunta?", r: "MedTender se abstiene y lo dice de forma explícita. No completa con conocimiento propio." },
+    { p: "¿Da dosis, diagnósticos o recomendaciones?", r: "No. Explica y cita lo que dicen los documentos. Si alguien pide una dosis o un diagnóstico, remite a su médico o farmacéutico." },
+    { p: "¿Puedo abrir el documento original?", r: "Sí, desde tu propio equipo. El visor compara la huella SHA 256 del archivo con la registrada. El archivo nunca se sube." },
+    { p: "¿Usa inteligencia artificial de terceros?", r: "Sí, Google Gemini. Antes de enviarle el texto se ocultan nombres, cédulas, teléfonos y correos cuando aparecen con una etiqueta. En esta etapa se usa su versión gratuita." },
+    { p: "¿Quién puede usarlo hoy?", r: "MedTender está en pruebas cerradas con personas invitadas. Si tu organización quiere probarlo, escríbenos." },
+  ],
+  riesgo: {
+    titulo: "El original no se queda en el servidor",
+    texto: "Se elimina después de indexarlo, con verificación y un acta de purga. Puedes comprobar la fuente siempre desde tu propio equipo.",
+  },
+  cierre: "Tu próxima licitación o auditoría, con la fuente a un clic.",
+  alterna: { texto: "Para personas", a: "/personas" },
+};
+
+const PERSONAS: ContenidoLanding = {
+  titular: "Entiende los documentos que te entregan en el hospital.",
+  subtitular:
+    "Sube tu resultado, tu orden o tu historia clínica y MedTender te lo explica en palabras sencillas, con el texto exacto al lado. No diagnostica ni receta.",
+  cta: { texto: "Crear mi cuenta", a: "/registro" },
+  apoyo: "Tu archivo original se elimina del servidor después de leerlo, y puedes borrar tu cuenta cuando quieras.",
+  pregunta: "¿Qué dice mi examen sobre el colesterol?",
+  respuesta: "El informe registra un colesterol LDL de 160 mg/dL y lo marca como alto.",
+  fuente: { documento: "Resultado de laboratorio, página 1", extracto: "Colesterol LDL 160 mg/dL (ref < 130) ALTO" },
+  lema: "Los papeles del hospital deberían poder leerse sin miedo. MedTender te explica lo que dicen, te muestra dónde lo dicen y te ayuda a preparar las preguntas para tu médico.",
+  pasos: [
+    { titulo: "Sube una foto o un PDF", texto: "Un resultado de laboratorio, una orden, una fórmula o un informe. Si es una foto, buena luz y de frente." },
+    { titulo: "Pulsa explícame este documento", texto: "Te cuenta de qué trata, lo que dice con su cita y qué significan los términos, en lenguaje sencillo." },
+    { titulo: "Llévale las preguntas a tu médico", texto: "Te sugiere preguntas concretas. Las decisiones sobre tu salud las toma tu médico, no MedTender." },
+  ],
+  beneficios: [
+    { titulo: "Explicaciones sencillas", texto: "Los términos técnicos se explican de forma general, sin decirte si tu valor es bueno o malo." },
+    { titulo: "Siempre con la cita al lado", texto: "Cada punto muestra el texto exacto del documento del que sale." },
+    { titulo: "Primero tu seguridad", texto: "Si describes una urgencia, el aviso de llamar al 123 aparece antes que cualquier otra cosa." },
+    { titulo: "Tú decides sobre tus datos", texto: "Borras tu historial o tu cuenta completa con un botón." },
+  ],
+  preguntas: [
+    { p: "¿MedTender me da un diagnóstico?", r: "No. Explica y cita lo que dice tu documento. No diagnostica, no receta y no indica dosis." },
+    { p: "¿Qué pasa con mi documento después de subirlo?", r: "El archivo original se elimina del servidor después de leerlo. Guardamos fragmentos de texto y tus preguntas mientras tengas la cuenta." },
+    { p: "¿Quién ve mis documentos?", r: "Solo tú. Cada cuenta personal es un espacio aparte, y confirmas tu correo para activarla." },
+    { p: "¿Se envía mi información a otra empresa?", r: "Sí: el texto se envía a Google Gemini para leerlo, con los datos personales ocultos cuando aparecen con una etiqueta. Es una versión gratuita que Google puede usar para mejorar sus productos, así que sube solo lo necesario." },
+    { p: "¿Cómo borro mi cuenta?", r: "Desde el menú de tu usuario, en «Eliminar mi cuenta». Se borra todo su contenido. Las copias de seguridad lo conservan hasta 14 días más." },
+    { p: "¿Funciona con una foto del celular?", r: "Sí, con fotos de JPG, PNG y HEIC. Si la foto sale borrosa, te pedimos que la repitas con buena luz y de frente." },
+  ],
+  riesgo: {
+    titulo: "Puedes borrarlo todo cuando quieras",
+    texto: "Eliminas tu historial de preguntas o tu cuenta completa desde tu menú. El archivo original ya se eliminó del servidor al leerlo.",
+  },
+  cierre: "Entiende tus documentos antes de tu próxima cita.",
+  alterna: { texto: "Para organizaciones", a: "/" },
+};
 
 export function PaginaBienvenida() {
-  return (
-    <div className="relative overflow-x-clip bg-mesa">
-      <Navegacion />
-      <Heroe />
-      <Casos />
-      <Prueba />
-      <ComoFunciona />
-      <Honestidad />
-      <Cuidado />
-      <Cierre />
-    </div>
-  );
+  return <Landing c={ORGANIZACIONES} />;
 }
 
-/* -------------------------------------------------------------- navegación */
-
-function Navegacion() {
-  const [fondo, setFondo] = useState(false);
-  useEffect(() => {
-    const alBajar = () => setFondo(window.scrollY > 24);
-    alBajar();
-    window.addEventListener("scroll", alBajar, { passive: true });
-    return () => window.removeEventListener("scroll", alBajar);
-  }, []);
-  const enlace = "rounded-md px-4 py-2 text-[0.95rem] text-tinta transition-colors hover:bg-tinta/10";
-  return (
-    <header className={cn("fixed inset-x-0 top-0 z-40 transition-colors duration-300", fondo ? "border-b border-tinta/15 bg-mesa" : "border-b border-transparent")}>
-      <div className="mx-auto flex max-w-[1200px] items-center justify-between px-5 py-3 sm:px-8">
-        <Link to="/" aria-label="MedTender, inicio">
-          <Marca />
-        </Link>
-        <nav className="hidden items-center md:flex" aria-label="Secciones">
-          <a href="#casos" className={enlace}>Qué resuelve</a>
-          <a href="#como-funciona" className={enlace}>Cómo funciona</a>
-          <a href="#cuidado" className={enlace}>Seguridad</a>
-        </nav>
-        <Link to="/ingreso" className={boton({ variante: "secundario", tamano: "md" })}>
-          Ingresar
-        </Link>
-      </div>
-    </header>
-  );
-}
-
-/* ------------------------------------------------------------------ héroe */
-
-function Heroe() {
-  return (
-    <section className="mx-auto grid min-h-[100svh] max-w-[1200px] items-center gap-12 px-5 pb-20 pt-28 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14">
-      <div>
-        <Revelar>
-          <h1 className="text-[clamp(2.2rem,4.3vw,3.5rem)]">
-            Pregunta a tus expedientes de salud.
-            <span className="block">Con la fuente a la vista.</span>
-          </h1>
-        </Revelar>
-        <Revelar retraso={0.08}>
-          <p className="mt-6 max-w-[33rem] text-[1.1rem] leading-[1.55] text-tinta-2">
-            El asistente para clínicas, hospitales y aseguradoras: consulta licitaciones médicas, historias clínicas y auditorías, y cada
-            respuesta llega con el documento, la página y el texto exacto.
-          </p>
-        </Revelar>
-        <Revelar retraso={0.16} className="mt-9 flex flex-wrap items-center gap-3">
-          <Link to="/ingreso" className={boton({ variante: "primario", tamano: "lg" })}>
-            Ingresar
-            <ArrowRight className="size-[1.1rem]" aria-hidden />
-          </Link>
-          <a href="#casos" className={boton({ variante: "secundario", tamano: "lg" })}>
-            Ver qué resuelve
-          </a>
-        </Revelar>
-        <Revelar retraso={0.24}>
-          <p className="mt-8 max-w-[32rem] text-[0.88rem] leading-relaxed text-tinta-3">
-            Para auditores médicos, ingenieros biomédicos y abogados de entidades de salud.{" "}
-            <Link to="/registro" className="font-semibold text-accion underline underline-offset-4">
-              ¿Eres paciente o familiar? Crea tu cuenta personal.
-            </Link>
-          </p>
-        </Revelar>
-      </div>
-      <EscenaExpediente />
-    </section>
-  );
-}
-
-function Titular({ children, className }: { children: ReactNode; className?: string }) {
-  return <h2 className={cn("text-[clamp(1.8rem,3.2vw,2.5rem)]", className)}>{children}</h2>;
-}
-
-/* ------------------------------------------------------------------- casos */
-
-const CASOS: { titulo: string; texto: string; pregunta: string }[] = [
-  {
-    titulo: "Licitaciones médicas",
-    texto:
-      "Pliegos, adendas, fichas técnicas y registros sanitarios en un solo expediente. Pregunta por plazos, garantías o requisitos habilitantes y mira qué adenda modifica el pliego.",
-    pregunta: "¿Qué garantías y pólizas exige esta licitación?",
-  },
-  {
-    titulo: "Historias clínicas y auditoría",
-    texto:
-      "Revisa historias clínicas, glosas y soportes con la cita exacta de cada folio, para auditar sin leer cientos de páginas a mano.",
-    pregunta: "¿Qué soporte hay en la historia clínica para esta glosa?",
-  },
-  {
-    titulo: "Medicamentos de Colombia",
-    texto:
-      "Registro sanitario, titular, vigencia, presentaciones y precio máximo regulado, con los datos abiertos de INVIMA y, con el prospecto que tú subas, efectos, contraindicaciones e interacciones citados de tu propio documento. No indica dosis ni dice qué tomar.",
-    pregunta: "¿Está vigente el registro de la losartán de Genfar?",
-  },
-];
-
-function Casos() {
-  return (
-    <section id="casos" className="mx-auto max-w-[1200px] scroll-mt-16 border-t border-tinta/15 px-5 py-20 sm:px-8 sm:py-28">
-      <Revelar className="max-w-2xl">
-        <Titular>Hecho para el trabajo diario de la salud.</Titular>
-      </Revelar>
-      <ul className="mt-12 grid gap-x-10 gap-y-12 lg:grid-cols-3">
-        {CASOS.map((c, i) => (
-          <li key={c.titulo}>
-            <Revelar retraso={i * 0.07}>
-              <h3 className="text-[1.4rem]">{c.titulo}</h3>
-              <p className="mt-3 leading-relaxed text-tinta-2">{c.texto}</p>
-              <p className="mt-5 border-t border-tinta/12 pt-3 font-display text-[1rem] leading-snug text-tinta">«{c.pregunta}»</p>
-              <p className="etiqueta mt-1.5">Pregunta de ejemplo</p>
-            </Revelar>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ prueba */
-
-function Prueba() {
-  return (
-    <section className="mx-auto max-w-[1200px] border-t border-tinta/15 px-5 py-20 sm:px-8 sm:py-28">
-      <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-16">
-        <Revelar>
-          <Titular>Cada respuesta llega con su prueba.</Titular>
-          <ul className="mt-7 max-w-[30rem] space-y-4 text-[1.02rem] leading-relaxed text-tinta-2">
-            <li>
-              <b className="font-semibold text-tinta">Documento, página y texto exacto.</b> El modelo solo elige qué fragmentos usar; lo que ves
-              es lo que dice el documento.
-            </li>
-            <li>
-              <b className="font-semibold text-tinta">Abres el original y lo compruebas.</b> Desde tu carpeta, comparamos su huella SHA-256 con
-              la registrada. Funciona en Chrome y Edge.
-            </li>
-            <li>
-              <b className="font-semibold text-tinta">Te avisa cuando conviene mirar el original.</b> Sellos, tablas y escaneos dudosos quedan
-              señalados en la propia cita.
-            </li>
-          </ul>
-        </Revelar>
-        <Revelar retraso={0.1}>
-          <VisorDocumento />
-        </Revelar>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------ cómo funciona */
-
-const PASOS: [string, string][] = [
-  ["Reúnes el expediente", "Subes la licitación, las historias clínicas o las fichas técnicas. Revisamos que los archivos sean válidos y estén libres de virus."],
-  [
-    "Preguntas en tus palabras",
-    "Leemos los documentos (con OCR en las páginas escaneadas) y buscamos por significado y por términos exactos, como un código CUM, un registro INVIMA o un número de adenda.",
-  ],
-  ["Compruebas la fuente", "Obtienes la respuesta con la cita exacta. Si los documentos no la respaldan, te lo dice en lugar de conjeturar."],
-];
-
-function ComoFunciona() {
-  return (
-    <section id="como-funciona" className="mx-auto max-w-[1200px] scroll-mt-16 border-t border-tinta/15 px-5 py-20 sm:px-8 sm:py-28">
-      <Revelar className="max-w-2xl">
-        <Titular>De la pila de documentos a la respuesta, en tres pasos.</Titular>
-      </Revelar>
-      <ol className="mt-12 grid gap-x-10 gap-y-10 lg:grid-cols-3">
-        {PASOS.map(([titulo, texto], i) => (
-          <li key={titulo}>
-            <Revelar retraso={i * 0.07}>
-              <p className="font-display text-[2.6rem] font-semibold leading-none text-tinta-3" aria-hidden>
-                {i + 1}
-              </p>
-              <h3 className="mt-3 text-[1.35rem]">{titulo}</h3>
-              <p className="mt-2 leading-relaxed text-tinta-2">{texto}</p>
-            </Revelar>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
-/* --------------------------------------------------------------- honestidad */
-
-function Honestidad() {
-  return (
-    <section id="honestidad" className="mx-auto max-w-[1200px] scroll-mt-16 border-t border-tinta/15 px-5 py-20 sm:px-8 sm:py-28">
-      <Revelar className="max-w-2xl">
-        <Titular>Las adendas pesan más. Y cuando no sabe, lo dice.</Titular>
-        <p className="mt-5 text-[1.05rem] leading-relaxed text-tinta-2">
-          En salud, una respuesta inventada es peor que ninguna. Ejemplos ilustrativos.
-        </p>
-      </Revelar>
-      <div className="mt-12 grid gap-6 lg:grid-cols-2">
-        <Revelar>
-          <article className="folio h-full p-6 sm:p-8">
-            <Insignia tono="aviso">
-              <ScrollText className="size-3.5" aria-hidden />
-              Adenda N° 2 modifica este punto
-            </Insignia>
-            <h3 className="mt-4 text-[1.3rem]">Cuando una adenda cambia el pliego, la respuesta lo señala</h3>
-            <p className="mt-3 font-display text-[1.02rem] leading-[1.7]">
-              <span className="resaltado">«El plazo de entrega será de quince (15) días calendario.»</span>
-            </p>
-            <p className="etiqueta mt-2">Adenda 2 · pág. 1 · ejemplo</p>
-            <p className="mt-4 text-[0.92rem] leading-relaxed text-tinta-2">
-              Entre adendas prevalece la de mayor número, y la respuesta advierte si hay otra adenda relacionada que no se citó.
-            </p>
-          </article>
-        </Revelar>
-        <Revelar retraso={0.08}>
-          <article className="folio h-full p-6 sm:p-8">
-            <Insignia tono="aviso">
-              <SearchX className="size-3.5" aria-hidden />
-              Sin evidencia suficiente
-            </Insignia>
-            <h3 className="mt-4 text-[1.3rem]">Prefiere callar a inventar</h3>
-            <p className="mt-3 text-[0.98rem] leading-relaxed">
-              No encontré en los documentos indexados nada que responda esta pregunta. Reformúlela o verifique que el documento pertinente esté
-              cargado.
-            </p>
-            <p className="mt-4 text-[0.92rem] leading-relaxed text-tinta-2">
-              Sin soporte documental, la respuesta es una abstención explícita; nunca una conjetura con buena redacción. Si el fragmento tiene
-              un sello, una tabla o un OCR dudoso, te avisa que conviene mirar el original.
-            </p>
-          </article>
-        </Revelar>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ cuidado */
-
-const GARANTIAS: [string, string][] = [
-  ["Tus originales no se quedan en el servidor.", "Se procesan, se verifica el índice y se eliminan; tú conservas los archivos en tu equipo."],
-  ["Solo lo de tu organización.", "Cada consulta se filtra por organización y por expediente, también dentro de la base de datos. Lo ajeno responde «no encontrado»."],
-  ["Auditoría de solo anexado.", "Accesos, denegaciones y consultas quedan registrados sin guardar el texto de tus preguntas."],
-  ["Conexión cifrada.", "Todo viaja por HTTPS, con una política de seguridad estricta y sin servicios de terceros en la página."],
-];
-
-function Cuidado() {
-  return (
-    <section id="cuidado" className="mx-auto max-w-[1200px] scroll-mt-16 border-t border-tinta/15 px-5 py-20 sm:px-8 sm:py-28">
-      <Revelar className="max-w-2xl">
-        <Titular>Información de salud, tratada con cuidado.</Titular>
-      </Revelar>
-      <ul className="mt-10 grid gap-x-12 gap-y-7 md:grid-cols-2">
-        {GARANTIAS.map(([titulo, texto], i) => (
-          <li key={titulo}>
-            <Revelar retraso={i * 0.05}>
-              <p className="leading-relaxed text-tinta-2">
-                <b className="font-semibold text-tinta">{titulo}</b> {texto}
-              </p>
-            </Revelar>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ cierre */
-
-function Cierre() {
-  return (
-    <section className="border-t border-tinta/15 bg-carpeta px-5 py-24 sm:py-28">
-      <Revelar className="mx-auto max-w-3xl text-center">
-        <h2 className="text-[clamp(2rem,4.4vw,3.2rem)]">Tu próxima licitación o auditoría, con la fuente a un clic.</h2>
-        <p className="mx-auto mt-4 max-w-xl text-[1.05rem] text-tinta">Ingresa con tu organización y abre tu primer expediente.</p>
-        <div className="mt-9 flex justify-center">
-          <Link to="/ingreso" className={boton({ variante: "primario", tamano: "lg" })}>
-            Ingresar a MedTender
-            <ArrowRight className="size-[1.1rem]" aria-hidden />
-          </Link>
-        </div>
-      </Revelar>
-      <footer className="mx-auto mt-24 flex max-w-[1200px] flex-col items-center justify-between gap-3 text-[0.78rem] text-tinta sm:flex-row">
-        <Marca />
-        <p>Los documentos, preguntas y respuestas de esta página son ejemplos ilustrativos.</p>
-      </footer>
-    </section>
-  );
+export function PaginaPersonas() {
+  return <Landing c={PERSONAS} />;
 }

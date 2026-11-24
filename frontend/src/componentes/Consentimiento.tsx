@@ -1,4 +1,4 @@
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "../iconos";
 import { CONTACTO_PRIVACIDAD, RESPONSABLE } from "../lib/legal";
 import { Boton } from "./ui/Boton";
 
@@ -15,22 +15,22 @@ const PUNTOS = [
 
 export function Consentimiento({ version, aceptando, error, alAceptar }: { version: string; aceptando: boolean; error?: string; alAceptar: () => void }) {
   return (
-    <section aria-labelledby="titulo-consentimiento" className="folio mb-7 border-l-0 p-6 sm:p-8">
-      <h2 id="titulo-consentimiento" className="flex items-center gap-2.5 text-[1.4rem]">
-        <ShieldCheck className="size-6 text-accion" aria-hidden />
+    <section aria-labelledby="titulo-consentimiento" className="panel mb-8 border-l-0 p-6 sm:p-8">
+      <h2 id="titulo-consentimiento" className="flex items-center gap-3 text-xl">
+        <ShieldCheck className="size-6 text-primario" aria-hidden />
         Antes de usar tus documentos de salud
       </h2>
-      <p className="mt-2 text-tinta-2">Lee esto con calma. Necesitamos tu aceptación para continuar.</p>
-      <ul className="mt-5 max-w-3xl space-y-3 text-[0.95rem] leading-relaxed">
+      <p className="mt-2 text-texto-2">Lee esto con calma. Necesitamos tu aceptación para continuar.</p>
+      <ul className="mt-4 max-w-3xl space-y-3 text-sm leading-relaxed">
         {PUNTOS.map((p) => (
           <li key={p} className="flex gap-3">
-            <span className="mt-2 size-1.5 shrink-0 rounded-full bg-tinta-3" aria-hidden />
+            <span className="mt-2 size-2 shrink-0 rounded-full bg-texto-3" aria-hidden />
             <span>{p}</span>
           </li>
         ))}
       </ul>
       {(RESPONSABLE || CONTACTO_PRIVACIDAD) && (
-        <p className="mt-4 max-w-3xl text-[0.9rem] leading-relaxed text-tinta-2">
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-texto-2">
           Responsable del tratamiento: {RESPONSABLE || "titular del proyecto MedTender"}
           {CONTACTO_PRIVACIDAD ? ` · contacto: ${CONTACTO_PRIVACIDAD}` : ""}.
         </p>

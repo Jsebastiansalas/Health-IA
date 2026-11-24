@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertOctagon, ArrowUpRight, ExternalLink, SearchX, SendHorizontal, TriangleAlert } from "lucide-react";
+import { AlertOctagon, ArrowUpRight, ExternalLink, SearchX, SendHorizontal, TriangleAlert } from "../iconos";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { api, post } from "../api/cliente";
@@ -68,14 +68,14 @@ export function PaginaMedicamentos() {
   return (
     <section aria-labelledby="titulo-med" className="mx-auto flex min-h-[78vh] max-w-5xl flex-col">
       <header className="mb-8">
-        <h1 id="titulo-med" className="text-3xl sm:text-4xl">
+        <h1 id="titulo-med" className="text-3xl font-semibold leading-9">
           Medicamentos
         </h1>
-        <p className="mt-3 max-w-2xl text-tinta-2">
+        <p className="mt-3 max-w-2xl text-texto-2">
           Pregunta por cualquier medicamento con registro en Colombia: titular, registro sanitario, vigencia, presentaciones,
           equivalentes y precio máximo regulado. Cada dato lleva su fuente.
         </p>
-        <p className="etiqueta mt-3">
+        <p className="mt-3 text-sm text-texto-3">
           {cargada
             ? `Datos de INVIMA (datos.gov.co, CC BY-SA 4.0) · cargados el ${fecha(cargada)}`
             : fuentes
@@ -88,13 +88,12 @@ export function PaginaMedicamentos() {
       <div className="flex-1 space-y-8 pb-6" role="log" aria-live="polite" aria-label="Conversación">
         {vacio && (
           <div className="animate-aparecer">
-            <p className="max-w-xl font-display text-2xl font-semibold leading-tight">Pregunta por un medicamento.</p>
-            <p className="mt-2 max-w-lg text-tinta-2">
+            <p className="max-w-3xl text-base text-texto-2">
               Responde con la base oficial de INVIMA. Para efectos, contraindicaciones e interacciones, sube el prospecto de tu
               medicamento a tu expediente y pregúntale a la consola o usa «Ver advertencias de mis medicamentos»: se cita tu propio
               documento. No indica dosis ni dice qué medicamento tomar: eso lo decide tu médico o farmacéutico.
             </p>
-            <ul className="mt-5 max-w-2xl divide-y divide-tinta/12 border-y border-tinta/12">
+            <ul className="mt-6 divide-y divide-borde border-y border-borde">
               {SUGERENCIAS.map((q) => (
                 <li key={q}>
                   <button
@@ -102,10 +101,10 @@ export function PaginaMedicamentos() {
                       setPregunta(q);
                       campo.current?.focus();
                     }}
-                    className="group flex w-full items-center justify-between gap-4 py-3 text-left text-[0.95rem] text-tinta-2 transition-colors hover:text-tinta"
+                    className="group flex w-full items-center justify-between gap-4 py-3 text-left text-sm text-texto-2 transition-colors hover:text-texto"
                   >
                     {q}
-                    <ArrowUpRight className="size-4 shrink-0 text-tinta-3 transition-colors group-hover:text-accion" aria-hidden />
+                    <ArrowUpRight className="size-4 shrink-0 text-texto-3 transition-colors group-hover:text-primario" aria-hidden />
                   </button>
                 </li>
               ))}
@@ -118,11 +117,11 @@ export function PaginaMedicamentos() {
         ))}
 
         {pendiente && (
-          <div className="animate-aparecer space-y-5">
+          <div className="animate-aparecer space-y-4">
             <Burbuja texto={pendiente} />
-            <div className="folio p-5" aria-busy aria-label="Consultando la base de INVIMA">
-              <p className="mb-4 text-sm text-tinta-2">Consultando la base de INVIMA…</p>
-              <div className="space-y-2.5">
+            <div className="panel p-4" aria-busy aria-label="Consultando la base de INVIMA">
+              <p className="mb-4 text-sm text-texto-2">Consultando la base de INVIMA…</p>
+              <div className="space-y-3">
                 <Esqueleto className="h-3.5 w-[92%]" />
                 <Esqueleto className="h-3.5 w-[74%]" />
                 <Esqueleto className="h-3.5 w-[50%]" />
@@ -131,7 +130,7 @@ export function PaginaMedicamentos() {
           </div>
         )}
         {consultar.error && (
-          <p role="alert" className="flex items-start gap-2.5 rounded-xl border border-peligro/40 bg-peligro/10 px-4 py-3 text-sm text-peligro">
+          <p role="alert" className="flex items-start gap-3 rounded-xl border border-peligro/40 bg-peligro/10 px-4 py-3 text-sm text-peligro">
             <AlertOctagon className="mt-0.5 size-4 shrink-0" aria-hidden />
             {(consultar.error as Error).message}
           </p>
@@ -139,11 +138,11 @@ export function PaginaMedicamentos() {
         <div ref={fin} />
       </div>
 
-      <form onSubmit={enviar} className="folio sticky bottom-4 z-10 p-2.5">
-        <div className="flex items-end gap-2.5">
+      <form onSubmit={enviar} className="panel sticky bottom-4 z-10 p-3">
+        <div className="flex items-end gap-3">
           <textarea
             ref={campo}
-            className="max-h-40 min-h-[2.9rem] flex-1 resize-none bg-transparent px-3 py-3 text-[0.95rem] outline-none"
+            className="max-h-40 min-h-12 flex-1 resize-none bg-transparent px-3 py-3 text-sm outline-none"
             rows={2}
             maxLength={1000}
             aria-label="Tu pregunta sobre un medicamento"
@@ -158,12 +157,12 @@ export function PaginaMedicamentos() {
             type="submit"
             variante="primario"
             tamano="icono"
-            className="size-11 shrink-0"
+            className="size-10 shrink-0"
             disabled={pregunta.trim().length < 3}
             cargando={consultar.isPending}
             aria-label="Consultar"
           >
-            {!consultar.isPending && <SendHorizontal className="size-[1.15rem]" aria-hidden />}
+            {!consultar.isPending && <SendHorizontal className="size-5" aria-hidden />}
           </Boton>
         </div>
       </form>
@@ -174,7 +173,7 @@ export function PaginaMedicamentos() {
 function Burbuja({ texto }: { texto: string }) {
   return (
     <div className="flex justify-end">
-      <p className="max-w-[85%] rounded-md bg-folio-2 px-5 py-3 text-[0.97rem] leading-relaxed text-tinta">{texto}</p>
+      <p className="max-w-[85%] rounded-lg bg-panel-2 px-4 py-3 text-sm leading-relaxed text-texto">{texto}</p>
     </div>
   );
 }
@@ -196,17 +195,17 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
   }
 
   return (
-    <article className="animate-aparecer space-y-5">
+    <article className="animate-aparecer space-y-4">
       <Burbuja texto={pregunta} />
-      <div className="folio p-5 sm:p-6">
+      <div className="panel p-4 sm:p-6">
         {r.urgencia && <AvisoUrgencia mensaje={r.urgencia.mensaje} />}
         {r.sinEvidencia && !r.limiteClinico && (
-          <Insignia tono="aviso" className="mb-3.5">
-            <SearchX className="size-3.5" aria-hidden />
+          <Insignia tono="aviso" className="mb-4">
+            <SearchX className="size-4" aria-hidden />
             Sin evidencia suficiente
           </Insignia>
         )}
-        <div className="space-y-3 text-[0.98rem] leading-relaxed [&_li]:ml-5 [&_li]:list-disc [&_strong]:font-medium [&_strong]:text-tinta">
+        <div className="space-y-3 text-sm leading-relaxed [&_li]:ml-4 [&_li]:list-disc [&_strong]:font-medium [&_strong]:text-texto">
           <ReactMarkdown
             components={{
               a: ({ href, children }) => {
@@ -215,7 +214,7 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
                   <button
                     type="button"
                     onClick={() => irA(id)}
-                    className="mx-0.5 inline-grid h-5 min-w-5 -translate-y-0.5 place-items-center rounded-[3px] bg-marca px-1.5 align-middle text-[0.68rem] font-bold text-marca-tx transition-colors hover:bg-accion hover:text-accion-tx"
+                    className="mx-0.5 inline-grid h-5 min-w-5 -translate-y-0.5 place-items-center rounded-md bg-cita px-2 align-middle text-sm font-semibold text-cita-tx transition-colors hover:bg-primario hover:text-primario-tx"
                     aria-label={`Ir a la fuente ${id}`}
                   >
                     {children}
@@ -229,16 +228,16 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
         </div>
 
         {r.alertas.length > 0 && (
-          <ul className="mt-5 space-y-2">
+          <ul className="mt-4 space-y-2">
             {r.alertas.map((a) => (
-              <li key={a} className="flex gap-2.5 rounded-xl border border-aviso/35 bg-aviso/10 px-3.5 py-2.5 text-sm text-aviso">
+              <li key={a} className="flex gap-3 rounded-xl border border-aviso/35 bg-aviso/10 px-4 py-3 text-sm text-aviso">
                 <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
                 <span>{a}</span>
               </li>
             ))}
           </ul>
         )}
-        <p className="mt-5 border-t border-tinta/10 pt-3.5 text-[0.74rem] leading-relaxed text-tinta-3">{r.aviso}</p>
+        <p className="mt-4 border-t border-borde pt-4 text-sm leading-relaxed text-texto-3">{r.aviso}</p>
         <FuentesOficiales fuentes={r.fuentesOficiales} />
       </div>
 
@@ -247,17 +246,17 @@ function Respuesta({ pregunta, r }: { pregunta: string; r: RespuestaMedicamentos
   );
 }
 
-const th = "px-3 py-2 text-left text-[0.74rem] font-medium text-tinta-3";
-const td = "px-3 py-2.5 align-top";
+const th = "px-3 py-2 text-left text-sm font-medium text-texto-3";
+const td = "block px-4 py-1 align-top before:mr-2 before:text-sm before:text-texto-3 before:content-[attr(data-etiqueta)] lg:table-cell lg:px-3 lg:py-3 lg:before:hidden";
 
 /** Marcador de la fuente: el mismo amarillo que la referencia [R1] dentro de la respuesta. */
 function Marcador({ id }: { id: string }) {
-  return <span className="inline-grid h-6 min-w-6 place-items-center rounded-[3px] bg-marca px-1.5 text-[0.72rem] font-bold text-marca-tx">{id}</span>;
+  return <span className="inline-grid h-6 min-w-6 place-items-center rounded-md bg-cita px-2 text-sm font-semibold text-cita-tx">{id}</span>;
 }
 
 function EnlaceFuente({ c }: { c: CitaMedicamento }) {
   return (
-    <div className="min-w-[7rem] text-[0.72rem] leading-snug text-tinta-3">
+    <div className="min-w-[7rem] text-sm leading-snug text-texto-3">
       {c.fuente.conjunto}
       {c.fuente.cargadoAt ? <span className="block">cargado el {fecha(c.fuente.cargadoAt)}</span> : null}
       {c.fuente.enlace && (
@@ -265,7 +264,7 @@ function EnlaceFuente({ c }: { c: CitaMedicamento }) {
           href={c.fuente.enlace}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-0.5 inline-flex items-center gap-1 text-tinta-2 underline underline-offset-4 hover:text-tinta"
+          className="mt-0.5 inline-flex items-center gap-1 text-texto-2 underline underline-offset-4 hover:text-texto"
         >
           Ver fuente
           <ExternalLink className="size-3" aria-hidden />
@@ -283,12 +282,12 @@ function EnlaceFuente({ c }: { c: CitaMedicamento }) {
 export function FuentesOficiales({ fuentes }: { fuentes?: FuenteOficial[] }) {
   if (!fuentes?.length) return null;
   return (
-    <p className="mt-2 text-[0.76rem] leading-relaxed text-tinta-3">
+    <p className="mt-2 text-sm leading-relaxed text-texto-3">
       Para saber más:{" "}
       {fuentes.map((f, i) => (
         <span key={f.url}>
           {i > 0 && " · "}
-          <a href={f.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-tinta">
+          <a href={f.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-texto">
             {f.nombre}
           </a>
         </span>
@@ -302,14 +301,14 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
   const precios = citas.filter((c): c is CitaPrecio => c.tipo === "PRECIO_REGULADO");
   const agregadas = citas.filter((c): c is CitaAgregada => c.tipo === "CONSULTA_AGREGADA");
   const fichas = citas.filter((c): c is CitaFicha => c.tipo === "FICHA_TECNICA");
-  const fila = (id: string) => cn("border-t border-tinta/10 transition-colors duration-500", resaltada === id && "bg-marca/35");
+  const fila = (id: string) => cn("border-t border-borde transition-colors duration-500", resaltada === id && "bg-cita/35");
   return (
     <div className="space-y-4">
       {registros.length > 0 && (
-        <section aria-label="Registros sanitarios citados" className="folio overflow-x-auto">
-          <table className="w-full min-w-[46rem] border-collapse text-[0.83rem]">
-            <caption className="px-3 pb-1 pt-3 text-left text-[0.8rem] font-semibold">Registros sanitarios citados</caption>
-            <thead>
+        <section aria-label="Registros sanitarios citados" className="panel">
+          <table className="block w-full border-collapse text-sm lg:table">
+            <caption className="px-3 pb-1 pt-3 text-left text-sm font-semibold">Registros sanitarios citados</caption>
+            <thead className="hidden lg:table-header-group">
               <tr>
                 <th className={th} scope="col">Ref.</th>
                 <th className={th} scope="col">Producto</th>
@@ -320,23 +319,23 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
                 <th className={th} scope="col">Fuente</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="block lg:table-row-group">
               {registros.map((c) => (
-                <tr key={c.id} id={`${base}-${c.id}`} className={fila(c.id)}>
-                  <th scope="row" className={cn(td, "font-normal")}><Marcador id={c.id} /></th>
-                  <td className={td}>
+                <tr key={c.id} id={`${base}-${c.id}`} className={cn(fila(c.id), "block pb-3 lg:table-row lg:pb-0")}>
+                  <th scope="row" className="block px-4 pb-1 pt-3 text-left font-normal lg:table-cell lg:p-3"><Marcador id={c.id} /></th>
+                  <td className={td} data-etiqueta="Producto: ">
                     <span className="block font-medium">{c.producto ?? "Sin nombre"}</span>
                     <span className="etiqueta block">CUM {c.cum}</span>
-                    <span className="block text-[0.76rem] text-tinta-2">
+                    <span className="block text-sm text-texto-2">
                       {[c.formaFarmaceutica, c.viaAdministracion].filter(Boolean).join(" · ")}
                       {c.presentaciones > 1 ? ` · ${c.presentaciones} presentaciones` : ""}
                     </span>
                   </td>
-                  <td className={td}>
+                  <td className={td} data-etiqueta="Titular: ">
                     {c.titular ?? "—"}
-                    <span className="num block text-[0.76rem] text-tinta-2">{c.registroSanitario ?? ""}</span>
+                    <span className="num block text-sm text-texto-2">{c.registroSanitario ?? ""}</span>
                   </td>
-                  <td className={td}>
+                  <td className={td} data-etiqueta="Principio activo: ">
                     {c.principiosActivos.length
                       ? c.principiosActivos
                           .map((p) => [p.nombre, [p.cantidad, p.unidad].filter(Boolean).join(" ")].filter(Boolean).join(" "))
@@ -344,11 +343,11 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
                       : "—"}
                     {c.atc ? <span className="etiqueta block">ATC {c.atc}</span> : null}
                   </td>
-                  <td className={td}>
+                  <td className={td} data-etiqueta="Estado: ">
                     <Insignia tono={ESTADO_TONO[c.conjunto]}>{c.estadoRegistro ?? c.conjunto}</Insignia>
                   </td>
-                  <td className={cn(td, "num whitespace-nowrap")}>{c.fechaVencimiento ? dia(c.fechaVencimiento) : "—"}</td>
-                  <td className={td}><EnlaceFuente c={c} /></td>
+                  <td className={cn(td, "num whitespace-nowrap")} data-etiqueta="Vence: ">{c.fechaVencimiento ? dia(c.fechaVencimiento) : "—"}</td>
+                  <td className={td} data-etiqueta="Fuente: "><EnlaceFuente c={c} /></td>
                 </tr>
               ))}
             </tbody>
@@ -357,36 +356,36 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
       )}
 
       {precios.length > 0 && (
-        <section aria-label="Precios máximos regulados citados" className="folio overflow-x-auto">
-          <table className="w-full min-w-[40rem] border-collapse text-[0.83rem]">
-            <caption className="px-3 pb-1 pt-3 text-left text-[0.8rem] font-semibold">Precio máximo regulado</caption>
-            <thead>
+        <section aria-label="Precios máximos regulados citados" className="panel">
+          <table className="block w-full border-collapse text-sm lg:table">
+            <caption className="px-3 pb-1 pt-3 text-left text-sm font-semibold">Precio máximo regulado</caption>
+            <thead className="hidden lg:table-header-group">
               <tr>
                 <th className={th} scope="col">Ref.</th>
                 <th className={th} scope="col">Medicamento</th>
-                <th className={cn(th, "text-right")} scope="col">Institucional</th>
-                <th className={cn(th, "text-right")} scope="col">Comercial</th>
-                <th className={cn(th, "text-right")} scope="col">Final comercial</th>
+                <th className={cn(th, "lg:text-right")} scope="col">Institucional</th>
+                <th className={cn(th, "lg:text-right")} scope="col">Comercial</th>
+                <th className={cn(th, "lg:text-right")} scope="col">Final comercial</th>
                 <th className={th} scope="col">Circular · desde</th>
                 <th className={th} scope="col">Fuente</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="block lg:table-row-group">
               {precios.map((c) => (
-                <tr key={c.id} id={`${base}-${c.id}`} className={fila(c.id)}>
-                  <th scope="row" className={cn(td, "font-normal")}><Marcador id={c.id} /></th>
-                  <td className={td}>
+                <tr key={c.id} id={`${base}-${c.id}`} className={cn(fila(c.id), "block pb-3 lg:table-row lg:pb-0")}>
+                  <th scope="row" className="block px-4 pb-1 pt-3 text-left font-normal lg:table-cell lg:p-3"><Marcador id={c.id} /></th>
+                  <td className={td} data-etiqueta="Medicamento: ">
                     <span className="block font-medium">{c.medicamento ?? c.cum}</span>
                     <span className="etiqueta block">CUM {c.cum}</span>
                   </td>
-                  <td className={cn(td, "num text-right")}>{plata(c.precioInstitucional)}</td>
-                  <td className={cn(td, "num text-right")}>{plata(c.precioComercial)}</td>
-                  <td className={cn(td, "num text-right font-semibold")}>{plata(c.precioFinalComercial)}</td>
-                  <td className={td}>
+                  <td className={cn(td, "num lg:text-right")} data-etiqueta="Institucional: ">{plata(c.precioInstitucional)}</td>
+                  <td className={cn(td, "num lg:text-right")} data-etiqueta="Comercial: ">{plata(c.precioComercial)}</td>
+                  <td className={cn(td, "num font-semibold lg:text-right")} data-etiqueta="Final comercial: ">{plata(c.precioFinalComercial)}</td>
+                  <td className={td} data-etiqueta="Circular: ">
                     {c.circular ?? "—"}
-                    <span className="block text-[0.76rem] text-tinta-2">{c.vigenciaDesde ? dia(c.vigenciaDesde) : ""}</span>
+                    <span className="block text-sm text-texto-2">{c.vigenciaDesde ? dia(c.vigenciaDesde) : ""}</span>
                   </td>
-                  <td className={td}><EnlaceFuente c={c} /></td>
+                  <td className={td} data-etiqueta="Fuente: "><EnlaceFuente c={c} /></td>
                 </tr>
               ))}
             </tbody>
@@ -399,11 +398,11 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
           key={c.id}
           id={`${base}-${c.id}`}
           aria-label={`Ficha técnica ${c.id}`}
-          className={cn("folio p-4 transition-shadow duration-500", resaltada === c.id && "ring-2 ring-marca")}
+          className={cn("panel p-4 transition-shadow duration-500", resaltada === c.id && "ring-2 ring-cita")}
         >
           <div className="flex flex-wrap items-center gap-3">
             <Marcador id={c.id} />
-            <p className="font-display text-[1.05rem] font-semibold">
+            <p className="text-base font-semibold">
               {c.titulo} · sección {c.seccion}
             </p>
           </div>
@@ -412,11 +411,11 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
               ? `Tu prospecto: ${c.nombreArchivo ?? "documento"} · pág. ${c.paginaInicio ?? "—"}`
               : `Ficha técnica de ${c.medicamento ?? "—"} (principio activo: ${c.principioActivo ?? "—"}) · registro ${c.registro ?? "—"}`}
           </p>
-          <blockquote className="mt-3 max-h-64 overflow-y-auto whitespace-pre-line border-l-2 border-accion/40 pl-3.5 text-[0.88rem] leading-relaxed text-tinta-2">
+          <blockquote className="mt-3 max-h-64 overflow-y-auto whitespace-pre-line rounded-lg bg-panel-2 p-4 text-sm leading-relaxed text-texto-2">
             {c.extractoLiteral}
           </blockquote>
-          {c.extractoTruncado && <p className="mt-1 text-[0.76rem] text-tinta-3">Extracto recortado: la sección completa está en la fuente.</p>}
-          <div className="mt-3 border-t border-tinta/10 pt-3"><EnlaceFuente c={c} /></div>
+          {c.extractoTruncado && <p className="mt-1 text-sm text-texto-3">Extracto recortado: la sección completa está en la fuente.</p>}
+          <div className="mt-3 border-t border-borde pt-3"><EnlaceFuente c={c} /></div>
         </section>
       ))}
 
@@ -425,23 +424,23 @@ export function FuentesCitadas({ citas, base, resaltada }: { citas: CitaMedicame
           key={c.id}
           id={`${base}-${c.id}`}
           aria-label="Consulta agregada"
-          className={cn("folio p-4 transition-shadow duration-500", resaltada === c.id && "ring-2 ring-marca")}
+          className={cn("panel p-4 transition-shadow duration-500", resaltada === c.id && "ring-2 ring-cita")}
         >
           <div className="flex flex-wrap items-center gap-3">
             <Marcador id={c.id} />
-            <p className="font-display text-[1.05rem] font-semibold">{c.registrosSanitarios} registros sanitarios</p>
+            <p className="text-base font-semibold">{c.registrosSanitarios} registros sanitarios</p>
           </div>
-          <dl className="mt-3 grid gap-x-8 gap-y-1 text-[0.83rem] sm:grid-cols-2">
-            <div className="flex justify-between gap-4"><dt className="text-tinta-3">Presentaciones (CUM)</dt><dd className="num">{c.coincidenciasCum}</dd></div>
-            <div className="flex justify-between gap-4"><dt className="text-tinta-3">Titulares distintos</dt><dd className="num">{c.titularesDistintos}</dd></div>
+          <dl className="mt-3 grid gap-x-8 gap-y-1 text-sm sm:grid-cols-2">
+            <div className="flex justify-between gap-4"><dt className="text-texto-3">Presentaciones (CUM)</dt><dd className="num">{c.coincidenciasCum}</dd></div>
+            <div className="flex justify-between gap-4"><dt className="text-texto-3">Titulares distintos</dt><dd className="num">{c.titularesDistintos}</dd></div>
             {c.porConjunto.map((x) => (
-              <div key={x.conjunto} className="flex justify-between gap-4"><dt className="text-tinta-3">{x.conjunto}</dt><dd className="num">{x.registros} registros</dd></div>
+              <div key={x.conjunto} className="flex justify-between gap-4"><dt className="text-texto-3">{x.conjunto}</dt><dd className="num">{x.registros} registros</dd></div>
             ))}
           </dl>
           {Object.keys(c.filtros).length > 0 && (
             <p className="etiqueta mt-3">Filtros: {Object.entries(c.filtros).map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>
           )}
-          <div className="mt-3 border-t border-tinta/10 pt-3"><EnlaceFuente c={c} /></div>
+          <div className="mt-3 border-t border-borde pt-3"><EnlaceFuente c={c} /></div>
         </section>
       ))}
     </div>

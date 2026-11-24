@@ -1,105 +1,94 @@
 @import "tailwindcss";
-@import "@fontsource-variable/source-serif-4/opsz.css";
-@import "@fontsource-variable/atkinson-hyperlegible-next";
+@import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
 
-/* Mundo: el expediente físico. En Colombia un expediente es una carpeta de cartulina manila con
-   folios foliados dentro. La carpeta (manila) es la estructura; el folio (papel) es donde se lee;
-   la tinta es azul-negra; la marca de evidencia es el resaltador sobre el texto citado.
-   Dos temas del mismo objeto: «papel» (día, por defecto) y «nocturno» (luz baja, mismo orden).
-   Elevación: un folio apoyado en la mesa proyecta sombra real (desplazada y difusa); el resto es plano. */
+/* El tema se elige con data-tema (no con la preferencia del sistema): `dark:` sigue a ese atributo. */
+@custom-variant dark (&:where([data-tema="oscuro"], [data-tema="oscuro"] *));
+
+/* Mundo: el registro clínico. El expediente se lee como una historia clínica en pantalla: el caso arriba,
+   el registro en pestañas, todo en listas precisas, con la cita al lado de cada afirmación.
+   Superficies planas separadas por una costura de 1 px; una sola acción de color (verde azulado clínico);
+   la cita se marca con un resaltado suave. Tema claro por defecto; el oscuro es una opción, nunca el valor inicial.
+   Una sola familia (Geist) y Geist Mono solo para códigos, huellas y cifras. */
 
 /* ---------- Valores por tema ---------- */
 :root,
-:root[data-tema="papel"] {
-  --mesa: #e6e5df; /* la mesa donde están las carpetas */
-  --folio: #fcfcfa; /* hoja: tarjetas y zonas de lectura */
-  --folio-2: #efeee8; /* controles secundarios, hover, pozos */
-  --carpeta: #dcc185; /* cartulina manila: barra lateral y pestañas */
-  --carpeta-osc: #c9a95e;
-  --tinta: #151c33;
-  --tinta-2: #404863;
-  --tinta-3: #596079;
-  --accion: #2336a6; /* tinta azul sellada: la acción principal */
-  --accion-osc: #1a2a86;
-  --accion-tx: #ffffff;
-  --marca: #ffe566; /* resaltador: lo citado */
-  --marca-tx: #151c33;
-  --ok: #1d6b47;
-  --aviso: #8a4f00;
-  --peligro: #b3261e;
-  --sombra-folio: 0 1px 1px rgb(21 28 51 / 0.1), 0 10px 22px -12px rgb(21 28 51 / 0.32);
+:root[data-tema="claro"] {
+  --fondo: #f4f7fa; /* fondo de la aplicación */
+  --panel: #ffffff; /* superficie: tablas, paneles, campos */
+  --panel-2: #eef2f6; /* controles secundarios, hover, pozos */
+  --borde: #d3dce5; /* costura de 1 px */
+  --texto: #14212e;
+  --texto-2: #44566a;
+  --texto-3: #5a6c80;
+  --marino: #0b2e4a; /* banner del caso y titulares de énfasis */
+  --primario: #0e7c86; /* la acción */
+  --primario-osc: #0a6169;
+  --primario-tx: #ffffff;
+  --cita: #fff0b3; /* lo citado */
+  --cita-borde: #e6c84a;
+  --cita-tx: #14212e;
+  --ok: #17734a;
+  --aviso: #8f5400;
+  --peligro: #b42318;
   color-scheme: light;
 }
 
-:root[data-tema="nocturno"] {
-  --mesa: #0f121a;
-  --folio: #181d2a;
-  --folio-2: #222a3c;
-  --carpeta: #3a3225; /* manila a media luz */
-  --carpeta-osc: #4a402f;
-  --tinta: #ebe8dd;
-  --tinta-2: #bdbbb2;
-  --tinta-3: #9795a0;
-  --accion: #93a5ff;
-  --accion-osc: #b0bdff;
-  --accion-tx: #0f1430;
-  --marca: #f5d94a;
-  --marca-tx: #151c33;
-  --ok: #76d7a5;
+:root[data-tema="oscuro"] {
+  --fondo: #000000;
+  --panel: #181818;
+  --panel-2: #1f1f1f;
+  --borde: #313131;
+  --texto: #ececec;
+  --texto-2: #b4b4b4;
+  --texto-3: #9a9a9a;
+  --marino: #272727;
+  --primario: #46c2cd;
+  --primario-osc: #6ad2db;
+  --primario-tx: #06242a;
+  --cita: #4d4513;
+  --cita-borde: #8a7a22;
+  --cita-tx: #f6efc4;
+  --ok: #6fd6a2;
   --aviso: #e8b866;
   --peligro: #ff8f86;
-  --sombra-folio: 0 1px 1px rgb(0 0 0 / 0.35), 0 12px 24px -12px rgb(0 0 0 / 0.7);
   color-scheme: dark;
 }
 
 /* ---------- Tokens de Tailwind (apuntan a los valores del tema activo) ---------- */
 @theme inline {
-  --color-mesa: var(--mesa);
-  --color-folio: var(--folio);
-  --color-folio-2: var(--folio-2);
-  --color-carpeta: var(--carpeta);
-  --color-carpeta-osc: var(--carpeta-osc);
-  --color-tinta: var(--tinta);
-  --color-tinta-2: var(--tinta-2);
-  --color-tinta-3: var(--tinta-3);
-  --color-accion: var(--accion);
-  --color-accion-osc: var(--accion-osc);
-  --color-accion-tx: var(--accion-tx);
-  --color-marca: var(--marca);
-  --color-marca-tx: var(--marca-tx);
+  --color-fondo: var(--fondo);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-borde: var(--borde);
+  --color-texto: var(--texto);
+  --color-texto-2: var(--texto-2);
+  --color-texto-3: var(--texto-3);
+  --color-marino: var(--marino);
+  --color-primario: var(--primario);
+  --color-primario-osc: var(--primario-osc);
+  --color-primario-tx: var(--primario-tx);
+  --color-cita: var(--cita);
+  --color-cita-borde: var(--cita-borde);
+  --color-cita-tx: var(--cita-tx);
   --color-ok: var(--ok);
   --color-aviso: var(--aviso);
   --color-peligro: var(--peligro);
-  --shadow-folio: var(--sombra-folio);
 }
 
 @theme {
-  /* Titulares con gravedad de documento legal; interfaz en una sans de lectura larga y alta
-     legibilidad; monoespaciada solo para huellas, códigos y cifras. */
-  --font-display: "Source Serif 4 Variable", Georgia, serif;
-  --font-sans: "Atkinson Hyperlegible Next Variable", "Segoe UI", sans-serif;
+  --font-sans: "Geist Variable", "Segoe UI", sans-serif;
   --font-mono: "Geist Mono Variable", Consolas, monospace;
 
-  /* Un folio tiene esquinas casi rectas; los controles, apenas suavizadas. Nada de pastillas. */
-  --radius-xl: 6px;
-  --radius-2xl: 6px;
-  --radius-3xl: 6px;
+  /* Curva única: pesada, desacelera hasta asentarse. 500 ms para posición, 300 ms para color y opacidad. */
+  --ease-salida: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --ease-salida: cubic-bezier(0.16, 1, 0.3, 1);
-
-  --animate-aparecer: aparecer 520ms var(--ease-salida) both;
-  --animate-brillo: brillo 1.8s ease-in-out infinite;
-  --animate-sello: sello 420ms var(--ease-salida) both;
+  --animate-aparecer: aparecer 500ms var(--ease-salida) both;
+  --animate-brillo: brillo 1.8s var(--ease-salida) infinite;
 
   @keyframes aparecer {
     0% { opacity: 0; transform: translateY(8px); }
     100% { opacity: 1; transform: translateY(0); }
-  }
-  /* El sello se estampa: llega algo más grande y se asienta. Solo escala y opacidad, para no pisar rotaciones. */
-  @keyframes sello {
-    0% { opacity: 0; scale: 1.35; }
-    100% { opacity: 1; scale: 1; }
   }
   @keyframes brillo {
     0% { background-position: 150% 0; }
@@ -109,77 +98,92 @@
 
 @layer base {
   html {
-    background-color: var(--mesa);
-    color: var(--tinta);
+    background-color: var(--fondo);
+    color: var(--texto);
     font-family: var(--font-sans);
     font-size: 16px;
-    line-height: 1.55;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     scroll-behavior: smooth;
   }
   body { min-height: 100vh; }
-  ::selection { background: var(--marca); color: var(--marca-tx); }
-  :focus-visible { outline: 2px solid var(--accion); outline-offset: 3px; border-radius: 4px; }
-  * { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--tinta) 30%, transparent) transparent; }
+  ::selection { background: var(--cita); color: var(--cita-tx); }
+  :focus-visible { outline: 2px solid var(--primario); outline-offset: 2px; border-radius: 4px; }
+  * { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--texto) 28%, transparent) transparent; }
   *::-webkit-scrollbar { width: 10px; height: 10px; }
-  *::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--tinta) 30%, transparent); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
-  input, textarea, select { caret-color: var(--accion); }
-  ::placeholder { color: var(--tinta-3); opacity: 1; }
+  *::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--texto) 28%, transparent); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+  input, textarea, select { caret-color: var(--primario); }
+  ::placeholder { color: var(--texto-3); opacity: 1; }
   .num { font-variant-numeric: tabular-nums; }
-  p { text-wrap: pretty; }
+  h1, h2, h3, h4 { text-wrap: balance; font-weight: 600; letter-spacing: -0.01em; }
+  p, li, dd, blockquote { text-wrap: pretty; }
   /* Un código, una URL o un nombre de archivo sin espacios no debe ensanchar la página. */
   h1, h2, h3, p, blockquote, dd { overflow-wrap: anywhere; }
+  em, i { font-style: normal; } /* sin cursivas en toda la interfaz */
 }
-
-/* Titulares: serif con tamaño óptico. Sin capa para ganar a las utilidades de peso. */
-h1, h2, h3 {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-optical-sizing: auto;
-  letter-spacing: -0.012em;
-  text-wrap: balance;
-}
-h1 { line-height: 1.08; }
-h2, h3 { line-height: 1.18; }
 
 @layer components {
-  /* El folio: una hoja apoyada en la mesa. */
-  .folio {
-    background: var(--folio);
-    box-shadow: var(--sombra-folio);
-    border-radius: 4px;
+  /* Estilos de texto con nombre. Cada uno sale de un paso de la escala de Tailwind: ningún tamaño suelto. */
+  .heading-1 { @apply text-6xl font-semibold; }
+  .heading-2 { @apply text-5xl font-semibold; }
+  .heading-3 { @apply text-4xl font-semibold; }
+  .heading-4 { @apply text-3xl font-semibold; }
+  .heading-5 { @apply text-2xl font-semibold; }
+  .heading-6 { @apply text-xl font-semibold; }
+  .title-1 { @apply text-xl font-medium; }
+  .title-2 { @apply text-lg font-medium; }
+  .title-3 { @apply text-base font-medium; }
+  .title-4 { @apply text-sm font-medium; }
+  .title-5 { @apply text-xs font-medium; }
+  .body-1 { @apply text-base font-semibold; }
+  .body-2 { @apply text-base font-medium; }
+  .body-3 { @apply text-base font-normal; }
+  .body-4 { @apply text-sm font-semibold; }
+  .body-5 { @apply text-sm font-medium; }
+  .body-6 { @apply text-sm font-normal; }
+  .caption-1 { @apply text-sm font-medium; }
+  .caption-2 { @apply text-sm font-normal; }
+  .caption-3 { @apply text-xs font-semibold; }
+  .caption-4 { @apply text-xs font-medium; }
+  .caption-5 { @apply text-xs font-normal; }
+
+  /* Panel: superficie plana con costura de 1 px. Sin sombra: la sombra es solo para lo que flota. */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
   }
-  .linea { border-color: color-mix(in oklab, var(--tinta) 16%, transparent); }
+  .linea { border-color: var(--borde); }
+  /* Datos exactos: códigos, huellas, cifras. */
   .etiqueta {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.02em;
-    color: var(--tinta-3);
+    @apply text-xs;
+    color: var(--texto-3);
   }
-  /* Texto citado: resaltador sobre la línea, como en un folio revisado a mano. */
+  /* Texto citado: resaltado suave sobre la línea. */
   .resaltado {
-    background: linear-gradient(transparent 12%, var(--marca) 12%, var(--marca) 92%, transparent 92%);
-    color: var(--marca-tx);
-    padding: 0 0.15em;
-    border-radius: 2px;
+    background: var(--cita);
+    color: var(--cita-tx);
+    padding: 0 0.2em;
+    border-radius: 4px;
     box-decoration-break: clone;
   }
-  /* El resaltador recorre la línea de izquierda a derecha, una vez. Con movimiento reducido llega directo al final. */
+  /* El resaltado recorre la línea de izquierda a derecha, una vez. Con movimiento reducido llega directo. */
   .resaltado-barrido {
-    background: linear-gradient(var(--marca), var(--marca)) no-repeat left center / 0% 88%;
-    padding: 0 0.15em;
-    border-radius: 2px;
+    background: linear-gradient(var(--cita), var(--cita)) no-repeat left center / 0% 100%;
+    padding: 0 0.2em;
+    border-radius: 4px;
     box-decoration-break: clone;
-    animation: barrer 900ms var(--ease-salida) 700ms forwards;
+    animation: barrer 800ms var(--ease-salida) 600ms forwards;
   }
   @keyframes barrer {
-    to { background-size: 100% 88%; color: var(--marca-tx); }
+    to { background-size: 100% 100%; color: var(--cita-tx); }
   }
   .esqueleto {
-    background: linear-gradient(100deg, color-mix(in oklab, var(--tinta) 5%, transparent) 30%, color-mix(in oklab, var(--tinta) 12%, transparent) 50%, color-mix(in oklab, var(--tinta) 5%, transparent) 70%);
+    background: linear-gradient(100deg, color-mix(in oklab, var(--texto) 5%, transparent) 30%, color-mix(in oklab, var(--texto) 11%, transparent) 50%, color-mix(in oklab, var(--texto) 5%, transparent) 70%);
     background-size: 200% 100%;
     animation: var(--animate-brillo);
-    border-radius: 6px;
+    border-radius: 8px;
   }
 }
 
@@ -187,7 +191,7 @@ h2, h3 { line-height: 1.18; }
   html { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: 1ms !important;
-    animation-delay: 0s !important; /* sin esto, un sello o un resaltado con retardo tardaría segundos en aparecer */
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
     transition-delay: 0s !important;

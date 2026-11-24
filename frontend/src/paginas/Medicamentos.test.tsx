@@ -83,7 +83,7 @@ describe("FuentesCitadas", () => {
     const { container } = render(<FuentesCitadas citas={[registro]} base="cita-x" resaltada="R1" />);
     const fila = container.querySelector("#cita-x-R1");
     expect(fila).not.toBeNull();
-    expect(fila!.className).toContain("bg-marca");
+    expect(fila!.className).toContain("bg-cita");
   });
 
   it("muestra la consulta agregada como ficha, sin tabla", () => {
@@ -111,7 +111,7 @@ describe("FuentesCitadas", () => {
     expect(screen.getByText(/en pacientes con úlcera gástrica/)).toBeInTheDocument();
     expect(screen.getByText(/Extracto recortado/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Ver fuente/ })).toHaveAttribute("href", "https://cima.aemps.es/x.html");
-    expect(document.getElementById("cita-x-F1")!.className).toContain("ring-marca");
+    expect(document.getElementById("cita-x-F1")!.className).toContain("ring-cita");
   });
 
   it("un prospecto que subió la persona se cita como su documento, sin enlace externo", () => {

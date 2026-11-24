@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eraser, Trash2 } from "lucide-react";
+import { Eraser, Trash2 } from "../iconos";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api, post } from "../api/cliente";
@@ -74,7 +74,7 @@ export function DialogoEliminarCuenta({ abierto, alCambiar }: { abierto: boolean
       descripcion="Se borran tus expedientes, documentos, preguntas y tus datos. No se puede deshacer."
     >
       <form
-        className="space-y-5"
+        className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
           eliminar.mutate();

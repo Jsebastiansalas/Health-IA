@@ -1,12 +1,12 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ChevronsUpDown, FolderOpen, LogOut, Moon, Pill, ShieldCheck, Sun, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { Toaster } from "sonner";
+import { ChevronsUpDown, FolderOpen, LogOut, Moon, Pill, Sun, Trash2 } from "../iconos";
 import { cn } from "../lib/cn";
+import { useConsentimiento } from "../lib/consentimiento";
 import { useTema } from "../lib/tema";
 import { useSesion } from "../sesion";
-import { useConsentimiento } from "../lib/consentimiento";
 import { Marca } from "./Marca";
 import { DialogoEliminarCuenta } from "./Privacidad";
 
@@ -29,10 +29,7 @@ const iniciales = (nombre?: string) =>
 function Avatar({ nombre, className }: { nombre?: string; className?: string }) {
   return (
     <span
-      className={cn(
-        "grid size-10 shrink-0 place-items-center rounded-md bg-folio font-display text-sm font-semibold text-tinta",
-        className,
-      )}
+      className={cn("grid size-8 shrink-0 place-items-center rounded-lg bg-marino text-xs font-semibold text-white", className)}
       aria-hidden
     >
       {iniciales(nombre)}
@@ -40,127 +37,113 @@ function Avatar({ nombre, className }: { nombre?: string; className?: string }) 
   );
 }
 
-function MenuUsuario({ compacto = false }: { compacto?: boolean }) {
+const itemMenu =
+  "flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-texto-2 outline-none transition-colors duration-300 data-[highlighted]:bg-panel-2 data-[highlighted]:text-texto";
+
+function MenuUsuario() {
   const { usuario, salir } = useSesion();
   const { tema, alternar } = useTema();
   const { esPersonal } = useConsentimiento();
   const [eliminando, setEliminando] = useState(false);
   return (
     <>
-    <Menu.Root>
-      <Menu.Trigger
-        className={cn(
-          "group flex w-full items-center gap-3 rounded-md bg-carpeta-osc/45 p-2 text-left text-tinta transition-colors hover:bg-carpeta-osc/70",
-          compacto && "w-auto border-0 bg-transparent p-1 text-tinta",
-        )}
-        aria-label="Menú de usuario"
-      >
-        <Avatar nombre={usuario?.nombre_completo} />
-        {!compacto && (
-          <>
-            <span className="min-w-0 flex-1 leading-tight">
-              <span className="block truncate text-sm font-semibold">{usuario?.nombre_completo ?? "…"}</span>
-              <span className="block truncate text-xs text-tinta-2">{usuario ? ROLES[usuario.rol_global] : ""}</span>
-            </span>
-            <ChevronsUpDown className="size-4 text-tinta-3 transition-colors group-hover:text-tinta" aria-hidden />
-          </>
-        )}
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Content
-          side={compacto ? "bottom" : "top"}
-          align={compacto ? "end" : "start"}
-          sideOffset={8}
-          className="folio z-50 w-60 rounded-md p-1.5 text-sm data-[state=open]:animate-[aparecer_220ms_var(--ease-salida)]"
+      <Menu.Root>
+        <Menu.Trigger
+          className="group flex items-center gap-2 rounded-lg p-1 pr-2 text-left transition-colors duration-300 hover:bg-panel-2"
+          aria-label="Menú de usuario"
         >
-          <div className="px-3 py-2.5">
-            <p className="truncate font-semibold">{usuario?.nombre_completo}</p>
-            <p className="truncate text-xs text-tinta-3">{usuario?.email}</p>
-          </div>
-          <Menu.Separator className="my-1 h-px bg-tinta/10" />
-          <Menu.Item
-            onSelect={alternar}
-            className="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-2.5 text-tinta-2 outline-none transition-colors data-[highlighted]:bg-tinta/8 data-[highlighted]:text-tinta"
+          <Avatar nombre={usuario?.nombre_completo} />
+          <span className="hidden min-w-0 leading-tight sm:block">
+            <span className="block max-w-40 truncate text-sm font-medium">{usuario?.nombre_completo ?? "…"}</span>
+            <span className="block max-w-40 truncate text-xs text-texto-3">{usuario ? ROLES[usuario.rol_global] : ""}</span>
+          </span>
+          <ChevronsUpDown className="size-4 text-texto-3 transition-colors group-hover:text-texto" aria-hidden />
+        </Menu.Trigger>
+        <Menu.Portal>
+          <Menu.Content
+            align="end"
+            sideOffset={8}
+            className="panel z-50 w-60 p-2 text-sm shadow-lg data-[state=open]:animate-[aparecer_300ms_var(--ease-salida)]"
           >
-            {tema === "papel" ? <Moon className="size-4" aria-hidden /> : <Sun className="size-4" aria-hidden />}
-            {tema === "papel" ? "Tema nocturno" : "Tema papel"}
-          </Menu.Item>
-          <Menu.Item
-            onSelect={salir}
-            className="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-2.5 text-tinta-2 outline-none transition-colors data-[highlighted]:bg-tinta/8 data-[highlighted]:text-tinta"
-          >
-            <LogOut className="size-4" aria-hidden />
-            Cerrar sesión
-          </Menu.Item>
-          {esPersonal && (
-            <Menu.Item
-              onSelect={() => setEliminando(true)}
-              className="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-2.5 text-peligro outline-none transition-colors data-[highlighted]:bg-peligro/10"
-            >
-              <Trash2 className="size-4" aria-hidden />
-              Eliminar mi cuenta
+            <div className="px-3 py-2">
+              <p className="truncate text-sm font-semibold">{usuario?.nombre_completo}</p>
+              <p className="truncate text-xs text-texto-3">{usuario?.email}</p>
+            </div>
+            <Menu.Separator className="my-2 h-px bg-borde" />
+            <Menu.Item onSelect={alternar} className={itemMenu}>
+              {tema === "claro" ? <Moon className="size-4" aria-hidden /> : <Sun className="size-4" aria-hidden />}
+              {tema === "claro" ? "Tema oscuro" : "Tema claro"}
             </Menu.Item>
-          )}
-        </Menu.Content>
-      </Menu.Portal>
-    </Menu.Root>
-    {esPersonal && <DialogoEliminarCuenta abierto={eliminando} alCambiar={setEliminando} />}
+            <Menu.Item onSelect={salir} className={itemMenu}>
+              <LogOut className="size-4" aria-hidden />
+              Cerrar sesión
+            </Menu.Item>
+            {esPersonal && (
+              <Menu.Item
+                onSelect={() => setEliminando(true)}
+                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-peligro outline-none transition-colors duration-300 data-[highlighted]:bg-peligro/10"
+              >
+                <Trash2 className="size-4" aria-hidden />
+                Eliminar mi cuenta
+              </Menu.Item>
+            )}
+          </Menu.Content>
+        </Menu.Portal>
+      </Menu.Root>
+      {esPersonal && <DialogoEliminarCuenta abierto={eliminando} alCambiar={setEliminando} />}
     </>
   );
 }
 
 const enlaceNav = ({ isActive }: { isActive: boolean }) =>
   cn(
-    "flex items-center gap-3 rounded-md px-3.5 py-2.5 text-sm font-medium transition-colors",
-    isActive ? "bg-folio text-tinta shadow-folio" : "text-tinta/80 hover:bg-tinta/[0.08] hover:text-tinta",
+    "relative flex h-12 items-center gap-2 px-1 text-sm font-medium transition-colors duration-300",
+    "after:absolute after:inset-x-1 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primario after:transition-opacity after:duration-300",
+    isActive ? "text-texto after:opacity-100" : "text-texto-2 after:opacity-0 hover:text-texto",
   );
 
 export function Marco({ children }: { children: ReactNode }) {
   const { tema } = useTema();
   return (
-    <div className="relative min-h-screen lg:pl-72">
-      {/* Barra lateral (escritorio) */}
-      <aside className="fixed inset-y-3 left-3 z-30 hidden w-64 flex-col rounded-md bg-carpeta p-4 text-tinta lg:flex">
-        <NavLink to="/" className="px-2 pb-5 pt-2" aria-label="MedTender, inicio">
-          <Marca />
-        </NavLink>
-        <nav className="flex-1 space-y-1" aria-label="Principal">
-          <NavLink to="/" end className={enlaceNav}>
-            <FolderOpen className="size-[1.15rem]" aria-hidden />
-            Expedientes
+    <div className="min-h-screen">
+      <a
+        href="#contenido"
+        className="sr-only rounded-lg bg-primario px-4 py-2 text-sm font-semibold text-primario-tx focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50"
+      >
+        Saltar al contenido
+      </a>
+      <header className="sticky top-0 z-30 border-b border-borde bg-panel/90 backdrop-blur">
+        <div className="mx-auto flex h-12 max-w-[1400px] items-center gap-6 px-4 sm:px-8">
+          <NavLink to="/" aria-label="MedTender, inicio" className="shrink-0">
+            <Marca compacta className="sm:hidden" />
+            <Marca className="hidden sm:inline-flex" />
           </NavLink>
-          <NavLink to="/medicamentos" className={enlaceNav}>
-            <Pill className="size-[1.15rem]" aria-hidden />
-            Medicamentos
-          </NavLink>
-        </nav>
-        <div className="mb-3 rounded-md bg-carpeta-osc/45 p-3.5 text-[0.8rem] leading-relaxed text-tinta">
-          <ShieldCheck className="mb-1.5 size-5" aria-hidden />
-          Licitaciones, historias clínicas y medicamentos. Cada respuesta cita su fuente.
+          <nav className="flex flex-1 items-center gap-3 sm:gap-6" aria-label="Principal">
+            <NavLink to="/" end className={enlaceNav}>
+              <FolderOpen className="size-4" aria-hidden />
+              <span className="hidden sm:inline">Expedientes</span>
+              <span className="sr-only sm:hidden">Expedientes</span>
+            </NavLink>
+            <NavLink to="/medicamentos" className={enlaceNav}>
+              <Pill className="size-4" aria-hidden />
+              <span className="hidden sm:inline">Medicamentos</span>
+              <span className="sr-only sm:hidden">Medicamentos</span>
+            </NavLink>
+          </nav>
+          <MenuUsuario />
         </div>
-        <MenuUsuario />
-      </aside>
-
-      {/* Barra superior (móvil y tableta) */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-tinta/15 bg-carpeta px-4 py-2.5 lg:hidden">
-        <NavLink to="/" aria-label="MedTender, inicio">
-          <Marca />
-        </NavLink>
-        <NavLink to="/medicamentos" className="ml-auto mr-2 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-tinta-2 hover:bg-tinta/10 hover:text-tinta">
-          <Pill className="size-4" aria-hidden />
-          Medicamentos
-        </NavLink>
-        <MenuUsuario compacto />
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-4 py-7 sm:px-8 lg:py-10">{children}</main>
+      <main id="contenido" className="mx-auto max-w-[1400px] px-4 py-8 sm:px-8 lg:py-10">
+        {children}
+      </main>
       <Toaster
-        theme={tema === "nocturno" ? "dark" : "light"}
+        theme={tema === "oscuro" ? "dark" : "light"}
         position="bottom-right"
         toastOptions={{
           classNames: {
-            toast: "!border-0 !bg-folio !text-tinta !shadow-folio !rounded-md",
-            description: "!text-tinta-2",
+            toast: "!border !border-borde !bg-panel !text-texto !shadow-lg !rounded-xl",
+            description: "!text-texto-2",
           },
         }}
       />

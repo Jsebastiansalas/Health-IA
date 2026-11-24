@@ -1,4 +1,4 @@
-import { CheckCircle2, MailWarning } from "lucide-react";
+import { CheckCircle2, MailWarning } from "../iconos";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { post } from "../api/cliente";
@@ -31,26 +31,26 @@ export function PaginaVerificarCorreo() {
       <Marca />
       {estado.fase === "verificando" && <p role="status">Confirmando tu correo…</p>}
       {estado.fase === "ok" && (
-        <section aria-live="polite" className="folio p-6">
-          <h1 className="flex items-center gap-2.5 text-[1.4rem]">
+        <section aria-live="polite" className="panel p-6">
+          <h1 className="flex items-center gap-3 text-xl">
             <CheckCircle2 className="size-6 text-ok" aria-hidden />
             Correo confirmado
           </h1>
-          <p className="mt-2 text-tinta-2">Ya puedes usar tu cuenta. Ingresa para continuar.</p>
-          <Link to="/ingreso" className="mt-5 inline-block">
+          <p className="mt-2 text-texto-2">Ya puedes usar tu cuenta. Ingresa para continuar.</p>
+          <Link to="/ingreso" className="mt-4 inline-block">
             <Boton variante="primario">Ingresar</Boton>
           </Link>
         </section>
       )}
       {estado.fase === "error" && (
-        <section role="alert" className="folio p-6">
-          <h1 className="flex items-center gap-2.5 text-[1.4rem]">
+        <section role="alert" className="panel p-6">
+          <h1 className="flex items-center gap-3 text-xl">
             <MailWarning className="size-6 text-aviso" aria-hidden />
             No pudimos confirmar tu correo
           </h1>
-          <p className="mt-2 text-tinta-2">{estado.mensaje}</p>
-          <p className="mt-2 text-[0.9rem] text-tinta-3">Ingresa a tu cuenta y pide un enlace nuevo desde el aviso que verás arriba.</p>
-          <Link to="/ingreso" className="mt-5 inline-block">
+          <p className="mt-2 text-texto-2">{estado.mensaje}</p>
+          <p className="mt-2 text-sm text-texto-3">Ingresa a tu cuenta y pide un enlace nuevo desde el aviso que verás arriba.</p>
+          <Link to="/ingreso" className="mt-4 inline-block">
             <Boton>Ir a ingresar</Boton>
           </Link>
         </section>
