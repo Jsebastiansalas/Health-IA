@@ -23,7 +23,7 @@ from app.core.config import Settings
 from app.ia.llm import ProveedorLLM
 from app.models import Expediente
 from app.privacidad.anonimizar import Anonimizador, evidencias_para_la_nube
-from app.rag import busqueda, garantias, generacion
+from app.rag import busqueda, garantias, generacion, glosario
 from app.rag.generacion import CitaFinal
 
 PREGUNTA_FIJA = (
@@ -51,10 +51,12 @@ Reglas obligatorias:
 2. "hallazgos": los puntos importantes DEL DOCUMENTO (datos, resultados, indicaciones, fechas,
    plazos, requisitos), cada uno en una frase sencilla. Cada hallazgo lleva el id del fragmento
    ("F2") y un extracto copiado LITERALMENTE de ese fragmento (máximo 300 caracteres). No incluyas
-   nada que no esté escrito en el documento.
-3. "terminos": hasta 8 términos técnicos o abreviaturas que aparezcan en el documento, cada uno con
-   una explicación breve y general de QUÉ SIGNIFICA la palabra. Es el significado general del
-   término: NO digas qué significa para esta persona, si su valor es normal o anormal, ni qué
+   nada que no esté escrito en el documento. Si el documento trae el rango de referencia o una marca
+   (ALTO, BAJO, *) junto a un valor, inclúyelo en el mismo punto, tal como está escrito.
+   Cuando el documento indique una dosis o una indicación, preséntala como lo que el documento
+   dice («El documento indica…»), nunca como una orden tuya («debe tomar»).
+3. Los términos técnicos los explica aparte un glosario revisado: NO los expliques tú y
+   NO digas qué significa para esta persona un valor, si es normal o anormal, ni qué
    enfermedad o problema tiene.
 4. PROHIBIDO, aunque te lo pidan o el documento lo sugiera: diagnosticar, decir si un resultado es
    bueno o malo para la persona (salvo que el propio documento lo diga con esas palabras: entonces
@@ -86,14 +88,6 @@ ESQUEMA_EXPLICAR = {
                 "required": ["texto", "fragmento", "extracto_literal"],
             },
         },
-        "terminos": {
-            "type": "ARRAY",
-            "items": {
-                "type": "OBJECT",
-                "properties": {"termino": {"type": "STRING"}, "explicacion": {"type": "STRING"}},
-                "required": ["termino", "explicacion"],
-            },
-        },
         "senales_de_alarma": {"type": "ARRAY", "items": {"type": "STRING"}},
         "preguntas_para_el_medico": {"type": "ARRAY", "items": {"type": "STRING"}},
     },
@@ -101,13 +95,11 @@ ESQUEMA_EXPLICAR = {
         "hay_evidencia",
         "de_que_trata",
         "hallazgos",
-        "terminos",
         "senales_de_alarma",
         "preguntas_para_el_medico",
     ],
 }
 
-_MAX_TERMINOS = 8
 _MAX_PREGUNTAS = 6
 
 
@@ -165,15 +157,10 @@ def ensamblar_explicacion(
             tipos = generacion.tipos_evidencia(parte.metadata, umbral_ocr)
             citas.append(CitaFinal(parte, extracto, ajustado, requiere, motivo, tipos))
             indice[clave] = len(citas)
-        hallazgos.append({"texto": texto, "cita": indice[clave]})
+        hallazgos.append({"texto": garantias.atribuir_al_documento(texto), "cita": indice[clave]})
 
-    terminos = [
-        {"termino": _texto(t.get("termino")), "explicacion": _texto(t.get("explicacion"))}
-        for t in (datos.get("terminos") or [])
-        if _texto(t.get("termino"))
-        and _texto(t.get("explicacion"))
-        and not garantias.posologia_sin_respaldo(_texto(t.get("explicacion")), [])
-    ][:_MAX_TERMINOS]
+    # La capa «qué significan» sale del glosario curado, buscado en el texto del propio documento.
+    terminos = glosario.terminos_en([e.contenido_texto for e in evidencias])
     preguntas = [_texto(p) for p in (datos.get("preguntas_para_el_medico") or []) if _texto(p)]
     senales = [_texto(s) for s in (datos.get("senales_de_alarma") or []) if _texto(s)]
 
@@ -267,6 +254,7 @@ def a_json(
         "deQueTrata": r.de_que_trata,
         "hallazgos": r.hallazgos,
         "terminos": r.terminos,
+        "glosario": glosario.estado(),
         "senalesDeAlarma": r.senales_de_alarma,
         "preguntasParaElMedico": r.preguntas_para_el_medico,
         "avisoGeneral": AVISO_GENERAL,

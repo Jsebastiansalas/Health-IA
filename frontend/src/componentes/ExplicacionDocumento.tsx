@@ -86,6 +86,9 @@ export function ExplicacionDocumento({
           <p className="mb-3 mt-0.5 text-[0.8rem] text-tinta-3">
             Explicación general de las palabras; no es un diagnóstico ni habla de tu caso.
           </p>
+          {r.glosario && !r.glosario.revisado && (
+            <p className="mb-3 text-[0.76rem] text-tinta-3">Glosario de MedTender: {r.glosario.revision.toLowerCase()}.</p>
+          )}
           <dl className="space-y-2.5">
             {terminos.map((t) => (
               <div key={t.termino}>

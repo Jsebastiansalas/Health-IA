@@ -111,3 +111,18 @@ def sin_posologia_inventada(cuerpo: dict) -> dict:
         cuerpo["sinEvidencia"] = True
         cuerpo["citas"] = []
     return cuerpo
+
+
+_IMPERATIVO = re.compile(
+    r"^(?:se\s+le\s+indica\s+que\s+)?(debe|debes|tiene\s+que|tienes\s+que|se\s+debe)\b",
+    re.IGNORECASE,
+)
+
+
+def atribuir_al_documento(texto: str) -> str:
+    """Un hallazgo no puede sonar a orden del asistente («Debe tomar…»): se presenta como lo que dice el
+    documento («El documento indica que debe tomar…»)."""
+    t = texto.strip()
+    if _IMPERATIVO.match(t):
+        return "El documento indica que " + t[0].lower() + t[1:]
+    return t

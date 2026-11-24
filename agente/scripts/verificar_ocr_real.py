@@ -96,9 +96,16 @@ CASOS = {
     "sin texto (radiografía)": (".jpg", jpg(degradado)),
 }
 ESPERADO = {
-    "nítida (PNG)": "acepta", "nítida (JPG)": "acepta", "HEIC": "acepta", "EXIF girado (móvil)": "acepta",
-    "ligeramente borrosa": "acepta", "muy borrosa": "rechaza", "con sombra": "acepta",
-    "baja resolución (500 px)": "?", "JPG muy comprimido": "?", "sin texto (radiografía)": "rechaza",
+    "nítida (PNG)": "acepta",
+    "nítida (JPG)": "acepta",
+    "HEIC": "acepta",
+    "EXIF girado (móvil)": "acepta",
+    "ligeramente borrosa": "acepta",
+    "muy borrosa": "rechaza",
+    "con sombra": "acepta",
+    "baja resolución (500 px)": "?",
+    "JPG muy comprimido": "?",
+    "sin texto (radiografía)": "rechaza",
 }
 
 
@@ -109,7 +116,9 @@ def palabras(t: str) -> set[str]:
 def main() -> int:
     cfg = ConfigExtraccion()
     originales = palabras(" ".join(TEXTO))
-    print(f"umbral de confianza={cfg.imagen_confianza_minima}  texto mínimo={cfg.imagen_texto_minimo}\n")
+    print(
+        f"umbral de confianza={cfg.imagen_confianza_minima}  texto mínimo={cfg.imagen_texto_minimo}\n"
+    )
     problemas = 0
     for nombre, (ext, datos) in CASOS.items():
         with tempfile.TemporaryDirectory() as d:
@@ -120,7 +129,10 @@ def main() -> int:
                 p = r.paginas[0]
                 texto = " ".join(parte.texto for parte in p.partes)
                 rec = len(palabras(texto) & originales) / len(originales)
-                resultado, detalle = "acepta", f"confianza {p.ocr_confidence:.0%}, palabras recuperadas {rec:.0%}"
+                resultado, detalle = (
+                    "acepta",
+                    f"confianza {p.ocr_confidence:.0%}, palabras recuperadas {rec:.0%}",
+                )
             except ImagenNoLegible as exc:
                 resultado, detalle = "rechaza", str(exc)[:90]
         esperado = ESPERADO[nombre]

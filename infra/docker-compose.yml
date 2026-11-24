@@ -59,6 +59,10 @@ services:
       MIGRACION_USER: medtender
       MIGRACION_PASSWORD: ${POSTGRES_PASSWORD:-medtender}
       # Correo de verificación (opcional en desarrollo): sin SMTP_HOST el correo no sale y el log lo avisa.
+      # true cuando hay un túnel o proxy delante (beta cerrada): toma la IP real de X-Forwarded-For.
+      CONFIAR_PROXY: ${CONFIAR_PROXY:-false}
+      # Dirección pública con la que se abre la web (para los enlaces de los correos). Con un túnel: su URL https.
+      CORREO_BASE_URL: ${CORREO_BASE_URL:-http://localhost:8088}
       CORREO_VERIFICACION_OBLIGATORIA: ${CORREO_VERIFICACION_OBLIGATORIA:-false}
       CORREO_REMITENTE: ${CORREO_REMITENTE:-no-responder@medtender.local}
       SPRING_MAIL_HOST: ${SMTP_HOST:-}

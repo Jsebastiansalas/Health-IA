@@ -48,16 +48,20 @@ Una persona (paciente o familiar, con cuenta propia) o una organización sube do
 - Secretos fuera del repositorio, rotación documentada (README, «Rotación de secretos»).
 
 ## 6. Textos que ve la persona (para revisar)
-**Consentimiento informado (versión `2026-11-v2`, `frontend/src/componentes/Consentimiento.tsx`)** — la persona debe aceptarlo antes de subir o consultar:
-1. Subirás documentos médicos (historias clínicas, resultados, órdenes). Son datos sensibles.
-2. Para leerlos y responderte usamos un servicio de inteligencia artificial de un proveedor externo (Google Gemini). Antes de enviarle el texto ocultamos nombres, cédulas, teléfonos, correos y direcciones cuando aparecen con una etiqueta (por ejemplo «Paciente:» o «CC»). Este ocultamiento no es perfecto: un nombre suelto dentro de una frase puede no detectarse, así que evita subir datos que no hagan falta.
-3. El archivo original se elimina del servidor después de leerlo. Guardamos fragmentos de texto y tus preguntas para poder responderte.
-4. Puedes borrar tu historial de preguntas y eliminar tu cuenta con todo su contenido cuando quieras.
-5. MedTender explica y cita lo que dicen tus documentos. No es un médico, no diagnostica ni receta. Si es una urgencia, llama al 123.
+**Consentimiento informado (versión `2026-11-v3`, `frontend/src/componentes/Consentimiento.tsx`)** — la persona debe aceptarlo antes de subir o consultar:
+1. MedTender está en pruebas cerradas: puede equivocarse. Compara siempre con tu médico o tu farmacéutico antes de decidir algo sobre tu salud.
+2. Subirás documentos médicos (historias clínicas, resultados, órdenes, prospectos). Son datos sensibles. Si subes documentos de otra persona, declaras que tienes derecho a hacerlo o su autorización. Si eres menor de edad, usa esta cuenta con un adulto responsable.
+3. Para leerlos y responderte usamos un servicio de inteligencia artificial de un tercero: Google Gemini, que puede procesar la información fuera de Colombia. En esta etapa usamos su versión gratuita, y Google puede conservar y usar lo que se le envía para mejorar sus productos. Por eso sube solo lo que necesites.
+4. Antes de enviarle el texto ocultamos nombres, cédulas, teléfonos, correos y direcciones cuando aparecen con una etiqueta (por ejemplo «Paciente:» o «CC»). Este ocultamiento no es perfecto: un nombre suelto dentro de una frase puede no detectarse.
+5. El archivo original se elimina del servidor después de leerlo. Guardamos fragmentos de texto tal como aparecen en el documento (con tus datos) y tus preguntas, para poder responderte y citar el texto exacto.
+6. Puedes borrar tu historial de preguntas y eliminar tu cuenta con todo su contenido cuando quieras. Las copias de seguridad conservan los datos hasta 14 días más. El registro de accesos (tu correo, la fecha y tu dirección IP, nunca el contenido de tus documentos ni de tus preguntas) se conserva sin fecha de vencimiento.
+7. MedTender explica y cita lo que dicen tus documentos. No es un médico, no diagnostica, no receta ni indica dosis. Si es una urgencia, llama al 123.
+
+Además, si se configuran `VITE_RESPONSABLE` y `VITE_CONTACTO_PRIVACIDAD` al construir la web, la pantalla muestra «Responsable del tratamiento: … · contacto: …».
 
 **Aviso permanente** (en las pantallas de consulta): «Información de apoyo, no atención médica. Explica y cita lo que dicen tus documentos y las fuentes; no diagnostica ni receta, y no sustituye a un profesional de la salud. En una urgencia, llama al 123.»
 
-**Qué falta en esos textos (a decidir con el abogado):** mención explícita de que los respaldos conservan los datos hasta 14 días después de borrar la cuenta; identificación del responsable del tratamiento y canal de contacto; que los datos se envían a un tercero fuera del país; texto para menores de edad (un adulto responsable); política de tratamiento y aviso de privacidad completos; términos y condiciones.
+**Qué falta en esos textos (a decidir con el abogado):** el nombre y el contacto reales del responsable (hoy se configuran por variable y, si no están, la línea no aparece); si lo de «versión gratuita de Gemini» sigue siendo cierto el día que se publique (si se pasa a un plan de pago hay que cambiar el punto 3 y subir la versión); texto para el caso de que la persona sea una institución; política de tratamiento y aviso de privacidad completos con enlace desde esta pantalla; términos y condiciones.
 
 ## 7. Límites conocidos del producto (para no prometer de más)
 - La anonimización por patrones no es perfecta (sección 3).
