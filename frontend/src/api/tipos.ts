@@ -149,6 +149,8 @@ export interface RespuestaConsulta {
   deQueTrata?: string;
   hallazgos?: HallazgoExplicado[];
   terminos?: TerminoExplicado[];
+  /** Estado del glosario curado de la capa «qué significan»: `revisado` es falso hasta que un profesional lo revise. */
+  glosario?: { revisado: boolean; revision: string; terminos: number };
   senalesDeAlarma?: string[];
   preguntasParaElMedico?: string[];
   avisoGeneral?: string;

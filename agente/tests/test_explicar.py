@@ -125,14 +125,14 @@ def test_hay_evidencia_falso_es_una_abstencion_aunque_haya_hallazgos():
     assert ensamblar(_datos(hay_evidencia=False)).sin_evidencia
 
 
-def test_los_glosarios_y_preguntas_se_acotan_y_se_limpian():
-    terminos = [{"termino": f"t{i}", "explicacion": "e"} for i in range(12)] + [
-        {"termino": "", "explicacion": "x"}
-    ]
+def test_las_preguntas_se_acotan_y_se_limpian_y_los_terminos_no_salen_del_modelo():
+    terminos = [{"termino": f"t{i}", "explicacion": "e"} for i in range(12)]
     preguntas = [f"¿p{i}?" for i in range(9)] + ["  "]
     r = ensamblar(_datos(terminos=terminos, preguntas_para_el_medico=preguntas))
-    assert len(r.terminos) == 8 and len(r.preguntas_para_el_medico) == 6
-    assert all(p.strip() for p in r.preguntas_para_el_medico)
+    assert len(r.preguntas_para_el_medico) == 6 and all(p.strip() for p in r.preguntas_para_el_medico)
+    # lo que el modelo diga como «términos» se ignora: solo cuentan los del glosario hallados en el texto
+    assert all(t["termino"] != "t0" for t in r.terminos)
+    assert {t["termino"] for t in r.terminos} >= {"Hemoglobina", "Glucosa en ayunas", "Colesterol LDL"}
 
 
 def test_el_prompt_prohibe_diagnosticar_recetar_y_dosificar_y_aisla_el_contenido():
@@ -150,7 +150,6 @@ def test_el_prompt_prohibe_diagnosticar_recetar_y_dosificar_y_aisla_el_contenido
         "hay_evidencia",
         "de_que_trata",
         "hallazgos",
-        "terminos",
         "senales_de_alarma",
         "preguntas_para_el_medico",
     }

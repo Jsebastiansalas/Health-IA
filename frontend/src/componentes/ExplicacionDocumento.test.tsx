@@ -37,6 +37,16 @@ describe("ExplicacionDocumento", () => {
     expect(screen.getByText(/no un diagnóstico/)).toBeInTheDocument();
   });
 
+  it("avisa que el glosario está pendiente de revisión profesional", () => {
+    render(
+      <ExplicacionDocumento
+        respuesta={{ ...base, glosario: { revisado: false, revision: "Pendiente de revisión profesional", terminos: 120 } }}
+        alIrACita={() => {}}
+      />,
+    );
+    expect(screen.getByText(/pendiente de revisión profesional/)).toBeInTheDocument();
+  });
+
   it("cada hallazgo lleva su número de cita y lo abre", () => {
     const alIrACita = vi.fn();
     render(<ExplicacionDocumento respuesta={base} alIrACita={alIrACita} />);

@@ -117,7 +117,9 @@ def test_la_explicacion_descarta_los_hallazgos_sin_respaldo_y_lo_avisa():
     r = explicar.ensamblar_explicacion(datos, [_frag(FRAG)], 0.85)
     assert [h["texto"] for h in r.hallazgos] == ["La hemoglobina es 13,2 g/dL."]
     assert r.descartados == 2 and any("2 punto(s)" in a for a in r.alertas)
-    assert [t["termino"] for t in r.terminos] == ["Hemoglobina"]  # el glosario no trae dosis
+    # el glosario viene del texto del documento: el término inventado con dosis del modelo no aparece
+    assert "Paracetamol" not in [t["termino"] for t in r.terminos]
+    assert "Hemoglobina" in [t["termino"] for t in r.terminos]
 
 
 # ---------- posología que ningún extracto respalda ----------
