@@ -10,6 +10,17 @@ const ORGANIZACIONES: ContenidoLanding = {
   respuesta: "Debe acreditar registro sanitario INVIMA vigente y el certificado de calibración del equipo ofertado.",
   fuente: { documento: "Ficha técnica, página 6", extracto: "El oferente deberá acreditar registro sanitario INVIMA vigente y certificado de calibración del equipo ofertado." },
   lema: "Una respuesta sin fuente no es una respuesta. MedTender solo contesta con lo que dice tu documento, y cuando no alcanza, te lo dice.",
+  recorrido: {
+    titulo: "Del ingreso a la habitación, cada documento con su fuente",
+    paradas: [
+      { titulo: "Todo empieza con un documento", texto: "Historias clínicas, órdenes y auditorías llegan en PDF o en foto." },
+      { titulo: "Se lee sin hacer esperar a nadie", texto: "Se indexa en fragmentos y el archivo original se elimina del servidor." },
+      { titulo: "Respuestas para quien atiende", texto: "Pregunta como a un colega y recibe el texto exacto que respalda la respuesta." },
+      { titulo: "Cada valor con su página", texto: "Resultados y fichas técnicas citados con documento, página y huella." },
+      { titulo: "Informes, no imágenes", texto: "De una radiografía lee el informe del radiólogo; la imagen no la interpreta." },
+      { titulo: "La auditoría, con la fuente a mano", texto: "Lo que dice el expediente, verificable desde tu propio equipo." },
+    ],
+  },
   pasos: [
     { titulo: "Sube el expediente", texto: "Pliegos, adendas, fichas técnicas e historias clínicas en PDF o en foto. Se leen, se indexan y el original se elimina del servidor." },
     { titulo: "Pregunta como lo harías a un colega", texto: "Escribe la duda en tus palabras. Las adendas pesan más que el pliego base y se señalan como alerta." },
@@ -47,6 +58,17 @@ const PERSONAS: ContenidoLanding = {
   respuesta: "El informe registra un colesterol LDL de 160 mg/dL y lo marca como alto.",
   fuente: { documento: "Resultado de laboratorio, página 1", extracto: "Colesterol LDL 160 mg/dL (ref < 130) ALTO" },
   lema: "Los papeles del hospital deberían poder leerse sin miedo. MedTender te explica lo que dicen, te muestra dónde lo dicen y te ayuda a preparar las preguntas para tu médico.",
+  recorrido: {
+    titulo: "Un día en el hospital, con tus papeles entendidos",
+    paradas: [
+      { titulo: "Llegas con tus papeles", texto: "MedTender lee lo que te entregan en urgencias, en el hospital o en la consulta." },
+      { titulo: "Lo subes desde el celular", texto: "Una foto o un PDF. El original se elimina del servidor después de leerlo." },
+      { titulo: "Te explica qué dice", texto: "En palabras sencillas, con el texto exacto del documento al lado." },
+      { titulo: "Tus resultados, con su fuente", texto: "Cada valor viene con su página y su cita. Si el documento no lo dice, te lo dice." },
+      { titulo: "Informes, no imágenes", texto: "De una radiografía lee el informe del radiólogo; la imagen no la interpreta." },
+      { titulo: "Llegas a tu cita preparado", texto: "Con las preguntas para tu médico. Las decisiones sobre tu salud las toma tu médico." },
+    ],
+  },
   pasos: [
     { titulo: "Sube una foto o un PDF", texto: "Un resultado de laboratorio, una orden, una fórmula o un informe. Si es una foto, buena luz y de frente." },
     { titulo: "Pulsa explícame este documento", texto: "Te cuenta de qué trata, lo que dice con su cita y qué significan los términos, en lenguaje sencillo." },

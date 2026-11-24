@@ -40,3 +40,6 @@ target/
 
 # Registro de sesiones de Impeccable (local)
 .impeccable/questions/
+
+# Material crudo del recorrido scroll-world (imágenes y videos originales de Flow)
+docs/scroll-world/crudo/

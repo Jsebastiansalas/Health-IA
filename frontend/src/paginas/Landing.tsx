@@ -4,6 +4,7 @@ import { ArrowRight, Check, FileText, List, Plus, ShieldCheck, X } from "../icon
 import { Marca } from "../componentes/Marca";
 import { boton } from "../componentes/ui/Boton";
 import { Insignia } from "../componentes/ui/Insignia";
+import { RecorridoHospital, type ParadaRecorrido } from "../componentes/RecorridoHospital";
 import { cn } from "../lib/cn";
 import { CONTACTO_PRIVACIDAD } from "../lib/legal";
 
@@ -17,6 +18,8 @@ export interface ContenidoLanding {
   /** Fuente que muestra el ejemplo: de dónde sale la respuesta. */
   fuente: { documento: string; extracto: string };
   lema: string;
+  /** Recorrido animado por el hospital: una parada por escena, en el orden de las imágenes. */
+  recorrido: { titulo: string; paradas: ParadaRecorrido[] };
   pasos: { titulo: string; texto: string }[];
   beneficios: { titulo: string; texto: string }[];
   preguntas: { p: string; r: string }[];
@@ -232,6 +235,9 @@ export function Landing({ c }: { c: ContenidoLanding }) {
             <MuestraRespuesta c={c} />
           </Revelar>
         </section>
+
+        {/* Recorrido por el hospital, movido por el scroll */}
+        <RecorridoHospital titulo={c.recorrido.titulo} paradas={c.recorrido.paradas} />
 
         {/* Lema */}
         <section className="mx-auto max-w-6xl px-6 py-24" aria-label="Lo que prometemos">
