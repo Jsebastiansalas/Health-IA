@@ -16,7 +16,11 @@ import tempfile
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
-ARCHIVOS = ["infra/docker-compose.prod.yml", "infra/docker-compose.monitoreo.yml"]
+ARCHIVOS = [
+    "infra/docker-compose.prod.yml",
+    "infra/docker-compose.monitoreo.yml",
+    "infra/docker-compose.errores.yml",
+]
 
 # Servicio -> por qué tiene que llegar a internet.
 NECESITAN_INTERNET = {
@@ -28,10 +32,13 @@ NECESITAN_INTERNET = {
     "clamav": "firmas del antivirus",
     "alertmanager": "correo de las alertas",
     "blackbox": "revisar el certificado del dominio",
+    "glitchtip": "correo de sus avisos",
 }
-SOLO_INTERNOS = {"postgres", "redis", "prometheus", "estado-respaldos"}
+SOLO_INTERNOS = {"postgres", "redis", "prometheus", "estado-respaldos", "errores-db"}
 # Únicos puertos que se pueden publicar. Grafana solo en la propia máquina.
-PUEDEN_PUBLICAR = {"caddy", "grafana"}
+PUEDEN_PUBLICAR = {"caddy", "grafana", "glitchtip"}
+# Paneles de administración: solo en la propia máquina.
+SOLO_LOCALES = {"grafana", "glitchtip"}
 
 
 def configuracion() -> dict:
@@ -73,8 +80,8 @@ def main() -> int:
         for puerto in servicio.get("ports") or []:
             if nombre not in PUEDEN_PUBLICAR:
                 fallos.append(f"{nombre} publica el puerto {puerto.get('published')}")
-            elif nombre == "grafana" and puerto.get("host_ip") != "127.0.0.1":
-                fallos.append("grafana debe publicarse solo en 127.0.0.1")
+            elif nombre in SOLO_LOCALES and puerto.get("host_ip") != "127.0.0.1":
+                fallos.append(f"{nombre} debe publicarse solo en 127.0.0.1")
     for f in fallos:
         print(f"FALLA  {f}")
     if not fallos:

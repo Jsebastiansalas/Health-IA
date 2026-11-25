@@ -24,6 +24,7 @@ dependencies = [
     "pillow-heif>=1.8.1",
     "anthropic>=1",
     "pyjwt[crypto]>=2.10",
+    "sentry-sdk>=2",
 ]
 
 [dependency-groups]

@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator
 from fastapi import FastAPI
 
 from app.api import interno, proveedor_ia, sistema
+from app.core import errores
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
 from app.core.logs import configurar_logging
@@ -75,6 +76,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     produccion = settings.entorno == "produccion"
     configurar_logging(settings.log_json or produccion)
+    errores.configurar(settings.errores_dsn, "agente", settings.entorno)
     app = FastAPI(
         title=f"{settings.app_name} - agente interno",
         version="2.0.0",

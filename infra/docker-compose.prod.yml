@@ -32,6 +32,7 @@ x-agente: &agente
     REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
     INTERNAL_TOKEN: ${INTERNAL_TOKEN:?defina INTERNAL_TOKEN}
     METRICS_TOKEN: ${METRICS_TOKEN:-}
+    ERRORES_DSN: ${ERRORES_DSN_AGENTE:-}
     DATOS_CLAVE: ${DATOS_CLAVE:?defina DATOS_CLAVE (openssl rand -base64 32)}
     # En producción solo Vertex AI (el agente no arranca con la API gratuita de AI Studio).
     IA_PROVEEDOR: vertex
@@ -134,6 +135,7 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET}
       METRICS_TOKEN: ${METRICS_TOKEN:-}
+      ERRORES_DSN: ${ERRORES_DSN_API:-}
       AGENTE_URL: http://agente:8000
       AGENTE_TOKEN: ${INTERNAL_TOKEN:?defina INTERNAL_TOKEN}
       ANTIVIRUS_BACKEND: clamav
@@ -242,6 +244,10 @@ services:
   caddy:
     build:
       context: ../frontend
+      args:
+        VITE_RESPONSABLE: ${VITE_RESPONSABLE:-}
+        VITE_CONTACTO_PRIVACIDAD: ${VITE_CONTACTO_PRIVACIDAD:-}
+        VITE_ERRORES_DSN: ${VITE_ERRORES_DSN:-}
     image: medtender-web:prod
     restart: unless-stopped
     ports:
@@ -251,6 +257,7 @@ services:
     environment:
       DOMINIO: ${DOMINIO:?defina DOMINIO}
       ACME_EMAIL: ${ACME_EMAIL:?defina ACME_EMAIL}
+      ERRORES_UPSTREAM: ${ERRORES_UPSTREAM:-}  # glitchtip:8000 si usas docker-compose.errores.yml
     volumes:
       - caddy_data:/data
       - caddy_config:/config

@@ -83,6 +83,8 @@ medtender:
   # Cuentas personales (pacientes y familias): se pueden abrir aunque el alta de organizaciones este cerrada.
   registro-personal-abierto: ${REGISTRO_PERSONAL_ABIERTO:true}
   # Cuentas seguras (sprint 40).
+  errores:
+    dsn: ${ERRORES_DSN:}                  # GlitchTip; vacío: apagado
   datos:
     # La misma clave del agente: la API solo la usa para «Descargar mis datos».
     clave: ${DATOS_CLAVE:}

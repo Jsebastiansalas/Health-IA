@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { activarRastreo } from "./lib/errores";
 import { ErrorApi } from "./api/cliente";
 import "./index.css";
 import { AvisosApp } from "./componentes/AvisosApp";
@@ -95,4 +96,5 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>,
 );
 
+void activarRastreo(import.meta.env.VITE_ERRORES_DSN as string | undefined);
 registrarApp();

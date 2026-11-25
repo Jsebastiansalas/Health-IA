@@ -36,6 +36,23 @@
 		respond 404
 	}
 
+	# Rastreo de errores de la web: solo la ruta de recepción va a GlitchTip, y sin nada que identifique a la
+	# persona (cookies, sesión, página, navegador, idioma ni IP). El panel de GlitchTip no se publica.
+	@errores path_regexp ^/api/[0-9]+/envelope/$
+	handle @errores {
+		@apagado expression `"{$ERRORES_UPSTREAM}" == ""`
+		respond @apagado 404
+		reverse_proxy {$ERRORES_UPSTREAM:127.0.0.1:1} {
+			header_up -Cookie
+			header_up -Authorization
+			header_up -Referer
+			header_up -User-Agent
+			header_up -Accept-Language
+			header_up -Cf-Connecting-Ip
+			header_up -X-Forwarded-For
+		}
+	}
+
 	handle /api/* {
 		# Un pliego puede pesar cientos de MB (MAX_UPLOAD_MB en la API Java es el límite real).
 		request_body {

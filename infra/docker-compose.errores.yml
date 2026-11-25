@@ -1,0 +1,57 @@
+# GlitchTip autoalojado (compatible con Sentry) para el rastreo de errores. Se levanta ENCIMA del de producción:
+#
+#   docker compose -f infra/docker-compose.prod.yml -f infra/docker-compose.errores.yml --env-file infra/.env.prod up -d
+#
+# Primera vez:
+#   docker compose ... exec glitchtip ./manage.py createsuperuser
+#   ssh -L 8000:127.0.0.1:8000 usuario@servidor   y en http://localhost:8000 crea la organización y tres proyectos
+#   (api, agente, web). En infra/.env.prod:
+#     ERRORES_DSN_API / ERRORES_DSN_AGENTE = el DSN del proyecto cambiando el host por  glitchtip:8000  (con http)
+#     VITE_ERRORES_DSN = https://<clave>@<tu dominio>/<id>   y reconstruye la web
+#     ERRORES_UPSTREAM = glitchtip:8000
+# Serie 6.x a propósito: en la 7.0 cambian nombres de variables y la guía oficial aún no la sigue. Antes de subir de
+# versión, lee https://glitchtip.com/blog/.
+
+services:
+  errores-db:
+    image: postgres:16
+    restart: unless-stopped
+    command: ["postgres", "-c", "max_locks_per_transaction=512"]
+    environment:
+      POSTGRES_DB: glitchtip
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: ${GLITCHTIP_DB_PASSWORD:?defina GLITCHTIP_DB_PASSWORD}
+    volumes:
+      - erroresdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glitchtip -d glitchtip"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [interna]
+
+  glitchtip:
+    image: glitchtip/glitchtip:6.2.6
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://glitchtip:${GLITCHTIP_DB_PASSWORD:?}@errores-db:5432/glitchtip
+      VALKEY_URL: ""  # sin Valkey: la cola y la caché van en PostgreSQL
+      SERVER_ROLE: all_in_one
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY:?defina GLITCHTIP_SECRET_KEY (openssl rand -hex 32)}
+      GLITCHTIP_DOMAIN: https://${DOMINIO:?defina DOMINIO}
+      EMAIL_URL: ${GLITCHTIP_EMAIL_URL:-consolemail://}
+      DEFAULT_FROM_EMAIL: ${CORREO_REMITENTE:-no-responder@medtender.local}
+      ENABLE_USER_REGISTRATION: "False"
+      ENABLE_ORGANIZATION_CREATION: "False"
+      GLITCHTIP_ENABLE_LOGS: "False"
+      GLITCHTIP_ENABLE_UPTIME: "False"
+    ports:
+      - "127.0.0.1:${GLITCHTIP_PUERTO:-8000}:8000"
+    depends_on:
+      errores-db:
+        condition: service_healthy
+    # «externa» para el correo y para publicar el panel en la propia máquina.
+    networks: [interna, externa]
+
+volumes:
+  erroresdata:

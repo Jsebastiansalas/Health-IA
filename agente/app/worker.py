@@ -12,6 +12,7 @@ from concurrent.futures import ProcessPoolExecutor
 from arq import cron
 from arq.connections import RedisSettings
 
+from app.core import errores
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
 from app.core.logs import configurar_logging
@@ -53,6 +54,7 @@ async def startup(ctx: dict) -> None:
     # La CLI de ARQ instala su propio handler; sin esto cada línea sale dos veces.
     logging.getLogger("arq").propagate = False
     settings = get_settings()
+    errores.configurar(settings.errores_dsn, "worker", settings.entorno)
     # "spawn": cada proceso carga su propio pdfium, sin heredar estado del padre.
     ctx["ejecutor"] = ProcessPoolExecutor(
         max_workers=settings.extraccion_procesos,
