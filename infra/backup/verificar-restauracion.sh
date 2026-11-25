@@ -16,10 +16,11 @@ log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) [verificar] $*"; }
 source "$(dirname "$0")/estado.sh"
 
 trabajo="$(mktemp -d)"
+bin="$(pg_config --bindir)" # initdb y pg_ctl no están en el PATH
 datos="${trabajo}/pg"
 terminar() {
     local estado=$?
-    [ -f "${datos}/postmaster.pid" ] && gosu postgres pg_ctl -D "$datos" -m immediate stop > /dev/null 2>&1 || true
+    [ -f "${datos}/postmaster.pid" ] && runuser -u postgres -- "$bin/pg_ctl" -D "$datos" -m immediate stop > /dev/null 2>&1 || true
     rm -rf "$trabajo"
     if [ "$estado" -eq 0 ]; then
         date -u +%s > "${BACKUP_DIR}/restauracion_ok"
@@ -50,8 +51,8 @@ fi
 
 # 2. Un servidor desechable, sin red: solo un socket dentro del directorio temporal.
 chown postgres "$trabajo"
-gosu postgres initdb -D "$datos" -U medtender --auth=trust --encoding=UTF8 > /dev/null
-gosu postgres pg_ctl -D "$datos" -w -o "-c listen_addresses='' -k ${trabajo}" -l "${trabajo}/pg.log" start > /dev/null
+runuser -u postgres -- "$bin/initdb" -D "$datos" -U medtender --auth=trust --encoding=UTF8 > /dev/null
+runuser -u postgres -- "$bin/pg_ctl" -D "$datos" -w -o "-c listen_addresses='' -k ${trabajo}" -l "${trabajo}/pg.log" start > /dev/null
 export PGHOST="$trabajo" PGUSER=medtender PGPORT=5432
 unset PGPASSWORD
 # El rol de la aplicación no viaja en la copia de una base; sin él no se restauran sus permisos.
