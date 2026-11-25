@@ -26,7 +26,7 @@ from app.ia.llm import ErrorLLM, ProveedorLLM, get_llm
 from app.medicamentos import busqueda as med_busqueda
 from app.medicamentos import consulta as med_consulta
 from app.models import Consulta, Documento, Expediente, Reindexacion
-from app.rag import cruce, explicar, garantias, motor, seguridad
+from app.rag import cronologia, cruce, explicar, garantias, motor, seguridad
 from app.schemas import ModeloEmbeddingOut, ReindexacionIn, ReindexacionOut
 from app.services import reindexacion
 from app.services.cola import ColaProcesamiento, get_cola
@@ -301,6 +301,78 @@ async def cruzar_medicamentos(
         )
         await guardar.commit()
     return cuerpo
+
+
+# ---------- Línea de tiempo y evolución de resultados
+class CronologiaIn(BaseModel):
+    tenant_id: uuid.UUID
+    expediente_id: uuid.UUID
+    usuario_id: uuid.UUID
+    # Rehacerla aunque los documentos no hayan cambiado (p. ej. tras mejorar el agente).
+    rehacer: bool = False
+
+
+@router.post("/cronologias")
+async def armar_cronologia(
+    data: CronologiaIn,
+    session: SessionDep,
+    llm: Annotated[ProveedorLLM, Depends(get_llm)],
+) -> dict:
+    """Eventos con fecha y valores de laboratorio de los documentos del expediente, ordenados y
+    con cita en cada dato. No interpreta resultados. Si los documentos no cambiaron desde la
+    última vez, se devuelve la guardada sin llamar al modelo."""
+    expediente = await _expediente(session, data.tenant_id, data.expediente_id)
+    huella = await cronologia.huella_actual(session, expediente)
+    if not data.rehacer:
+        guardada = await session.scalar(
+            select(Consulta)
+            .where(
+                Consulta.tenant_id == data.tenant_id,
+                Consulta.expediente_id == data.expediente_id,
+                Consulta.pregunta == cronologia.PREGUNTA_HISTORIAL,
+                Consulta.respuesta["huella"].astext == huella,
+            )
+            .order_by(Consulta.created_at.desc())
+            .limit(1)
+        )
+        if guardada is not None:
+            return {
+                **guardada.respuesta,
+                "guardada": True,
+                "generadaAt": guardada.created_at.isoformat(),
+            }
+    try:
+        r = await cronologia.armar(session, expediente, llm, get_settings(), huella)
+    except ErrorLLM as exc:
+        CONSULTAS.labels("error_ia").inc()
+        log.error("Línea de tiempo fallida expediente=%s: %s", data.expediente_id, exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "El servicio de IA no está disponible en este momento; intente de nuevo.",
+        ) from exc
+    CONSULTAS.labels("sin_evidencia" if r.sin_evidencia else "con_evidencia").inc()
+    consulta_id = uuid.uuid4()
+    cuerpo = cronologia.a_json(r, consulta_id, expediente.embedding_model_activo)
+    async with get_sessionmaker()() as guardar:
+        fijar_tenant(guardar, data.tenant_id)
+        fila = Consulta(
+            id=consulta_id,
+            tenant_id=data.tenant_id,
+            expediente_id=data.expediente_id,
+            usuario_id=data.usuario_id,
+            pregunta=cronologia.PREGUNTA_HISTORIAL,
+            respuesta=cuerpo,
+            sin_evidencia=r.sin_evidencia,
+            modelo_embeddings=expediente.embedding_model_activo,
+            modelo_llm=r.modelo_llm,
+            fragmentos_recuperados=r.fragmentos,
+            latencia_ms=r.latencia_ms,
+        )
+        guardar.add(fila)
+        await guardar.commit()
+        await guardar.refresh(fila)
+        generada = fila.created_at.isoformat()
+    return {**cuerpo, "guardada": False, "generadaAt": generada}
 
 
 # ---------- Medicamentos (datos abiertos de INVIMA) ----------

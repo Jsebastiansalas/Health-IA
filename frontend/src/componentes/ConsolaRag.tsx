@@ -11,6 +11,8 @@ import { TarjetaCita } from "./TarjetaCita";
 import { AvisoSalud, AvisoUrgencia } from "./AvisoSalud";
 import { CruceMedicamentos } from "./CruceMedicamentos";
 import { ExplicacionDocumento } from "./ExplicacionDocumento";
+import { LineaDeTiempo } from "./LineaDeTiempo";
+import { useArmarLineaDeTiempo } from "../lib/lineaDeTiempo";
 import { Boton } from "./ui/Boton";
 import { Esqueleto } from "./ui/Esqueleto";
 import { Insignia } from "./ui/Insignia";
@@ -62,6 +64,7 @@ export function ConsolaRag({
     onSettled: () => setPendiente(null),
   });
 
+  const linea = useArmarLineaDeTiempo(expedienteId);
   const conversacion = [...(historial ?? [])].reverse();
   useEffect(() => {
     // Sin `return`: en Chrome recientes scrollIntoView devuelve una Promise y React la tomaría
@@ -119,7 +122,13 @@ export function ConsolaRag({
         )}
 
         {conversacion.map((r) => (
-          <Intercambio key={r.consultaId} respuesta={r} alAbrirCita={alAbrirCita} />
+          <Intercambio
+            key={r.consultaId}
+            respuesta={r}
+            alAbrirCita={alAbrirCita}
+            alRehacer={r.modo === "cronologia" && !bloqueado ? () => linea.mutate(true) : undefined}
+            rehaciendo={linea.isPending}
+          />
         ))}
 
         {pendiente && (
@@ -216,7 +225,17 @@ function conReferencias(texto: string, total: number) {
   return texto.replace(/\[(\d{1,2})\]/g, (m, n) => (Number(n) >= 1 && Number(n) <= total ? `[${n}](#cita-${n})` : m));
 }
 
-function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsulta; alAbrirCita: (c: Cita) => void }) {
+function Intercambio({
+  respuesta: r,
+  alAbrirCita,
+  alRehacer,
+  rehaciendo,
+}: {
+  respuesta: RespuestaConsulta;
+  alAbrirCita: (c: Cita) => void;
+  alRehacer?: () => void;
+  rehaciendo?: boolean;
+}) {
   const [resaltada, setResaltada] = useState<number | null>(null);
   const [copiado, setCopiado] = useState(false);
   const base = `cita-${r.consultaId}`;
@@ -246,7 +265,9 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
             ? "Explícame este documento"
             : r.modo === "cruce"
               ? "Ver advertencias de mis medicamentos"
-              : (r.pregunta ?? "")
+              : r.modo === "cronologia"
+                ? "Ver mi línea de tiempo"
+                : (r.pregunta ?? "")
         }
       />
       <div className="flex gap-4">
@@ -258,6 +279,8 @@ function Intercambio({ respuesta: r, alAbrirCita }: { respuesta: RespuestaConsul
               <ExplicacionDocumento respuesta={r} alIrACita={irACita} />
             ) : r.modo === "cruce" ? (
               <CruceMedicamentos respuesta={r} alIrACita={irACita} />
+            ) : r.modo === "cronologia" ? (
+              <LineaDeTiempo respuesta={r} alIrACita={irACita} alRehacer={alRehacer} rehaciendo={rehaciendo} />
             ) : (
               <>
             {r.sinEvidencia && !r.limiteClinico && (

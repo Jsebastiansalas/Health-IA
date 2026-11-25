@@ -7,6 +7,7 @@ import {
   FileText,
   Loader2,
   Pill,
+  CalendarBlank,
   ScrollText,
   Trash2,
   TriangleAlert,
@@ -15,6 +16,7 @@ import {
 import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { api, post, subirDocumento } from "../api/cliente";
+import { useArmarLineaDeTiempo } from "../lib/lineaDeTiempo";
 import type { Documento, EstadoIndexacion, RespuestaConsulta, TipoDocumento } from "../api/tipos";
 import { cn } from "../lib/cn";
 import { esFinal, estadoPaso, etiquetaDocumento, fecha, PASOS, tamano, TIPOS_DOCUMENTO } from "../lib/formato";
@@ -39,6 +41,7 @@ export function PanelDocumentos({
   clinico?: boolean;
 }) {
   const cliente = useQueryClient();
+  const linea = useArmarLineaDeTiempo(expedienteId, alExplicar);
   const cruce = useMutation({
     mutationFn: () => post<RespuestaConsulta>(`/expedientes/${expedienteId}/medicamentos/cruce`, {}),
     onSuccess: (r) => {
@@ -72,6 +75,25 @@ export function PanelDocumentos({
           {cruce.error && (
             <p role="alert" className="mt-2 text-sm text-peligro">
               {(cruce.error as Error).message}
+            </p>
+          )}
+          <Boton
+            variante="secundario"
+            tamano="sm"
+            className="mt-4"
+            onClick={() => linea.mutate(false)}
+            disabled={!puedeExplicar}
+            cargando={linea.isPending}
+          >
+            {!linea.isPending && <CalendarBlank className="size-4" aria-hidden />}
+            {linea.isPending ? "Ordenando tus documentos…" : "Ver mi línea de tiempo"}
+          </Boton>
+          <p className="mt-2 text-xs text-texto-3">
+            Ordena por fecha lo que dicen tus documentos y cómo cambiaron tus exámenes. No interpreta resultados.
+          </p>
+          {linea.error && (
+            <p role="alert" className="mt-2 text-sm text-peligro">
+              {(linea.error as Error).message}
             </p>
           )}
         </div>

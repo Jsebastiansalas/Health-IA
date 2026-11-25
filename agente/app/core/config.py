@@ -98,6 +98,8 @@ class Settings(BaseSettings):
     llm_intentos_por_modelo: int = 1
     # «Explícame este documento»: tope de fragmentos que se envían al modelo (≈ 700 tokens c/u).
     explicar_max_fragmentos: int = 30
+    # Línea de tiempo: tope de fragmentos del expediente que van al modelo en una sola llamada.
+    cronologia_max_fragmentos: int = 60
     # Fichas técnicas de CIMA (AEMPS): apagadas por defecto hasta confirmar sus condiciones de
     # reutilización.
     # Sin ellas, la información de medicamentos sale de los prospectos que sube la persona.

@@ -31,6 +31,12 @@ Primero, porque todo lo demás se usará sobre todo desde el celular.
 - **Frontend:** pestaña «Línea de tiempo» en el expediente: lista por fecha con filtros por tipo, y por cada analito una gráfica simple de su evolución con el rango impreso como banda; cada punto abre su cita. Sin colores de «bueno/malo»: solo la marca que trae el documento.
 - Pruebas: documentos sintéticos con el mismo analito en tres fechas, sinónimos, una fecha ambigua y un valor que el modelo inventa (debe descartarse).
 
+**Hecho (25-nov-2026), con dos cambios respecto a lo previsto:**
+- Sin tabla nueva: la línea se guarda en `consultas` (que ya tiene RLS) con una huella de los documentos indexados; si no cambiaron, se devuelve la guardada sin llamar al modelo (0,1 s). La API es `POST /api/v1/expedientes/{id}/cronologia[?rehacer=true]`.
+- Sin pestaña nueva: aparece como una tarjeta en la consola, como «Explícame» y el Cruce («Ver mi línea de tiempo» en el panel de documentos), y queda en el historial.
+- Además: la marca impresa solo vale si está junto a su valor; cada toma de laboratorio entra a la línea como evento armado con sus valores ya comprobados; un «control en 3 meses» se muestra junto a la fecha del documento que lo indica, sin calcular la del control (eso es el sprint 39).
+- Recorrido real con Gemini: `agente/scripts/recorrido_cronologia_real.py`.
+
 ## Sprint 38: Preparar mi cita
 
 - **Agente** (`POST /internal/v1/preparaciones`): a partir de la cronología (sprint 37), el cruce y Explicar, arma un resumen de una página:
