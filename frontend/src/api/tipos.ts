@@ -144,7 +144,7 @@ export interface RespuestaConsulta {
   /** El asistente no decide dosis, qué tomar ni diagnósticos: respuesta fija que remite al médico. */
   limiteClinico?: { codigo: "dosis" | "receta" | "diagnostico" } | null;
   /** «Explícame este documento»: las consultas de ese modo traen además estos campos. */
-  modo?: "explicar" | "cruce";
+  modo?: "explicar" | "cruce" | "cronologia";
   documentoId?: string;
   deQueTrata?: string;
   hallazgos?: HallazgoExplicado[];
@@ -162,6 +162,46 @@ export interface RespuestaConsulta {
   sinFicha?: string[];
   fichas?: CitaFicha[];
   fuentesOficiales?: FuenteOficial[];
+  /** «Mi línea de tiempo» (modo cronologia). */
+  eventos?: EventoClinico[];
+  analitos?: Analito[];
+  /** La línea guardada se devolvió sin llamar al modelo porque los documentos no cambiaron. */
+  guardada?: boolean;
+  generadaAt?: string;
+}
+
+export type TipoEvento = "CONSULTA" | "EXAMEN" | "HOSPITALIZACION" | "PROCEDIMIENTO" | "FORMULA" | "CONTROL" | "OTRO";
+
+/** Un hecho con fecha escrito en un documento. `fecha` (ISO) es null si la fecha escrita no se entiende sin dudas. */
+export interface EventoClinico {
+  fecha: string | null;
+  fechaTexto: string;
+  /** Para «control en 3 meses»: la fecha del documento que lo indica (no la del control). */
+  referencia?: string | null;
+  tipo: TipoEvento;
+  texto: string;
+  cita: number;
+}
+
+/** Un valor de laboratorio tal como lo imprime el documento. Rango y marca solo si vienen impresos. */
+export interface ValorAnalito {
+  fecha: string | null;
+  fechaTexto: string | null;
+  valor: number;
+  valorTexto: string;
+  unidad: string | null;
+  rango: string | null;
+  marca: string | null;
+  cita: number;
+}
+
+export interface Analito {
+  clave: string;
+  nombre: string;
+  unidades: string[];
+  /** Falso si el mismo examen aparece con unidades distintas: no se grafica junto. */
+  comparable: boolean;
+  valores: ValorAnalito[];
 }
 
 export interface AdvertenciaCruzada {
