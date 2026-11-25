@@ -113,3 +113,7 @@ Single continuous cinematic camera move, no cuts. Start exactly on the first ima
 | `parada-6.mp4` | hospital room | the patient sitting up in bed reading |
 
 Duración: la más larga que ofrezca Flow (8 s), 16:9, descarga en 720p, guardar en `docs/scroll-world/crudo/`.
+
+## Tramos definitivos (25-nov-2026)
+
+Los tramos `tramo-1.mp4` a `tramo-5.mp4` de la portada son ahora los videos «con entrada» (`parada-1` a `parada-5` en `crudo/`): Flow, *Fotogramas a video*, primer fotograma = escena N, último = escena N + 1, 8 s, 720p. La cámara entra en cada escena, se acerca a la gente y sigue por una puerta hasta la siguiente, como en la demo de la skill. Comprobado: cada uno empieza y termina en su imagen y el fondo se mantiene claro. Los tramos cortos de 4 s quedan solo en `crudo/`.

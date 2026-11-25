@@ -55,7 +55,7 @@ export function MundoHospital({ titular, subtitular, cta, alterna, paradas }: Pr
       cta: { label: "Ingresar", href: "/ingreso" },
       hint: "Desliza para recorrer",
       diveScroll: 0.9,
-      connScroll: 1.2,
+      connScroll: 1.5,
       sections: secciones,
       connectors: paradas.slice(1).map((_, i) => `${RUTA}/tramo-${i + 1}.mp4`),
       navigate: (ruta) => navegar.current(ruta),
