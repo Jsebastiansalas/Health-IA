@@ -27,6 +27,12 @@ export interface Tokens {
   refresh_token: string;
 }
 
+/** Respuesta del ingreso: los tokens o, con verificación en dos pasos, el desafío para el segundo paso. */
+export interface RespuestaIngreso extends Partial<Tokens> {
+  requiere2fa?: boolean;
+  desafio?: string | null;
+}
+
 export interface Usuario {
   id: string;
   tenant_id: string;
@@ -34,6 +40,8 @@ export interface Usuario {
   nombre_completo: string;
   rol_global: RolGlobal;
   activo: boolean;
+  /** Verificación en dos pasos activa. */
+  dos_pasos?: boolean;
 }
 
 export interface Expediente {

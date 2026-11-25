@@ -44,14 +44,19 @@ public class AuthController {
     private final AuditoriaService auditoria;
     private final MedtenderProperties props;
     private final co.medtender.api.privacidad.VerificacionCorreoService verificacionCorreo;
+    private final SesionService sesiones;
+    private final PoliticaContrasena politica;
     @org.springframework.beans.factory.annotation.Value("${medtender.registro-personal-abierto:true}")
     private boolean registroPersonalAbierto;
 
     public AuthController(UsuarioRepository usuarios, IdentidadService identidad, PasswordService passwords,
                           JwtService jwt, Limitador limitador, AuditoriaService auditoria,
                           MedtenderProperties props,
-                          co.medtender.api.privacidad.VerificacionCorreoService verificacionCorreo) {
+                          co.medtender.api.privacidad.VerificacionCorreoService verificacionCorreo,
+                          SesionService sesiones, PoliticaContrasena politica) {
         this.verificacionCorreo = verificacionCorreo;
+        this.sesiones = sesiones;
+        this.politica = politica;
         this.usuarios = usuarios;
         this.identidad = identidad;
         this.passwords = passwords;
@@ -67,9 +72,7 @@ public class AuthController {
     }
 
     private TokensOut tokens(Usuario u) {
-        return TokensOut.de(
-                jwt.crear(u.getId(), u.getTenantId(), u.getRolGlobal(), JwtService.Tipo.ACCESS),
-                jwt.crear(u.getId(), u.getTenantId(), u.getRolGlobal(), JwtService.Tipo.REFRESH));
+        return sesiones.abrir(u);
     }
 
     /** Alta de una organizacion (hospital, aseguradora...) con su primer ADMIN_TENANT. */
@@ -86,9 +89,7 @@ public class AuthController {
             throw new ApiException(HttpStatus.FORBIDDEN, "El registro de tenants está deshabilitado");
         }
         limitador.exigir("registro", ip(), rl.registroIpHora(), 3600);
-        if (PasswordService.excedeLimite(in.adminPassword())) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "La contraseña no puede superar 72 bytes");
-        }
+        politica.exigir(in.adminPassword(), in.adminEmail(), in.adminNombre());
         // El hash (~250 ms de CPU) se calcula antes de tocar la base de datos.
         String hash = passwords.hash(in.adminPassword());
         var r = identidad.registrarTenant(in.tenantNombre(), in.nit(), in.politicaBorrado(),
@@ -110,9 +111,7 @@ public class AuthController {
             throw new ApiException(HttpStatus.FORBIDDEN, "El registro de cuentas personales está deshabilitado");
         }
         limitador.exigir("registro", ip(), props.rateLimit().registroIpHora(), 3600);
-        if (PasswordService.excedeLimite(in.password())) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "La contraseña no puede superar 72 bytes");
-        }
+        politica.exigir(in.password(), in.email(), in.nombre());
         String hash = passwords.hash(in.password());
         var r = identidad.registrarPersonal(in.nombre().trim(), in.email().toLowerCase(Locale.ROOT), hash);
         auditoria.auditar(Accion.REGISTRO_PERSONAL, r.tenant().getId(), r.admin().getId(), r.admin().getEmail(),
@@ -122,12 +121,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public TokensOut login(@Valid @RequestBody LoginIn in) {
+    public Dtos.LoginOut login(@Valid @RequestBody LoginIn in) {
         // Se busca al usuario por correo, antes de saber a que tenant pertenece.
         return ContextoTenant.comoSistema(() -> loginInterno(in));
     }
 
-    private TokensOut loginInterno(LoginIn in) {
+    private Dtos.LoginOut loginInterno(LoginIn in) {
         var rl = props.rateLimit();
         String ip = ip();
         String email = in.email().toLowerCase(Locale.ROOT);
@@ -153,8 +152,13 @@ public class AuthController {
                     Map.of("motivo", u != null && valido ? "inactivo" : "credenciales"));
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
         }
+        if (u.isTotpActivo()) {
+            // Contraseña correcta, falta el segundo paso: un desafío de 5 minutos en lugar de los tokens.
+            String desafio = jwt.crear(u.getId(), u.getTenantId(), u.getRolGlobal(), JwtService.Tipo.DOS_PASOS);
+            return Dtos.LoginOut.dosPasos(desafio);
+        }
         auditoria.auditar(Accion.LOGIN_OK, u.getTenantId(), u.getId(), email, "OK", null, null, null);
-        return tokens(u);
+        return Dtos.LoginOut.de(tokens(u));
     }
 
     @PostMapping("/refresh")
@@ -164,16 +168,15 @@ public class AuthController {
 
     private TokensOut refreshInterno(RefreshIn in) {
         limitador.exigir("refresh", ip(), props.rateLimit().refreshIpMin(), 60);
-        UUID id;
+        org.springframework.security.oauth2.jwt.Jwt refresh;
         try {
-            id = UUID.fromString(jwt.leer(in.refreshToken(), JwtService.Tipo.REFRESH).getSubject());
+            refresh = jwt.leer(in.refreshToken(), JwtService.Tipo.REFRESH);
+            UUID.fromString(refresh.getSubject());
         } catch (JwtException | IllegalArgumentException e) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Refresh token inválido");
         }
-        Usuario u = usuarios.findById(id).filter(Usuario::isActivo)
-                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Usuario inactivo o inexistente"));
-        // El rol se relee de la base de datos: un cambio de rol se refleja en el nuevo access token.
-        return tokens(u);
+        // Rota el token y relee el usuario (un cambio de rol se refleja en el nuevo access token).
+        return sesiones.renovar(refresh);
     }
 
     @GetMapping("/me")

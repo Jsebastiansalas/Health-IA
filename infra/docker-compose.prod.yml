@@ -103,6 +103,9 @@ services:
       ALLOW_TENANT_SIGNUP: "false"
       # Cuentas personales: el correo se confirma antes de subir o consultar. Requiere un servidor SMTP.
       CORREO_VERIFICACION_OBLIGATORIA: "true"
+      # Sprint 40: secretos TOTP cifrados con su propia clave y dos pasos obligatorios para administradores.
+      CIFRADO_CLAVE: ${CIFRADO_CLAVE:?defina CIFRADO_CLAVE (openssl rand -base64 32)}
+      DOS_PASOS_ADMINS: "true"
       CORREO_BASE_URL: https://${DOMINIO:?defina DOMINIO}
       SPRING_MAIL_HOST: ${SMTP_HOST:-}
       SPRING_MAIL_PORT: ${SMTP_PORT:-587}

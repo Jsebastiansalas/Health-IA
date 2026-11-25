@@ -48,6 +48,11 @@ public class ConversorUsuario implements Converter<Jwt, AbstractAuthenticationTo
         Usuario u = usuarios.findByIdAndTenantId(id, tenantId)
                 .filter(Usuario::isActivo)
                 .orElseThrow(() -> new InvalidBearerTokenException(USUARIO_INACTIVO));
+        // Cambio de contraseña o «cerrar todas las sesiones»: los tokens anteriores dejan de valer ya.
+        var emitido = JwtService.emitido(jwt);
+        if (emitido == null || emitido.isBefore(u.getSesionesValidasDesde())) {
+            throw new InvalidBearerTokenException("Tu sesión se cerró; vuelve a ingresar");
+        }
         // Desde aqui, cada log de la peticion lleva el usuario y el tenant.
         MDC.put("usuario_id", u.getId().toString());
         MDC.put("tenant_id", u.getTenantId().toString());

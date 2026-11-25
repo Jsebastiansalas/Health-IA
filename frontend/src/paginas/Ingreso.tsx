@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, LockKeyhole, Mail } from "../iconos";
+import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, Key, LockKeyhole, Mail } from "../iconos";
 import { motion, useReducedMotion } from "motion/react";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -8,7 +8,9 @@ import { Campo } from "../componentes/ui/Campo";
 import { useSesion } from "../sesion";
 
 export function PaginaIngreso() {
-  const { ingresar } = useSesion();
+  const { ingresar, verificarDosPasos } = useSesion();
+  const [desafio, setDesafio] = useState<string | null>(null);
+  const [codigo, setCodigo] = useState("");
   const quieto = useReducedMotion();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,7 +23,12 @@ export function PaginaIngreso() {
     setEnviando(true);
     setError(null);
     try {
-      await ingresar(email, password);
+      if (desafio) {
+        await verificarDosPasos(desafio, codigo);
+      } else {
+        const r = await ingresar(email, password);
+        if (r.desafio) setDesafio(r.desafio);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible ingresar.");
     } finally {
@@ -69,9 +76,50 @@ export function PaginaIngreso() {
             <ArrowLeft className="size-4" aria-hidden />
             Inicio
           </Link>
-          <h2 className="relative text-2xl font-semibold leading-tight text-texto">Ingresa a tu cuenta</h2>
-          <p className="relative mt-2 text-sm text-texto-2">Usa el correo con el que tu organización te registró.</p>
+          <h2 className="relative text-2xl font-semibold leading-tight text-texto">
+            {desafio ? "Verificación en dos pasos" : "Ingresa a tu cuenta"}
+          </h2>
+          <p className="relative mt-2 text-sm text-texto-2">
+            {desafio
+              ? "Escribe el código de 6 dígitos de tu app de autenticación, o uno de tus códigos de respaldo."
+              : "Usa el correo con el que te registraste."}
+          </p>
 
+          {desafio ? (
+            <form onSubmit={enviar} className="relative mt-8 space-y-4" noValidate>
+              <Campo
+                etiqueta="Código de verificación"
+                icono={Key}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                required
+                autoFocus
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value)}
+                placeholder="123456"
+              />
+              {error && (
+                <div role="alert" className="flex items-start gap-3 rounded-lg border border-peligro/40 bg-peligro/10 px-4 py-3 text-sm text-peligro">
+                  <AlertCircle className="mt-0.5 size-4 shrink-0 text-peligro" aria-hidden />
+                  {error}
+                </div>
+              )}
+              <Boton type="submit" variante="primario" tamano="lg" className="w-full" cargando={enviando} disabled={!codigo.trim()}>
+                {enviando ? "Verificando…" : "Verificar"}
+              </Boton>
+              <button
+                type="button"
+                className="w-full text-center text-sm text-texto-3 underline underline-offset-4 hover:text-texto"
+                onClick={() => {
+                  setDesafio(null);
+                  setCodigo("");
+                  setError(null);
+                }}
+              >
+                Volver a escribir la contraseña
+              </button>
+            </form>
+          ) : (
           <form onSubmit={enviar} className="relative mt-8 space-y-4" noValidate>
             <Campo
               etiqueta="Correo electrónico"
@@ -113,7 +161,13 @@ export function PaginaIngreso() {
             <Boton type="submit" variante="primario" tamano="lg" className="w-full" cargando={enviando}>
               {enviando ? "Verificando…" : "Ingresar"}
             </Boton>
+            <p className="text-center text-sm">
+              <Link to="/olvide-contrasena" className="text-texto-2 underline underline-offset-4 hover:text-texto">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </p>
           </form>
+          )}
           <p className="relative mt-6 text-center text-sm text-texto-2">
             ¿Eres paciente o familiar?{" "}
             <Link to="/registro" className="font-semibold text-primario underline underline-offset-4">

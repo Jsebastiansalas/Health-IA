@@ -22,6 +22,9 @@ const PaginaIngreso = lazy(() => import("./paginas/Ingreso").then((m) => ({ defa
 const PaginaExpedientes = lazy(() => import("./paginas/Expedientes").then((m) => ({ default: m.PaginaExpedientes })));
 const PaginaMedicamentos = lazy(() => import("./paginas/Medicamentos").then((m) => ({ default: m.PaginaMedicamentos })));
 const PaginaRecordatorios = lazy(() => import("./paginas/Recordatorios").then((m) => ({ default: m.PaginaRecordatorios })));
+const PaginaOlvideContrasena = lazy(() => import("./paginas/Contrasena").then((m) => ({ default: m.PaginaOlvideContrasena })));
+const PaginaRestablecer = lazy(() => import("./paginas/Contrasena").then((m) => ({ default: m.PaginaRestablecer })));
+const PaginaSeguridad = lazy(() => import("./paginas/Seguridad").then((m) => ({ default: m.PaginaSeguridad })));
 const PaginaCompartir = lazy(() => import("./paginas/Compartir").then((m) => ({ default: m.PaginaCompartir })));
 const PaginaExpediente = lazy(() => import("./paginas/Expediente").then((m) => ({ default: m.PaginaExpediente })));
 
@@ -44,6 +47,8 @@ function Rutas() {
         <Route path="/registro" element={<PaginaRegistro />} />
         <Route path="/personas" element={<PaginaPersonas />} />
         <Route path="/verificar-correo" element={<PaginaVerificarCorreo />} />
+        <Route path="/olvide-contrasena" element={<PaginaOlvideContrasena />} />
+        <Route path="/restablecer" element={<PaginaRestablecer />} />
         <Route path="/privacidad" element={<PaginaPrivacidad />} />
         <Route path="/terminos" element={<PaginaTerminos />} />
         {/* Llegó un archivo desde «Compartir» sin sesión: queda guardado en el teléfono y se ofrece al ingresar. */}
@@ -63,6 +68,8 @@ function Rutas() {
         <Route path="/expedientes/:id" element={<PaginaExpediente />} />
         <Route path="/compartir" element={<PaginaCompartir />} />
         <Route path="/recordatorios" element={<PaginaRecordatorios />} />
+        <Route path="/cuenta/seguridad" element={<PaginaSeguridad />} />
+        <Route path="/restablecer" element={<PaginaRestablecer />} />
         <Route path="/privacidad" element={<PaginaPrivacidad />} />
         <Route path="/terminos" element={<PaginaTerminos />} />
         <Route path="*" element={<PaginaNoEncontrada />} />

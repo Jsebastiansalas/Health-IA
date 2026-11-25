@@ -1,8 +1,10 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { useState, type ReactNode } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { useEffect, useState, type ReactNode } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Toaster } from "sonner";
-import { Bell, ChevronsUpDown, FolderOpen, LogOut, Moon, Pill, Sun, Trash2 } from "../iconos";
+import { Bell, ChevronsUpDown, FolderOpen, LogOut, Moon, Pill, ShieldCheck, Sun, Trash2 } from "../iconos";
+import { EVENTO_DOS_PASOS_REQUERIDO } from "../api/cliente";
+import { toast as avisar } from "sonner";
 import { cn } from "../lib/cn";
 import { useCompartido } from "../lib/compartido";
 import { useConsentimiento } from "../lib/consentimiento";
@@ -46,6 +48,16 @@ function MenuUsuario() {
   const { tema, alternar } = useTema();
   const { esPersonal } = useConsentimiento();
   const [eliminando, setEliminando] = useState(false);
+  const navegar = useNavigate();
+  // Un administrador sin verificación en dos pasos (si es obligatoria) va directo a activarla.
+  useEffect(() => {
+    const ir = () => {
+      avisar.info("Activa la verificación en dos pasos para seguir usando MedTender.");
+      navegar("/cuenta/seguridad");
+    };
+    window.addEventListener(EVENTO_DOS_PASOS_REQUERIDO, ir);
+    return () => window.removeEventListener(EVENTO_DOS_PASOS_REQUERIDO, ir);
+  }, [navegar]);
   return (
     <>
       <Menu.Root>
@@ -74,6 +86,10 @@ function MenuUsuario() {
             <Menu.Item onSelect={alternar} className={itemMenu}>
               {tema === "claro" ? <Moon className="size-4" aria-hidden /> : <Sun className="size-4" aria-hidden />}
               {tema === "claro" ? "Tema oscuro" : "Tema claro"}
+            </Menu.Item>
+            <Menu.Item onSelect={() => navegar("/cuenta/seguridad")} className={itemMenu}>
+              <ShieldCheck className="size-4" aria-hidden />
+              Seguridad de la cuenta
             </Menu.Item>
             <Menu.Item onSelect={salir} className={itemMenu}>
               <LogOut className="size-4" aria-hidden />
