@@ -6,9 +6,21 @@ import { VitePWA } from "vite-plugin-pwa";
 
 declare const process: { env: Record<string, string | undefined> };
 
+// Dirección pública para las etiquetas al compartir (og:image debe ser completa). Vacía: rutas relativas.
+process.env.VITE_URL_PUBLICA ??= "";
+
 // En desarrollo, /api se reenvía a la API Java (docker compose la publica en el 8010).
 // Así no hace falta CORS y la File System Access API funciona en localhost (contexto seguro).
 export default defineConfig({
+  resolve: {
+    // jsPDF arrastra un conversor de HTML a PDF que no se usa (ver src/lib/sinConversorHtml.ts).
+    alias: [{ find: /^(html2canvas|canvg|dompurify)$/, replacement: "/src/lib/sinConversorHtml.ts" }],
+  },
+  build: {
+    rollupOptions: {
+      output: { manualChunks: (id: string) => (id.includes("node_modules/@sentry") ? "rastreo" : undefined) },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -23,7 +35,8 @@ export default defineConfig({
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,woff2,svg,png}"],
         // Los videos e imágenes de la portada no van al teléfono: se descargan solo al verla.
-        globIgnores: ["recorrido/**"],
+        // Tampoco el rastreo de errores: solo se descarga si está activado.
+        globIgnores: ["recorrido/**", "assets/rastreo-*"],
       },
       manifest: {
         id: "/",

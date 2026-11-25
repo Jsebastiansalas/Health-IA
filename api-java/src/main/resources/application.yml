@@ -64,9 +64,17 @@ management:
     health:
       probes:
         enabled: true
+  health:
+    mail:
+      # El correo no decide si la API está viva: caído o sin configurar, lo demás funciona.
+      enabled: false
   metrics:
     tags:
       application: medtender-api
+    distribution:
+      # Cubetas para la latencia del 95 % en las alertas y el panel.
+      slo:
+        http.server.requests: 100ms,500ms,1s,2s,5s,10s,30s
 
 medtender:
   entorno: ${ENTORNO:desarrollo}          # desarrollo | produccion
@@ -79,6 +87,8 @@ medtender:
   # Cuentas personales (pacientes y familias): se pueden abrir aunque el alta de organizaciones este cerrada.
   registro-personal-abierto: ${REGISTRO_PERSONAL_ABIERTO:true}
   # Cuentas seguras (sprint 40).
+  errores:
+    dsn: ${ERRORES_DSN:}                  # GlitchTip; vacío: apagado
   datos:
     # La misma clave del agente: la API solo la usa para «Descargar mis datos».
     clave: ${DATOS_CLAVE:}

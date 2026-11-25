@@ -1,0 +1,165 @@
+# Pruebas de las reglas de alerta: cada una suena cuando debe y calla cuando no.
+#   docker run --rm -v "$PWD/infra/monitoreo:/m" -w /m --entrypoint promtool prom/prometheus:v3.16.0 test rules alertas_test.yml
+rule_files: [alertas.yml]
+evaluation_interval: 1m
+
+tests:
+  - name: un servicio caído avisa a los 5 minutos, no antes
+    interval: 1m
+    input_series:
+      - { series: 'up{job="api"}', values: "0x20" }
+      - { series: 'up{job="agente"}', values: "1x20" }
+    promql_expr_test:
+      - { expr: 'count by (job) (ALERTS{alertname="ServicioCaido",alertstate="firing"})', eval_time: 3m, exp_samples: [] }
+      - expr: 'count by (job) (ALERTS{alertname="ServicioCaido",alertstate="firing"})'
+        eval_time: 10m
+        exp_samples: [{ labels: '{job="api"}', value: 1 }]
+
+  - name: más del 5 % de errores de la API avisa
+    interval: 1m
+    input_series:
+      - { series: 'http_server_requests_seconds_count{application="medtender-api",status="200"}', values: "0+90x40" }
+      - { series: 'http_server_requests_seconds_count{application="medtender-api",status="500"}', values: "0+10x40" }
+    promql_expr_test:
+      - expr: 'count(ALERTS{alertname="ErroresDeLaApi",alertstate="firing"})'
+        eval_time: 30m
+        exp_samples: [{ labels: "{}", value: 1 }]
+
+  - name: un 2 % de errores no avisa
+    interval: 1m
+    input_series:
+      - { series: 'http_server_requests_seconds_count{application="medtender-api",status="200"}', values: "0+98x40" }
+      - { series: 'http_server_requests_seconds_count{application="medtender-api",status="500"}', values: "0+2x40" }
+    promql_expr_test:
+      - { expr: 'count(ALERTS{alertname="ErroresDeLaApi"})', eval_time: 30m, exp_samples: [] }
+
+  - name: un solo error con muy poco tráfico no despierta a nadie
+    interval: 1m
+    input_series:
+      - { series: 'http_server_requests_seconds_count{application="medtender-api",status="500"}', values: "0x10 1x30" }
+      - { series: 'http_server_requests_seconds_count{application="medtender-api",status="200"}', values: "0x40" }
+    promql_expr_test:
+      - { expr: 'count(ALERTS{alertname="ErroresDeLaApi",alertstate="firing"})', eval_time: 25m, exp_samples: [] }
+
+  - name: la API lenta fuera de la IA avisa; la lentitud de la IA se mide aparte
+    interval: 1m
+    input_series:
+      # el 90 % de las respuestas normales tarda más de 2 s
+      - { series: 'http_server_requests_seconds_bucket{application="medtender-api",uri="/api/v1/expedientes",le="2.0"}', values: "0+1x40" }
+      - { series: 'http_server_requests_seconds_bucket{application="medtender-api",uri="/api/v1/expedientes",le="5.0"}', values: "0+10x40" }
+      - { series: 'http_server_requests_seconds_bucket{application="medtender-api",uri="/api/v1/expedientes",le="+Inf"}', values: "0+10x40" }
+      - { series: 'medtender_consulta_duracion_segundos_bucket{job="agente",le="34.0"}', values: "0+10x40" }
+      - { series: 'medtender_consulta_duracion_segundos_bucket{job="agente",le="+Inf"}', values: "0+10x40" }
+    promql_expr_test:
+      - expr: 'count(ALERTS{alertname="ApiLenta",alertstate="firing"})'
+        eval_time: 30m
+        exp_samples: [{ labels: "{}", value: 1 }]
+      - { expr: 'count(ALERTS{alertname="RespuestasDeIaLentas",alertstate="firing"})', eval_time: 30m, exp_samples: [] }
+
+  - name: documentos atascados y archivos sin borrar
+    interval: 1m
+    input_series:
+      - { series: 'medtender_documentos_en_proceso_mas_de_1h{job="agente"}', values: "2x200" }
+      - { series: 'medtender_pdf_temporales_pendientes{job="agente"}', values: "1x200" }
+    promql_expr_test:
+      - expr: 'count(ALERTS{alertname="DocumentosAtascados",alertstate="firing"})'
+        eval_time: 20m
+        exp_samples: [{ labels: "{}", value: 1 }]
+      - { expr: 'count(ALERTS{alertname="ArchivosSinBorrar",alertstate="firing"})', eval_time: 100m, exp_samples: [] }
+      - expr: 'count(ALERTS{alertname="ArchivosSinBorrar",alertstate="firing"})'
+        eval_time: 150m
+        exp_samples: [{ labels: "{}", value: 1 }]
+
+  - name: sin copia en 36 horas avisa
+    interval: 1m
+    input_series:
+      - { series: 'medtender_respaldo_ultimo_ok_timestamp_segundos{job="respaldos"}', values: "0+0x3000" }
+      - { series: 'medtender_respaldo_remoto_configurado{job="respaldos"}', values: "0+0x3000" }
+      - { series: 'medtender_respaldo_remoto_ok_timestamp_segundos{job="respaldos"}', values: "0+0x3000" }
+      - { series: 'medtender_restauracion_fallo{job="respaldos"}', values: "0+0x3000" }
+    promql_expr_test:
+      - { expr: 'count(ALERTS{alertname="RespaldoVencido",alertstate="firing"})', eval_time: 35h, exp_samples: [] }
+      - expr: 'count(ALERTS{alertname="RespaldoVencido",alertstate="firing"})'
+        eval_time: 37h
+        exp_samples: [{ labels: "{}", value: 1 }]
+      # sin destino remoto configurado no se exige copia fuera
+      - { expr: 'count(ALERTS{alertname="RespaldoRemotoVencido",alertstate="firing"})', eval_time: 40h, exp_samples: [] }
+      - { expr: 'count(ALERTS{alertname="RestauracionFallida"})', eval_time: 40h, exp_samples: [] }
+      - { expr: 'count(ALERTS{alertname="SinEstadoDeRespaldos"})', eval_time: 40h, exp_samples: [] }
+
+  - name: copia fuera del equipo vencida y restauración fallida
+    interval: 1m
+    input_series:
+      - { series: 'medtender_respaldo_remoto_configurado{job="respaldos"}', values: "1+0x3000" }
+      - { series: 'medtender_respaldo_remoto_ok_timestamp_segundos{job="respaldos"}', values: "0+0x3000" }
+      - { series: 'medtender_restauracion_fallo{job="respaldos"}', values: "1+0x3000" }
+    promql_expr_test:
+      - expr: 'count(ALERTS{alertname="RespaldoRemotoVencido",alertstate="firing"})'
+        eval_time: 37h
+        exp_samples: [{ labels: "{}", value: 1 }]
+      - expr: 'count(ALERTS{alertname="RestauracionFallida",alertstate="firing"})'
+        eval_time: 1h
+        exp_samples: [{ labels: "{}", value: 1 }]
+
+  - name: si nunca llega el estado de los respaldos, también avisa
+    interval: 1m
+    input_series:
+      - { series: 'up{job="api"}', values: "1+0x600" }
+    promql_expr_test:
+      - expr: 'count(ALERTS{alertname="SinEstadoDeRespaldos",alertstate="firing"})'
+        eval_time: 3h
+        exp_samples: [{ labels: "{}", value: 1 }]
+
+  - name: certificado a menos de 14 días y sitio inaccesible
+    interval: 1m
+    input_series:
+      - { series: 'probe_ssl_earliest_cert_expiry{job="sitio",instance="https://a.co"}', values: "864000+0x120" }
+      - { series: 'probe_ssl_earliest_cert_expiry{job="sitio",instance="https://b.co"}', values: "2592000+0x120" }
+      - { series: 'probe_success{job="sitio",instance="https://b.co"}', values: "0x120" }
+    promql_expr_test:
+      - expr: 'count by (instance) (ALERTS{alertname="CertificadoPorVencer",alertstate="firing"})'
+        eval_time: 90m
+        exp_samples: [{ labels: '{instance="https://a.co"}', value: 1 }]
+      - expr: 'count by (instance) (ALERTS{alertname="SitioInaccesible",alertstate="firing"})'
+        eval_time: 15m
+        exp_samples: [{ labels: '{instance="https://b.co"}', value: 1 }]
+
+  - name: el gasto de IA avisa al 80 % del tope y al rechazar llamadas
+    interval: 1m
+    input_series:
+      - { series: 'medtender_ia_costo_hoy_usd{job="agente"}', values: "9x60" }
+      - { series: 'medtender_ia_tope_diario_usd{job="agente"}', values: "10x60" }
+      - { series: 'medtender_ia_tope_rechazos_total{job="agente"}', values: "0x20 1+1x40" }
+    promql_expr_test:
+      - expr: 'count(ALERTS{alertname="CostoDeIaCercaDelTope",alertstate="firing"})'
+        eval_time: 10m
+        exp_samples: [{ labels: "{}", value: 1 }]
+      - { expr: 'count(ALERTS{alertname="TopeDeIaAlcanzado"})', eval_time: 10m, exp_samples: [] }
+      - expr: 'count(ALERTS{alertname="TopeDeIaAlcanzado",alertstate="firing"})'
+        eval_time: 30m
+        exp_samples: [{ labels: "{}", value: 1 }]
+
+  - name: sin tope configurado el costo no avisa
+    interval: 1m
+    input_series:
+      - { series: 'medtender_ia_costo_hoy_usd{job="agente"}', values: "50x30" }
+      - { series: 'medtender_ia_tope_diario_usd{job="agente"}', values: "0x30" }
+    promql_expr_test:
+      - { expr: 'count(ALERTS{alertname="CostoDeIaCercaDelTope"})', eval_time: 20m, exp_samples: [] }
+
+  - name: modelo de IA no disponible, proveedor caído y auditoría que falla
+    interval: 1m
+    input_series:
+      - { series: 'medtender_modelo_disponible{job="agente",tipo="llm",modelo="m"}', values: "0x60" }
+      - { series: 'medtender_ia_circuito_abierto{job="agente",proveedor="vertex"}', values: "1x60" }
+      - { series: 'medtender_auditoria_fallos_total{job="api"}', values: "0x10 3x50" }
+    promql_expr_test:
+      - expr: 'count(ALERTS{alertname="ModeloDeIaNoDisponible",alertstate="firing"})'
+        eval_time: 30m
+        exp_samples: [{ labels: "{}", value: 1 }]
+      - expr: 'count(ALERTS{alertname="ProveedorDeIaCaido",alertstate="firing"})'
+        eval_time: 30m
+        exp_samples: [{ labels: "{}", value: 1 }]
+      - expr: 'count(ALERTS{alertname="AuditoriaFallando",alertstate="firing"})'
+        eval_time: 30m
+        exp_samples: [{ labels: "{}", value: 1 }]

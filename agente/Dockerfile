@@ -1,7 +1,9 @@
 FROM python:3.12-slim
 
 # Tesseract OCR con datos de español y detección de orientación (OSD) para páginas rotadas.
+# `upgrade`: parches de seguridad del sistema publicados después de la imagen base.
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-spa tesseract-ocr-osd \
     && rm -rf /var/lib/apt/lists/*
 

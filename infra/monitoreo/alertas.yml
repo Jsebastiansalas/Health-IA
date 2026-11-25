@@ -1,0 +1,139 @@
+# Alertas de MedTender. Se prueban en alertas_test.yml.
+# Los textos solo llevan nombres de servicios y cifras: por correo no viaja ningún dato de salud ni de personas.
+groups:
+  - name: disponibilidad
+    rules:
+      - alert: ServicioCaido
+        expr: up{job=~"api|agente|respaldos"} == 0
+        for: 5m
+        labels: { severity: critica }
+        annotations:
+          resumen: "El servicio {{ $labels.job }} no responde hace 5 minutos"
+          que_hacer: "docker compose ps y docker compose logs {{ $labels.job }}"
+      - alert: ErroresDeLaApi
+        expr: >
+          sum(rate(http_server_requests_seconds_count{application="medtender-api",status=~"5.."}[10m]))
+            / sum(rate(http_server_requests_seconds_count{application="medtender-api"}[10m])) > 0.05
+          and sum(increase(http_server_requests_seconds_count{application="medtender-api",status=~"5.."}[10m])) >= 5
+        for: 10m
+        labels: { severity: critica }
+        annotations:
+          resumen: "Más del 5 % de las respuestas de la API son errores"
+          que_hacer: "Revisa el registro de la API y el rastreo de errores"
+      - alert: ApiLenta
+        # Sin las rutas que esperan a la IA o suben archivos: esas se miden en RespuestasDeIaLentas.
+        expr: >
+          histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{application="medtender-api",
+            uri!~".*(consultas|explicacion|cronologia|preparacion|cruce|propuestas|documentos|medicamentos).*"}[10m]))) > 2
+        for: 15m
+        labels: { severity: aviso }
+        annotations:
+          resumen: "El 5 % más lento de la API tarda más de 2 segundos"
+          que_hacer: "Mira la base de datos y la memoria del servidor"
+      - alert: RespuestasDeIaLentas
+        expr: histogram_quantile(0.95, sum by (le) (rate(medtender_consulta_duracion_segundos_bucket[15m]))) > 34
+        for: 15m
+        labels: { severity: aviso }
+        annotations:
+          resumen: "El 5 % más lento de las consultas con IA supera los 34 segundos"
+          que_hacer: "Revisa el proveedor de IA"
+      - alert: SitioInaccesible
+        expr: probe_success{job="sitio"} == 0
+        for: 5m
+        labels: { severity: critica }
+        annotations:
+          resumen: "{{ $labels.instance }} no responde desde fuera"
+          que_hacer: "Revisa Caddy, el DNS y el servidor"
+      - alert: CertificadoPorVencer
+        expr: probe_ssl_earliest_cert_expiry{job="sitio"} - time() < 14 * 86400
+        for: 1h
+        labels: { severity: aviso }
+        annotations:
+          resumen: "El certificado de {{ $labels.instance }} vence en menos de 14 días"
+          que_hacer: "Caddy debería haberlo renovado: revisa su registro"
+
+  - name: documentos
+    rules:
+      - alert: DocumentosAtascados
+        expr: max(medtender_documentos_en_proceso_mas_de_1h) > 0
+        for: 15m
+        labels: { severity: aviso }
+        annotations:
+          resumen: "Hay documentos procesándose hace más de una hora"
+          que_hacer: "Revisa el worker y la cola"
+      - alert: ArchivosSinBorrar
+        expr: max(medtender_pdf_temporales_pendientes) > 0
+        for: 2h
+        labels: { severity: critica }
+        annotations:
+          resumen: "Hay archivos originales sin borrar hace más de 2 horas (se promete borrarlos)"
+          que_hacer: "Revisa el barrido de purga del worker"
+      - alert: AuditoriaFallando
+        expr: sum(increase(medtender_auditoria_fallos_total[1h])) > 0
+        labels: { severity: critica }
+        annotations:
+          resumen: "No se pudo escribir en el registro de auditoría en la última hora"
+          que_hacer: "Revisa la base de datos y el registro de la API"
+
+  - name: respaldos
+    rules:
+      - alert: SinEstadoDeRespaldos
+        expr: absent(medtender_respaldo_ultimo_ok_timestamp_segundos)
+        for: 2h
+        labels: { severity: critica }
+        annotations:
+          resumen: "El servicio de respaldos no ha informado ninguna copia"
+          que_hacer: "docker compose logs backup"
+      - alert: RespaldoVencido
+        expr: time() - max(medtender_respaldo_ultimo_ok_timestamp_segundos) > 36 * 3600
+        for: 10m
+        labels: { severity: critica }
+        annotations:
+          resumen: "No hay una copia de la base correcta en las últimas 36 horas"
+          que_hacer: "docker compose logs backup"
+      - alert: RespaldoRemotoVencido
+        expr: >
+          max(medtender_respaldo_remoto_configurado) == 1
+          and time() - max(medtender_respaldo_remoto_ok_timestamp_segundos) > 36 * 3600
+        for: 10m
+        labels: { severity: critica }
+        annotations:
+          resumen: "La copia fuera del equipo no se completa hace más de 36 horas"
+          que_hacer: "Revisa las credenciales del destino en infra/backup/rclone.env"
+      - alert: RestauracionFallida
+        expr: max(medtender_restauracion_fallo) == 1
+        for: 5m
+        labels: { severity: critica }
+        annotations:
+          resumen: "La restauración de prueba falló: la última copia podría no servir"
+          que_hacer: "docker compose exec backup bash /scripts/verificar-restauracion.sh"
+
+  - name: inteligencia-artificial
+    rules:
+      - alert: CostoDeIaCercaDelTope
+        expr: max(medtender_ia_costo_hoy_usd) > 0.8 * max(medtender_ia_tope_diario_usd) and max(medtender_ia_tope_diario_usd) > 0
+        for: 5m
+        labels: { severity: aviso }
+        annotations:
+          resumen: "El gasto de IA de hoy pasó el 80 % del tope"
+          que_hacer: "Revisa el uso; al llegar al tope la IA deja de responder hasta mañana"
+      - alert: TopeDeIaAlcanzado
+        expr: sum(increase(medtender_ia_tope_rechazos_total[1h])) > 0
+        labels: { severity: critica }
+        annotations:
+          resumen: "Se alcanzó el tope diario: la IA está rechazando llamadas"
+          que_hacer: "Decide si subir IA_TOPE_DIARIO_USD"
+      - alert: ModeloDeIaNoDisponible
+        expr: min(medtender_modelo_disponible) == 0
+        for: 15m
+        labels: { severity: critica }
+        annotations:
+          resumen: "Un modelo de IA configurado no respondió a la verificación"
+          que_hacer: "Revisa el modelo, la región y la credencial en el registro del agente"
+      - alert: ProveedorDeIaCaido
+        expr: max(medtender_ia_circuito_abierto) == 1
+        for: 5m
+        labels: { severity: aviso }
+        annotations:
+          resumen: "Un proveedor de IA falla y se está usando el siguiente"
+          que_hacer: "Revisa el estado del proveedor"

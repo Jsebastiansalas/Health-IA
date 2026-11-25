@@ -19,6 +19,8 @@ INTERVALO_HORAS="${INTERVALO_HORAS:-24}"
 PGDATABASE="${PGDATABASE:-medtender}"
 
 log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) [backup] $*"; }
+# shellcheck source=estado.sh
+source "$(dirname "$0")/estado.sh"
 
 # pg_dump y el conteo de filas ven la misma foto de la base: así la restauración de prueba puede
 # exigir los conteos exactos aunque la aplicación siga escribiendo mientras se copia.
@@ -122,14 +124,20 @@ hacer_copia() {
 }
 
 case "${1:-once}" in
-    once) hacer_copia ;;
+    once)
+        trap publicar_estado EXIT
+        hacer_copia
+        ;;
     loop)
         while true; do
-            hacer_copia || log "La copia falló; se reintentará en el próximo ciclo"
+            # En un proceso aparte: llamar aquí a la función con «||» apagaría `set -e` dentro de ella, y un paso
+            # fallido (p. ej. el cifrado) dejaría la copia anotada como correcta.
+            bash "$0" once || log "La copia falló; se reintentará en el próximo ciclo"
             if toca_verificar; then
                 bash "$(dirname "$0")/verificar-restauracion.sh" \
                     || log "ERROR: la restauración de prueba falló; revisa el registro"
             fi
+            publicar_estado
             sleep "$((INTERVALO_HORAS * 3600))"
         done
         ;;

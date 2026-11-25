@@ -86,6 +86,16 @@ Hoy todo va a la API gratuita de Gemini (que puede usar lo que recibe) y a un so
 - **Portada liviana:** videos recodificados con ffmpeg (fotogramas clave densos, sin audio, menos peso), imágenes fijas en datos móviles y etiquetas Open Graph, `robots.txt` y `sitemap.xml`.
 - Separar html2canvas del PDF y sacarlo del caché del teléfono.
 
+**Hecho (25-nov-2026):**
+- Prometheus, Alertmanager y Grafana con alertas probadas (promtool y de punta a punta hasta un buzón falso) y una prueba que impide vigilar métricas que no existen.
+- Rastreo de errores sin datos de salud en agente, API y web, probado sobre los bytes enviados y con un GlitchTip real.
+- Playwright con la aplicación aislada: recorrido completo de una persona.
+- CI: recorrido, infraestructura, Trivy, CodeQL, Dependabot, Java 26 además de 21, CHANGELOG y pasos de versión.
+- Portada de 17 a 5 MB de video e imágenes fijas en datos móviles; app instalada de 2,93 a 2,16 MB; Open Graph, robots y sitemap.
+- **Errores graves encontrados y corregidos:** en producción la API y los respaldos no tenían salida a internet (ningún correo habría salido y la copia fuera del equipo habría fallado); en modo continuo, un fallo al cifrar se anotaba como copia correcta tras borrarla; sin un SMTP que respondiera, la API quedaba «unhealthy» y no arrancaban el agente ni la web; las variables `VITE_` no llegaban a la web de Docker.
+- **Seguridad de las imágenes (Trivy, 25-nov-2026):** se corrigieron los hallazgos altos y críticos con parche: la API (Tomcat, Netty, Jackson y PostgreSQL), el agente (sistema) y los respaldos (sin `gosu`). **Quedan 3 y el flujo `imagenes.yml` estará en rojo por ellos; no se silenciaron:** 2 críticos de `spring-webmvc` 6.2.19 (CVE-2026-47884 y CVE-2026-47890), que solo tienen arreglo en Spring 7, es decir, migrar a Spring Boot 4 (no se evaluó si nuestro uso es explotable); y 1 alto en el binario de Caddy (CVE-2026-78661), a la espera de una versión de Caddy.
+- **Pendiente del dueño:** D4 (`ALERTAS_CORREO`), probar las alertas con el SMTP real, crear las claves de GlitchTip y comprobar los flujos de CI en GitHub (no se han ejecutado allí). El `ci.yml` de pruebas unitarias lo está preparando la otra herramienta y aún no está en el repositorio.
+
 ## Sprint 44: Calidad de la IA medida y privacidad más fuerte
 
 - **Conjunto de evaluación** con documentos reales anonimizados (o sintéticos realistas) y respuestas esperadas: qué tan seguido se recupera el fragmento correcto, qué tan seguido la cita respalda lo dicho, qué tan seguido se abstiene cuando debe, y lo mismo para explicar, la línea de tiempo y la preparación. Corre cada noche con el modelo real y falla si una métrica baja.

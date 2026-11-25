@@ -2,6 +2,7 @@ import Lenis from "lenis";
 import "lenis/dist/lenis.css";
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { conviveConDatosLimitados } from "../lib/conexion";
 import { mountScrollWorld, type SeccionMundo } from "../lib/scrollWorld";
 
 /** Una parada del recorrido: la escena fija y el texto que la acompaña. */
@@ -57,7 +58,8 @@ export function MundoHospital({ titular, subtitular, cta, alterna, paradas }: Pr
       diveScroll: 0.9,
       connScroll: 1.5,
       sections: secciones,
-      connectors: paradas.slice(1).map((_, i) => `${RUTA}/tramo-${i + 1}.mp4`),
+      // Con datos limitados no se piden los videos: el recorrido funde las imágenes fijas.
+      connectors: conviveConDatosLimitados() ? [] : paradas.slice(1).map((_, i) => `${RUTA}/tramo-${i + 1}.mp4`),
       navigate: (ruta) => navegar.current(ruta),
     });
   }, [titular, subtitular, cta.texto, cta.a, alterna.texto, alterna.a, paradas]);

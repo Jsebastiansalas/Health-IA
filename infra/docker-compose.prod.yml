@@ -32,6 +32,7 @@ x-agente: &agente
     REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
     INTERNAL_TOKEN: ${INTERNAL_TOKEN:?defina INTERNAL_TOKEN}
     METRICS_TOKEN: ${METRICS_TOKEN:-}
+    ERRORES_DSN: ${ERRORES_DSN_AGENTE:-}
     DATOS_CLAVE: ${DATOS_CLAVE:?defina DATOS_CLAVE (openssl rand -base64 32)}
     # En producción solo Vertex AI (el agente no arranca con la API gratuita de AI Studio).
     IA_PROVEEDOR: vertex
@@ -134,6 +135,7 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET}
       METRICS_TOKEN: ${METRICS_TOKEN:-}
+      ERRORES_DSN: ${ERRORES_DSN_API:-}
       AGENTE_URL: http://agente:8000
       AGENTE_TOKEN: ${INTERNAL_TOKEN:?defina INTERNAL_TOKEN}
       ANTIVIRUS_BACKEND: clamav
@@ -156,7 +158,8 @@ services:
         condition: service_healthy
       clamav:
         condition: service_healthy
-    networks: [interna]
+    # «externa» solo da salida a internet (correo SMTP y contraseñas filtradas); no publica puertos.
+    networks: [interna, externa]
 
   # Agente de IA (FastAPI). Solo la API Java le habla, con X-Internal-Token. Nunca se publica.
   agente:
@@ -219,9 +222,11 @@ services:
       BACKUP_REMOTO: ${BACKUP_REMOTO:-}
       BACKUP_REMOTO_RETENCION_DIAS: ${BACKUP_REMOTO_RETENCION_DIAS:-14}
       RESTAURACION_INTERVALO_DIAS: ${RESTAURACION_INTERVALO_DIAS:-30}
+      ESTADO_DIR: /estado  # métricas del respaldo para el monitoreo (sin las copias)
     volumes:
       - ./backup:/scripts:ro
       - ${BACKUP_DIR:-backups}:/backups
+      - estado:/estado
     healthcheck:
       # Sana si hubo una copia correcta en las últimas 36 h (y fuera del equipo, si está configurada) y la última
       # restauración de prueba no falló.
@@ -233,11 +238,17 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    networks: [interna]
+    # «externa» solo da salida a internet (la copia fuera del equipo (BACKUP_REMOTO)); no publica puertos.
+    networks: [interna, externa]
 
   caddy:
     build:
       context: ../frontend
+      args:
+        VITE_URL_PUBLICA: https://${DOMINIO:?defina DOMINIO}
+        VITE_RESPONSABLE: ${VITE_RESPONSABLE:-}
+        VITE_CONTACTO_PRIVACIDAD: ${VITE_CONTACTO_PRIVACIDAD:-}
+        VITE_ERRORES_DSN: ${VITE_ERRORES_DSN:-}
     image: medtender-web:prod
     restart: unless-stopped
     ports:
@@ -247,6 +258,7 @@ services:
     environment:
       DOMINIO: ${DOMINIO:?defina DOMINIO}
       ACME_EMAIL: ${ACME_EMAIL:?defina ACME_EMAIL}
+      ERRORES_UPSTREAM: ${ERRORES_UPSTREAM:-}  # glitchtip:8000 si usas docker-compose.errores.yml
     volumes:
       - caddy_data:/data
       - caddy_config:/config
@@ -256,7 +268,7 @@ services:
     networks: [externa, interna]
 
 networks:
-  # Sin salida a internet: aquí viven la base de datos, Redis y los respaldos.
+  # Sin salida a internet: por aquí se habla con la base de datos y Redis.
   interna:
     internal: true
   externa: {}
@@ -272,5 +284,6 @@ volumes:
   clamav-db:
   ephemeral:
   backups:
+  estado:
   caddy_data:
   caddy_config:

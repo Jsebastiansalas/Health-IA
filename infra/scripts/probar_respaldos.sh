@@ -14,7 +14,7 @@ fallos=0
 
 limpiar() {
     docker rm -f "$id-db" > /dev/null 2>&1 || true
-    docker volume rm "$id-copias" "$id-bucket" > /dev/null 2>&1 || true
+    docker volume rm "$id-copias" "$id-bucket" "$id-estado" > /dev/null 2>&1 || true
     docker network rm "$id" > /dev/null 2>&1 || true
 }
 trap limpiar EXIT
@@ -51,6 +51,7 @@ en_respaldos() { # en_respaldos [opciones de docker...] -- script args
     while [ "$1" != "--" ]; do opciones+=("$1"); shift; done
     shift
     docker run --rm --network "$id" -v "$raiz/infra/backup:/scripts:ro" -v "$id-copias:/backups" -v "$id-bucket:/bucket" \
+        -v "$id-estado:/estado" -e ESTADO_DIR=/estado \
         -e PGHOST="$id-db" -e PGUSER=medtender -e PGPASSWORD=prueba -e PGDATABASE=medtender \
         -e BACKUP_PASSPHRASE=frase-de-prueba-larga "${opciones[@]}" --entrypoint bash "$imagen" "$@"
 }
@@ -87,10 +88,25 @@ comprobar "otra copia, que aplica la retención por defecto fuera del equipo" 0 
 comprobar "ni dentro ni fuera sobrevive una copia que pasaría de 14 días antes de la próxima limpieza" 0 \
     en_respaldos -- -c 'test ! -e /bucket/medtender-00-viejo.dump.enc && test ! -e /backups/medtender-00-viejo.dump.enc && test -e /bucket/medtender-00-reciente.dump.enc && test -e /backups/medtender-00-reciente.dump.enc && rm /bucket/medtender-00-reciente.dump.enc /backups/medtender-00-reciente.dump.enc'
 
+comprobar "publica su estado para el monitoreo, legible sin ser root" 0 en_respaldos -- -c '
+    f=/estado/respaldos.prom
+    test "$(stat -c %a $f)" = 644
+    for m in respaldo_ultimo_ok_timestamp_segundos respaldo_remoto_ok_timestamp_segundos restauracion_ultimo_ok_timestamp_segundos; do
+        grep -qE "^medtender_$m [1-9][0-9]+$" $f || { echo "falta $m"; exit 1; }
+    done
+    grep -qx "medtender_restauracion_fallo 0" $f'
+
 MENSAJE="consultas tiene 1 filas y al copiar había 999" comprobar "si los conteos no cuadran, falla" 1 \
     en_respaldos -- -c 'f=$(ls /backups/*.conteos | tail -1); sed -i "s/^consultas .*/consultas 999/" "$f"; bash /scripts/verificar-restauracion.sh'
-comprobar "y deja la señal de fallo para la alerta" 0 \
-    en_respaldos -- -c 'test -f /backups/restauracion_fallo'
+comprobar "y deja la señal de fallo para la alerta y para el monitoreo" 0 \
+    en_respaldos -- -c 'test -f /backups/restauracion_fallo && grep -qx "medtender_restauracion_fallo 1" /estado/respaldos.prom'
+
+# En modo continuo, un paso que falle (aquí, el cifrado) no puede dejar la copia como correcta.
+comprobar "en modo continuo, si el cifrado falla la copia no se da por buena" 0 en_respaldos -- -c '
+    echo 1 > /backups/ultimo_ok
+    printf "#!/bin/sh\nexit 1\n" > /usr/local/sbin/openssl && chmod +x /usr/local/sbin/openssl
+    PATH="/usr/local/sbin:$PATH" timeout 25 bash /scripts/backup.sh loop > /tmp/salida 2>&1
+    test "$(cat /backups/ultimo_ok)" = 1 || { cat /tmp/salida; exit 1; }'
 
 echo "ALTER TABLE consultas DISABLE ROW LEVEL SECURITY;" | sql > /dev/null
 sleep 1 # que la copia nueva tenga otra marca de tiempo

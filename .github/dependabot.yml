@@ -1,0 +1,34 @@
+# Actualizaciones semanales de dependencias, agrupadas para no llenar el repositorio de solicitudes. Van contra
+# develop; las pruebas de CI deciden si se pueden integrar.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directories: ["/frontend", "/e2e"]
+    schedule: { interval: weekly }
+    target-branch: develop
+    groups:
+      menores: { update-types: [minor, patch] }
+  - package-ecosystem: uv
+    directory: /agente
+    schedule: { interval: weekly }
+    target-branch: develop
+    groups:
+      menores: { update-types: [minor, patch] }
+  - package-ecosystem: maven
+    directory: /api-java
+    schedule: { interval: weekly }
+    target-branch: develop
+    groups:
+      menores: { update-types: [minor, patch] }
+  - package-ecosystem: docker
+    directories: ["/api-java", "/agente", "/frontend", "/infra/backup"]
+    schedule: { interval: weekly }
+    target-branch: develop
+  - package-ecosystem: docker-compose
+    directory: /infra
+    schedule: { interval: weekly }
+    target-branch: develop
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    target-branch: develop

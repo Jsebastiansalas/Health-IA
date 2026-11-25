@@ -100,6 +100,11 @@ class Settings(BaseSettings):
     llm_timeout_s: float = 30.0
     llm_intentos_por_modelo: int = 1
 
+    # ---------- Operación (Sprint 43) ----------
+    # DSN de GlitchTip (o compatible con Sentry) para reportar errores sin datos de salud.
+    # Vacío: apagado.
+    errores_dsn: str = ""
+
     # ---------- Datos en reposo (Sprint 42) ----------
     # Clave (32 bytes en base64) con la que se cifran en la base las preguntas y respuestas. La API
     # Java necesita la misma. Vacía: se guardan sin cifrar (solo desarrollo).

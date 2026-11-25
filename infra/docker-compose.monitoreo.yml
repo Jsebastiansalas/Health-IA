@@ -1,0 +1,89 @@
+# Monitoreo y alertas por correo. Se levanta ENCIMA del compose de producción:
+#
+#   docker compose -f infra/docker-compose.prod.yml -f infra/docker-compose.monitoreo.yml --env-file infra/.env.prod up -d
+#
+# Necesita METRICS_TOKEN, ALERTAS_CORREO, GRAFANA_ADMIN_PASSWORD y el SMTP en infra/.env.prod.
+# Grafana solo se publica en el propio servidor. Para verlo desde tu equipo:  ssh -L 3000:127.0.0.1:3000 usuario@servidor
+
+x-comun: &comun
+  restart: unless-stopped
+  security_opt: [no-new-privileges:true]
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+
+services:
+  prometheus:
+    <<: *comun
+    image: prom/prometheus:v3.16.0
+    entrypoint: ["/bin/sh", "/etc/medtender/arrancar-prometheus.sh"]
+    environment:
+      METRICS_TOKEN: ${METRICS_TOKEN:?defina METRICS_TOKEN (openssl rand -hex 32)}
+      URL_SITIO: https://${DOMINIO:?defina DOMINIO}
+    volumes:
+      - ./monitoreo:/etc/medtender:ro
+      - prometheusdata:/prometheus
+    networks: [interna]
+
+  alertmanager:
+    <<: *comun
+    image: prom/alertmanager:v0.35.1
+    entrypoint: ["/bin/sh", "/etc/medtender/arrancar-alertmanager.sh"]
+    environment:
+      ALERTAS_CORREO: ${ALERTAS_CORREO:?defina ALERTAS_CORREO}
+      SMTP_HOST: ${SMTP_HOST:?defina SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      CORREO_REMITENTE: ${CORREO_REMITENTE:-no-responder@medtender.local}
+    volumes:
+      - ./monitoreo:/etc/medtender:ro
+      - alertmanagerdata:/alertmanager
+    networks: [interna, externa]
+
+  # Visita el sitio como cualquier persona.
+  blackbox:
+    <<: *comun
+    image: prom/blackbox-exporter:v0.29.1
+    command: ["--config.file=/etc/medtender/blackbox.yml"]
+    volumes:
+      - ./monitoreo:/etc/medtender:ro
+    networks: [interna, externa]
+
+  # Publica el estado de los respaldos. Solo ve el volumen de estado, nunca las copias.
+  estado-respaldos:
+    <<: *comun
+    image: prom/node-exporter:v1.13.1
+    command:
+      - --collector.disable-defaults
+      - --collector.textfile
+      - --collector.textfile.directory=/estado
+    volumes:
+      - estado:/estado:ro
+    networks: [interna]
+
+  grafana:
+    <<: *comun
+    image: grafana/grafana:13.3.2
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?defina GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # Sin llamadas a casa ni descargas de complementos al arrancar.
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+    ports:
+      - "127.0.0.1:${GRAFANA_PUERTO:-3000}:3000"
+    volumes:
+      - ./monitoreo/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoreo/grafana/paneles:/var/lib/medtender-paneles:ro
+      - grafanadata:/var/lib/grafana
+    # «externa» solo para poder publicar el puerto en la propia máquina.
+    networks: [interna, externa]
+
+volumes:
+  prometheusdata:
+  alertmanagerdata:
+  grafanadata:

@@ -69,6 +69,19 @@ Además de PDF se aceptan **JPG, PNG y HEIC** (la foto de un resultado, una orde
 - **Visor local:** abre la foto original desde tu carpeta y compara su huella; las HEIC no se pueden mostrar en la mayoría de navegadores (se avisa).
 - **Móvil:** el panel de documentos tiene un botón «Tomar una foto» que abre la cámara.
 
+## Operación (sprint 43)
+- **Monitoreo y alertas** (`infra/docker-compose.monitoreo.yml`, encima del de producción): Prometheus lee la API, el agente y el estado de los respaldos; vigila el sitio y su certificado; Alertmanager avisa por correo (`ALERTAS_CORREO`, con el SMTP de la API) por servicio caído, errores, lentitud, documentos atascados o sin borrar, respaldo vencido, restauración fallida, certificado, auditoría y costo o fallo de la IA. Los correos solo llevan nombres de servicios y cifras. Grafana (panel «MedTender») solo en el servidor: `ssh -L 3000:127.0.0.1:3000`.
+- **Rastreo de errores** (`infra/docker-compose.errores.yml`, GlitchTip 6.2.6; pasos al principio del archivo): agente, API y web envían solo el tipo del error y por dónde pasó, nunca mensajes, variables, peticiones, usuarios, direcciones ni migas. Caddy reenvía solo la recepción, sin cookies, navegador ni IP. Apagado si no hay DSN.
+- **Pruebas en navegador:** `CANAL=msedge bash infra/scripts/e2e.sh` levanta la aplicación **aislada** (proyecto `medtender-e2e`, sin tocar la beta) con una IA de mentira, y recorre registro, consentimiento, foto, explicación, línea de tiempo, cita en PDF, recordatorio, descarga de datos y borrado de cuenta.
+- **Infraestructura:** `python infra/scripts/comprobar_compose.py` (redes y puertos), `bash infra/scripts/probar_respaldos.sh`, `probar_monitoreo.sh` y `probar_proxy_errores.sh`.
+- **CI:** además de las pruebas unitarias, `calidad.yml` (recorrido en navegador, infraestructura, presupuesto del build y la API con Java 26, el del equipo; producción usa 21), `imagenes.yml` (Trivy; hoy en rojo por 2 hallazgos críticos de Spring Web que exigen Spring Boot 4 y 1 alto de Caddy, ver `docs/plan-d.md`), `codeql.yml` (en un repositorio privado necesita GitHub Advanced Security) y Dependabot semanal contra `develop`.
+- **Portada:** videos sin audio y con fotogramas clave densos (5 MB en total); en datos móviles, con ahorro de datos o red lenta se muestran las imágenes fijas. `npm run comprobar:build` vigila el peso de los videos y lo que la app instalada guarda en el teléfono. `robots.txt` y `sitemap.xml` los sirve Caddy.
+
+### Versiones
+1. `python infra/scripts/changelog.py --siguiente` dice qué número toca.
+2. `python infra/scripts/changelog.py --version vX.Y.Z > CHANGELOG.md` y commit.
+3. `git tag -a vX.Y.Z -m "vX.Y.Z"`. `main` es lo publicado: se pone al día con `develop` solo cuando el dueño lo decide.
+
 ## Tus datos y respaldos (sprint 42)
 - **Descargar mis datos** (cuentas personales, menú «Mis datos»; `POST /api/v1/cuenta/exportar` con la contraseña, 3 por hora): ZIP con `resumen.html`, `datos.json` y `LEEME.txt`. Trae la cuenta, los consentimientos, los expedientes, el texto de los documentos con su página, preguntas y respuestas, recordatorios, constancias de borrado y registro de accesos. No trae contraseñas, secretos ni vectores. Se arma al pedirlo y no se guarda.
 - **Retención del historial** (`GET/PUT /api/v1/cuenta/retencion`): conservar todo (por defecto) o borrar lo de más de 3, 6, 12 o 24 meses. La pantalla dice cuántas respuestas se borrarían antes de confirmar; una tarea diaria aplica el plazo.
