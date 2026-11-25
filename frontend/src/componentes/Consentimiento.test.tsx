@@ -6,10 +6,11 @@ import { Consentimiento } from "./Consentimiento";
 describe("Consentimiento", () => {
   it("explica qué se envía, a quién y cómo borrar, y deja aceptar", () => {
     const alAceptar = vi.fn();
-    render(<Consentimiento version="2026-11-v3" aceptando={false} alAceptar={alAceptar} />);
+    render(<Consentimiento version="2026-11-v4" aceptando={false} alAceptar={alAceptar} />);
     expect(screen.getByRole("heading", { name: /antes de usar tus documentos de salud/i })).toBeInTheDocument();
-    expect(screen.getByText(/Google Gemini, que puede procesar la información fuera de Colombia/)).toBeInTheDocument();
-    expect(screen.getByText(/versión gratuita, y Google puede conservar y usar lo que se le envía/)).toBeInTheDocument();
+    expect(screen.getByText(/Gemini en Google Cloud \(Vertex AI\) y, solo si ese servicio falla, Claude de Anthropic/)).toBeInTheDocument();
+    expect(screen.getByText(/Ninguno de los dos usa lo que les enviamos para entrenar sus modelos/)).toBeInTheDocument();
+    expect(screen.queryByText(/versión gratuita/)).not.toBeInTheDocument();
     expect(screen.getByText(/pruebas cerradas: puede equivocarse/i)).toBeInTheDocument();
     expect(screen.getByText(/copias de seguridad conservan los datos hasta 14 días más/i)).toBeInTheDocument();
     expect(screen.getByText(/sin fecha de vencimiento/i)).toBeInTheDocument();
@@ -19,7 +20,7 @@ describe("Consentimiento", () => {
     expect(screen.getByText(/este ocultamiento no es perfecto/i)).toBeInTheDocument();
     expect(screen.getByText(/eliminar tu cuenta/i)).toBeInTheDocument();
     expect(screen.getByText(/llama al 123/i)).toBeInTheDocument();
-    expect(screen.getByText("Versión 2026-11-v3")).toBeInTheDocument();
+    expect(screen.getByText("Versión 2026-11-v4")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /entiendo y acepto/i }));
     expect(alAceptar).toHaveBeenCalledTimes(1);
   });

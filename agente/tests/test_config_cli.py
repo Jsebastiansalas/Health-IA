@@ -14,6 +14,11 @@ SEGURO = dict(
     cola_backend="arq",
     gemini_api_key="k",
     metrics_token="t",
+    ia_proveedor="vertex",
+    vertex_proyecto="mi-proyecto",
+    llm_respaldo_proveedor="claude",
+    anthropic_api_key="sk-prueba",
+    ia_tope_diario_usd=10,
 )
 
 
@@ -36,6 +41,9 @@ def test_configuracion_segura_no_tiene_problemas():
             "DATABASE_URL",
         ),
         ({"cola_backend": "ninguna"}, "COLA_BACKEND"),
+        ({"ia_proveedor": "gemini_api"}, "IA_PROVEEDOR=gemini_api"),
+        ({"vertex_proyecto": ""}, "VERTEX_PROYECTO"),
+        ({"anthropic_api_key": ""}, "ANTHROPIC_API_KEY"),
     ],
 )
 def test_problemas_fatales(cambio, texto):
@@ -48,10 +56,12 @@ def test_advertencias_no_bloquean():
         gemini_api_key="",
         openai_api_key="",  # el entorno de pruebas define una key falsa
         metrics_token="",
+        llm_respaldo_proveedor="",
+        ia_tope_diario_usd=0,
     ).problemas_produccion()
     assert fatales == []
     texto = " ".join(avisos)
-    for esperado in ("API key", "METRICS_TOKEN"):
+    for esperado in ("METRICS_TOKEN", "respaldo", "IA_TOPE_DIARIO_USD"):
         assert esperado in texto
 
 

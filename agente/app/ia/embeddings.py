@@ -18,6 +18,7 @@ from typing import Literal, Protocol
 import httpx
 
 from app.core.config import Settings, get_settings
+from app.ia.google_auth import CredencialGoogle, ErrorCredencial, credencial_para, vertex_url
 from app.models import EMBEDDING_DIM
 
 log = logging.getLogger(__name__)
@@ -148,6 +149,45 @@ class GeminiEmbeddings(_Base):
         return [normalizar(e["values"]) for e in datos.get("embeddings", [])]
 
 
+# ---------- Gemini en Vertex AI (producción) ----------
+@dataclass
+class VertexEmbeddings(_Base):
+    """El mismo gemini-embedding-001 servido por Google Cloud: los vectores son compatibles con
+    los ya indexados, así que pasar de AI Studio a Vertex no obliga a reindexar. Este modelo
+    recibe un texto por petición en Vertex; se envían varias a la vez."""
+
+    proyecto: str = ""
+    region: str = "us-central1"
+    credencial: CredencialGoogle | None = None
+    concurrencia: int = 8
+
+    async def _lote(self, cliente, textos, tarea):
+        if not self.proyecto:
+            raise ErrorEmbeddings("VERTEX_PROYECTO no configurado")
+        try:
+            token = await (self.credencial or credencial_para("")).token()
+        except ErrorCredencial as exc:
+            raise ErrorEmbeddings(f"Credencial de Google Cloud: {exc}") from exc
+        url = vertex_url(self.proyecto, self.region, self.modelo, "predict")
+        cabeceras = {"Authorization": f"Bearer {token}"}
+        tipo = "RETRIEVAL_DOCUMENT" if tarea == "documento" else "RETRIEVAL_QUERY"
+        semaforo = asyncio.Semaphore(max(1, self.concurrencia))
+
+        async def uno(texto: str) -> list[float]:
+            cuerpo = {
+                "instances": [{"content": texto, "task_type": tipo}],
+                "parameters": {"outputDimensionality": self.dimension},
+            }
+            async with semaforo:
+                datos = await post_con_reintentos(cliente, url, cuerpo, cabeceras, self.reintentos)
+            predicciones = datos.get("predictions") or []
+            if len(predicciones) != 1:
+                raise ErrorEmbeddings(f"Vertex devolvió {len(predicciones)} vectores para 1 texto")
+            return normalizar(predicciones[0]["embeddings"]["values"])
+
+        return list(await asyncio.gather(*(uno(t) for t in textos)))
+
+
 # ---------- OpenAI (proveedor del documento original) ----------
 @dataclass
 class OpenAIEmbeddings(_Base):
@@ -218,15 +258,29 @@ class EmbeddingRouter:
 
 def construir_router(s: Settings) -> EmbeddingRouter:
     comun = {"lote": s.embedding_lote, "reintentos": s.embedding_reintentos}
+    gemini: ProveedorEmbeddings
+    # Mismo nombre de modelo en los dos casos: los expedientes no cambian de modelo activo.
+    if s.ia_proveedor == "vertex":
+        gemini = VertexEmbeddings(
+            "gemini-embedding-001",
+            1536,
+            proyecto=s.vertex_proyecto,
+            region=s.vertex_region,
+            credencial=credencial_para(s.vertex_credenciales),
+            concurrencia=s.vertex_embeddings_concurrencia,
+            **comun,
+        )
+    else:
+        gemini = GeminiEmbeddings(
+            "gemini-embedding-001",
+            1536,
+            api_key=s.gemini_api_key,
+            base_url=s.gemini_base_url,
+            **comun,
+        )
     return EmbeddingRouter(
         {
-            "gemini-embedding-001": GeminiEmbeddings(
-                "gemini-embedding-001",
-                1536,
-                api_key=s.gemini_api_key,
-                base_url=s.gemini_base_url,
-                **comun,
-            ),
+            "gemini-embedding-001": gemini,
             "text-embedding-3-small": OpenAIEmbeddings(
                 "text-embedding-3-small",
                 1536,
