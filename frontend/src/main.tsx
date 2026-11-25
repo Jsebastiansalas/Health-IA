@@ -21,6 +21,7 @@ const PaginaVerificarCorreo = lazy(() => import("./paginas/VerificarCorreo").the
 const PaginaIngreso = lazy(() => import("./paginas/Ingreso").then((m) => ({ default: m.PaginaIngreso })));
 const PaginaExpedientes = lazy(() => import("./paginas/Expedientes").then((m) => ({ default: m.PaginaExpedientes })));
 const PaginaMedicamentos = lazy(() => import("./paginas/Medicamentos").then((m) => ({ default: m.PaginaMedicamentos })));
+const PaginaRecordatorios = lazy(() => import("./paginas/Recordatorios").then((m) => ({ default: m.PaginaRecordatorios })));
 const PaginaCompartir = lazy(() => import("./paginas/Compartir").then((m) => ({ default: m.PaginaCompartir })));
 const PaginaExpediente = lazy(() => import("./paginas/Expediente").then((m) => ({ default: m.PaginaExpediente })));
 
@@ -61,6 +62,7 @@ function Rutas() {
         <Route path="/medicamentos" element={<PaginaMedicamentos />} />
         <Route path="/expedientes/:id" element={<PaginaExpediente />} />
         <Route path="/compartir" element={<PaginaCompartir />} />
+        <Route path="/recordatorios" element={<PaginaRecordatorios />} />
         <Route path="/privacidad" element={<PaginaPrivacidad />} />
         <Route path="/terminos" element={<PaginaTerminos />} />
         <Route path="*" element={<PaginaNoEncontrada />} />

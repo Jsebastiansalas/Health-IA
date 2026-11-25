@@ -346,3 +346,38 @@ async def test_otro_tenant_no_la_ve_y_un_fallo_del_modelo_es_503(
     assert (await _pedir(client, org_b, expediente)).status_code == 404
     assert (await _pedir(client, org_a, expediente)).status_code == 503
     assert (await _pedir(client, org_a, expediente, headers={})).status_code == 401
+
+
+def test_los_controles_sin_fecha_se_conservan_con_su_plazo_o_sin_fecha():
+    """El modelo suele devolver «control en 3 meses» sin fecha: no se pierde de la línea ni de los recordatorios."""
+    a = _frag("Fecha: 15/09/2025. Hb 12,1 g/dL. Control en 3 meses. Control con cardiologia.")
+    sin_fecha = {"fecha_texto": "", "fragmento": "F1"}
+    datos = {
+        "eventos": [
+            {
+                **sin_fecha,
+                "tipo": "CONTROL",
+                "descripcion": "Control en 3 meses",
+                "extracto_literal": "Control en 3 meses",
+            },
+            {
+                **sin_fecha,
+                "tipo": "CONTROL",
+                "descripcion": "Control con cardiologia",
+                "extracto_literal": "Control con cardiologia",
+            },
+            {
+                **sin_fecha,
+                "tipo": "CONSULTA",
+                "descripcion": "Consulta",
+                "extracto_literal": "Hb 12,1",
+            },
+        ],
+        "valores": [_valor("Hb", "12,1", "g/dL", fecha="15/09/2025")],
+    }
+    _, eventos, _, descartados = cronologia.ensamblar(datos, [a], 0.85)
+    controles = {e["texto"]: e for e in eventos if e["tipo"] == "CONTROL"}
+    assert controles["Control en 3 meses"]["fechaTexto"] == "en 3 meses"
+    assert controles["Control con cardiologia"]["fechaTexto"] == cronologia.SIN_FECHA_ESCRITA
+    assert all(c["referencia"] == "2025-09-15" for c in controles.values())
+    assert descartados == 1  # la consulta sin fecha sí se descarta

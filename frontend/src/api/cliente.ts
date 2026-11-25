@@ -88,6 +88,22 @@ export async function api<T>(ruta: string, opciones: RequestInit = {}, reintento
 export const post = <T>(ruta: string, cuerpo: unknown) =>
   api<T>(ruta, { method: "POST", body: JSON.stringify(cuerpo) });
 
+/** Descarga un archivo de la API con la sesión (p. ej. el .ics de un recordatorio). */
+export async function descargar(ruta: string, reintento = true): Promise<Blob> {
+  const headers = new Headers();
+  if (tokens) headers.set("Authorization", `Bearer ${tokens.access_token}`);
+  const r = await fetch(`${BASE}${ruta}`, { headers });
+  if (r.status === 401 && tokens && reintento) {
+    if (await refrescar()) return descargar(ruta, false);
+    expirar();
+  }
+  if (!r.ok) {
+    const c = r.headers.get("content-type")?.includes("json") ? await r.json() : null;
+    throw new ErrorApi(r.status, c?.detail ?? `Error ${r.status}`, c?.codigo);
+  }
+  return r.blob();
+}
+
 /** Subida multipart (PDF o foto) con progreso real de bytes (fetch no lo expone). */
 export function subirDocumento(
   expedienteId: string,

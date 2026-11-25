@@ -36,6 +36,8 @@ from app.rag.busqueda import _FILTRO_SEGURO, FragmentoRecuperado, _fila
 from app.rag.cruce import _Citas, _t
 
 PREGUNTA_HISTORIAL = "[Línea de tiempo]"
+# Un control que el documento indica sin fecha ni plazo («control con cardiología»).
+SIN_FECHA_ESCRITA = "sin fecha escrita"
 
 AVISO_GENERAL = (
     "Esta línea de tiempo ordena lo que dicen tus documentos, con su cita. No interpreta tus resultados: "
@@ -393,10 +395,19 @@ def ensamblar(
             descartados += 1
             continue
         fecha_texto, fecha = fecha_de(ev.get("fecha_texto"), e)
-        if not fecha_texto:  # un evento sin fecha escrita no va en una línea de tiempo
+        tipo = _t(ev.get("tipo")).upper()
+        if not fecha_texto and tipo == "CONTROL":
+            # Un control indicado casi nunca trae fecha («control en 3 meses»): vale el plazo si está escrito
+            # en el fragmento; si no hay plazo, se conserva igual (la persona pondrá la fecha del recordatorio).
+            plazo = _RELATIVA.search(_norm(texto))
+            fecha_texto = (
+                plazo.group(0)
+                if plazo and _escrito(plazo.group(0), e.contenido_texto)
+                else SIN_FECHA_ESCRITA
+            )
+        if not fecha_texto:  # cualquier otro evento sin fecha escrita no va en una línea de tiempo
             descartados += 1
             continue
-        tipo = _t(ev.get("tipo")).upper()
         clave = (tipo, fecha_texto, _norm(texto))
         if clave in vistos_ev:
             continue
@@ -472,7 +483,7 @@ def ensamblar(
         # la fecha del control (eso lo confirma la persona en sus recordatorios).
         if (
             not ev["fecha"]
-            and _RELATIVA.search(_norm(ev["fechaTexto"]))
+            and (ev["tipo"] == "CONTROL" or _RELATIVA.search(_norm(ev["fechaTexto"])))
             and ev["_doc"] in fechas_doc
         ):
             ev["referencia"] = fechas_doc[ev["_doc"]].most_common(1)[0][0]

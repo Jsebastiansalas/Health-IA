@@ -7,6 +7,7 @@ import {
   FileText,
   Loader2,
   Pill,
+  Bell,
   CalendarBlank,
   ClipboardText,
   ScrollText,
@@ -18,7 +19,8 @@ import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { api, post, subirDocumento } from "../api/cliente";
 import { useArmarLineaDeTiempo, usePrepararCita } from "../lib/lineaDeTiempo";
-import type { Documento, EstadoIndexacion, RespuestaConsulta, TipoDocumento } from "../api/tipos";
+import type { Documento, EstadoIndexacion, Recordatorio, RespuestaConsulta, TipoDocumento } from "../api/tipos";
+import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/cn";
 import { esFinal, estadoPaso, etiquetaDocumento, fecha, PASOS, tamano, TIPOS_DOCUMENTO } from "../lib/formato";
 import { Boton } from "./ui/Boton";
@@ -44,6 +46,16 @@ export function PanelDocumentos({
   const cliente = useQueryClient();
   const linea = useArmarLineaDeTiempo(expedienteId, alExplicar);
   const preparacion = usePrepararCita(expedienteId, alExplicar);
+  const navegar = useNavigate();
+  const controles = useMutation({
+    mutationFn: () => post<Recordatorio[]>(`/expedientes/${expedienteId}/recordatorios/propuestas`, {}),
+    onSuccess: (lista) => {
+      cliente.invalidateQueries({ queryKey: ["recordatorios"] });
+      const porConfirmar = lista.filter((r) => r.estado === "PROPUESTO").length;
+      if (porConfirmar === 0) toast.info("No encontré controles nuevos en tus documentos.");
+      else navegar("/recordatorios");
+    },
+  });
   const cruce = useMutation({
     mutationFn: () => post<RespuestaConsulta>(`/expedientes/${expedienteId}/medicamentos/cruce`, {}),
     onSuccess: (r) => {
@@ -115,6 +127,25 @@ export function PanelDocumentos({
           {preparacion.error && (
             <p role="alert" className="mt-2 text-sm text-peligro">
               {(preparacion.error as Error).message}
+            </p>
+          )}
+          <Boton
+            variante="secundario"
+            tamano="sm"
+            className="mt-4"
+            onClick={() => controles.mutate()}
+            disabled={!puedeExplicar}
+            cargando={controles.isPending}
+          >
+            {!controles.isPending && <Bell className="size-4" aria-hidden />}
+            {controles.isPending ? "Buscando controles…" : "Buscar controles en mis documentos"}
+          </Boton>
+          <p className="mt-2 text-xs text-texto-3">
+            Propone recordatorios de los controles que indican tus documentos. Tú confirmas cada uno.
+          </p>
+          {controles.error && (
+            <p role="alert" className="mt-2 text-sm text-peligro">
+              {(controles.error as Error).message}
             </p>
           )}
         </div>
