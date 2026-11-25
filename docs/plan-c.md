@@ -48,6 +48,13 @@ Primero, porque todo lo demás se usará sobre todo desde el celular.
 - **Frontend:** botón «Preparar mi cita» en el expediente, vista previa editable de las preguntas, «Descargar PDF» y «Compartir» (Web Share en el celular).
 - Pruebas: que ninguna línea del PDF quede sin cita, que una petición de dosis dentro de las preguntas dispare el límite clínico.
 
+**Hecho (25-nov-2026), con cambios respecto a lo previsto:**
+- El PDF se arma **en el navegador** (jsPDF, cargado solo al pulsar «Descargar PDF»), no en el servidor: así el archivo nunca pasa por él. «Compartir» usa Web Share con el archivo cuando el dispositivo lo permite.
+- Una sola llamada al modelo: reutiliza la línea de tiempo guardada y extrae medicamentos, diagnósticos y alergias (la misma validación del cruce) junto con las preguntas.
+- Las preguntas sugeridas se descartan si afirman cifras o juicios que los documentos no dicen, si traen una posología sin respaldo o si afirman un diagnóstico; la persona las edita, quita o agrega antes del PDF.
+- Hallazgo y arreglo de privacidad: con un título como «FORMULA MEDICA» antes de «Paciente: …», el nombre se enviaba sin ocultar (la palabra «MEDICA» tomaba «Paciente» como nombre). Corregido en `privacidad/anonimizar.py`, con prueba.
+- Recorrido real con Gemini: `agente/scripts/recorrido_preparacion_real.py`.
+
 ## Sprint 39: Recordatorios de controles
 
 - **Agente:** de la cronología toma los eventos tipo «control indicado» y las citas con fecha («control en 3 meses», «cita el 12/02»), y calcula la fecha propuesta a partir de la fecha del documento. Cada recordatorio lleva su cita.

@@ -25,6 +25,11 @@ _PALABRA = r"[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+"
 _NOMBRE = _PALABRA + r"(?:\s+(?:(?:de|del)\s+(?:la\s+|los\s+|las\s+)?)?" + _PALABRA + r"){0,3}"
 _MAYUS = r"[A-ZÁÉÍÓÚÑ]{2,}"
 _NOMBRE_MAYUS = _MAYUS + r"(?:\s+" + _MAYUS + r"){1,3}"
+_ETIQUETAS_PERSONA = (
+    r"(?i:paciente|nombres?(?:\s+completos?)?|apellidos?|acudiente|responsable|familiar|"
+    r"madre|padre|esposo|esposa|titular|solicitante|se[ñn]or|se[ñn]ora|sr\.?|sra\.?|"
+    r"m[eé]dic[oa]|doctor|doctora|dra?\.|enfermer[oa])"
+)
 
 # (tipo, patrón compilado, grupo que se enmascara). Se aplican en este orden.
 _REGLAS: list[tuple[str, re.Pattern[str], str | int]] = [
@@ -73,10 +78,10 @@ _REGLAS: list[tuple[str, re.Pattern[str], str | int]] = [
     (
         "PERSONA",
         re.compile(
-            r"(?i:paciente|nombres?(?:\s+completos?)?|apellidos?|acudiente|responsable|familiar|"
-            r"madre|padre|esposo|esposa|titular|solicitante|se[ñn]or|se[ñn]ora|sr\.?|sra\.?|"
-            r"m[eé]dic[oa]|doctor|doctora|dra?\.|enfermer[oa])"
-            r"\s*[:\-]?\s+(?:(?i:dra?\.|doctora?|sra?\.|se[ñn]ora?)\s+)?"
+            _ETIQUETAS_PERSONA + r"\s*[:\-]?\s+(?:(?i:dra?\.|doctora?|sra?\.|se[ñn]ora?)\s+)?"
+            # Una etiqueta nunca es el nombre: en «FORMULA MEDICA Paciente: Ana Ruiz», «MEDICA» no
+            # puede tomar «Paciente» como nombre: se comería la etiqueta y Ana quedaría expuesta.
+            r"(?!" + _ETIQUETAS_PERSONA + r"\b)"
             r"(?P<v>" + _NOMBRE_MAYUS + "|" + _NOMBRE + ")"
         ),
         "v",

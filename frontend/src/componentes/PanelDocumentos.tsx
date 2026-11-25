@@ -8,6 +8,7 @@ import {
   Loader2,
   Pill,
   CalendarBlank,
+  ClipboardText,
   ScrollText,
   Trash2,
   TriangleAlert,
@@ -16,7 +17,7 @@ import {
 import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { api, post, subirDocumento } from "../api/cliente";
-import { useArmarLineaDeTiempo } from "../lib/lineaDeTiempo";
+import { useArmarLineaDeTiempo, usePrepararCita } from "../lib/lineaDeTiempo";
 import type { Documento, EstadoIndexacion, RespuestaConsulta, TipoDocumento } from "../api/tipos";
 import { cn } from "../lib/cn";
 import { esFinal, estadoPaso, etiquetaDocumento, fecha, PASOS, tamano, TIPOS_DOCUMENTO } from "../lib/formato";
@@ -42,6 +43,7 @@ export function PanelDocumentos({
 }) {
   const cliente = useQueryClient();
   const linea = useArmarLineaDeTiempo(expedienteId, alExplicar);
+  const preparacion = usePrepararCita(expedienteId, alExplicar);
   const cruce = useMutation({
     mutationFn: () => post<RespuestaConsulta>(`/expedientes/${expedienteId}/medicamentos/cruce`, {}),
     onSuccess: (r) => {
@@ -94,6 +96,25 @@ export function PanelDocumentos({
           {linea.error && (
             <p role="alert" className="mt-2 text-sm text-peligro">
               {(linea.error as Error).message}
+            </p>
+          )}
+          <Boton
+            variante="secundario"
+            tamano="sm"
+            className="mt-4"
+            onClick={() => preparacion.mutate()}
+            disabled={!puedeExplicar}
+            cargando={preparacion.isPending}
+          >
+            {!preparacion.isPending && <ClipboardText className="size-4" aria-hidden />}
+            {preparacion.isPending ? "Preparando tu resumen…" : "Preparar mi cita"}
+          </Boton>
+          <p className="mt-2 text-xs text-texto-3">
+            Un resumen de una página con lo que dicen tus documentos y preguntas para tu médico, para descargar en PDF.
+          </p>
+          {preparacion.error && (
+            <p role="alert" className="mt-2 text-sm text-peligro">
+              {(preparacion.error as Error).message}
             </p>
           )}
         </div>

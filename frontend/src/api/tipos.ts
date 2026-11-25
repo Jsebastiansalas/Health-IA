@@ -144,7 +144,7 @@ export interface RespuestaConsulta {
   /** El asistente no decide dosis, qué tomar ni diagnósticos: respuesta fija que remite al médico. */
   limiteClinico?: { codigo: "dosis" | "receta" | "diagnostico" } | null;
   /** «Explícame este documento»: las consultas de ese modo traen además estos campos. */
-  modo?: "explicar" | "cruce" | "cronologia";
+  modo?: "explicar" | "cruce" | "cronologia" | "preparacion";
   documentoId?: string;
   deQueTrata?: string;
   hallazgos?: HallazgoExplicado[];
@@ -168,6 +168,25 @@ export interface RespuestaConsulta {
   /** La línea guardada se devolvió sin llamar al modelo porque los documentos no cambiaron. */
   guardada?: boolean;
   generadaAt?: string;
+  /** «Preparar mi cita» (modo preparacion). */
+  cambios?: CambioAnalito[];
+  preguntas?: string[];
+}
+
+/** Un examen medido al menos dos veces: el primer y el último valor, tal como están escritos. */
+export interface CambioAnalito {
+  nombre: string;
+  mediciones: number;
+  desde: MedicionResumida;
+  hasta: MedicionResumida;
+}
+
+export interface MedicionResumida {
+  fecha: string | null;
+  valorTexto: string;
+  unidad: string | null;
+  marca: string | null;
+  cita: number;
 }
 
 export type TipoEvento = "CONSULTA" | "EXAMEN" | "HOSPITALIZACION" | "PROCEDIMIENTO" | "FORMULA" | "CONTROL" | "OTRO";
