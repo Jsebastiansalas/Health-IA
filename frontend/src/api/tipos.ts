@@ -349,3 +349,22 @@ export interface FuenteCargada {
   filas: number;
   cargadoAt: string;
 }
+
+export type EstadoRecordatorio = "PROPUESTO" | "CONFIRMADO" | "HECHO" | "DESCARTADO";
+
+/** Recordatorio de un control que indica un documento (la API Java responde en snake_case). */
+export interface Recordatorio {
+  id: string;
+  expediente_id: string;
+  texto: string;
+  fecha_texto: string;
+  /** Fecha del documento que indica el control. */
+  fecha_documento: string | null;
+  /** Fecha calculada desde el documento («en 3 meses» desde su fecha); null si no se pudo. */
+  fecha_propuesta: string | null;
+  /** La que confirmó la persona. */
+  fecha: string | null;
+  estado: EstadoRecordatorio;
+  cita: { documentoId?: string; nombreArchivo?: string; paginaInicio?: number; extractoLiteral?: string };
+  avisado: boolean;
+}

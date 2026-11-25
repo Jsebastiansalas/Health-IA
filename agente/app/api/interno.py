@@ -26,7 +26,16 @@ from app.ia.llm import ErrorLLM, ProveedorLLM, get_llm
 from app.medicamentos import busqueda as med_busqueda
 from app.medicamentos import consulta as med_consulta
 from app.models import Consulta, Documento, Expediente, Reindexacion
-from app.rag import cronologia, cruce, explicar, garantias, motor, preparacion, seguridad
+from app.rag import (
+    cronologia,
+    cruce,
+    explicar,
+    garantias,
+    motor,
+    preparacion,
+    recordatorios,
+    seguridad,
+)
 from app.schemas import ModeloEmbeddingOut, ReindexacionIn, ReindexacionOut
 from app.services import reindexacion
 from app.services.cola import ColaProcesamiento, get_cola
@@ -407,6 +416,33 @@ async def armar_cronologia(
         return await _cronologia_de(session, expediente, data.usuario_id, data.rehacer, llm)
     except ErrorLLM as exc:
         raise _sin_ia(exc, "Línea de tiempo", data.expediente_id) from exc
+
+
+class ExpedienteIn(BaseModel):
+    tenant_id: uuid.UUID
+    expediente_id: uuid.UUID
+    usuario_id: uuid.UUID
+
+
+# ---------- Recordatorios de controles
+@router.post("/recordatorios/propuestas")
+async def proponer_recordatorios(
+    data: ExpedienteIn,
+    session: SessionDep,
+    llm: Annotated[ProveedorLLM, Depends(get_llm)],
+) -> dict:
+    """Los controles que indican los documentos, con una fecha propuesta (calculada por código) y su
+    cita. Solo propuestas: Java las guarda y la persona confirma cada una. Reutiliza la línea de
+    tiempo guardada, así que normalmente no llama al modelo."""
+    expediente = await _expediente(session, data.tenant_id, data.expediente_id)
+    try:
+        linea = await _cronologia_de(session, expediente, data.usuario_id, False, llm)
+    except ErrorLLM as exc:
+        raise _sin_ia(exc, "Propuesta de recordatorios", data.expediente_id) from exc
+    return {
+        "propuestas": recordatorios.propuestas(linea),
+        "lineaGuardada": bool(linea.get("guardada")),
+    }
 
 
 # ---------- Preparar mi cita

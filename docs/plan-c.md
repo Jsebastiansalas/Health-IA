@@ -63,6 +63,16 @@ Primero, porque todo lo demás se usará sobre todo desde el celular.
 - No se crean recordatorios de tomas de medicamentos (sería dosificar).
 - Pruebas: cálculo de fechas relativas, recordatorio sin fecha clara (queda propuesto con el texto, sin fecha), envío de correo con el doble de prueba.
 
+**Hecho (25-nov-2026):**
+- Agente: `POST /internal/v1/recordatorios/propuestas` (rag/recordatorios.py) toma los controles de la línea de tiempo guardada y calcula la fecha con código («en 3 meses» desde la fecha del documento; fin de mes ajustado). Un control sin plazo queda sin fecha para que la persona la ponga; nunca se propone una toma de medicamento.
+- Arreglo en la línea de tiempo: el modelo suele devolver «control en 3 meses» sin fecha escrita y se descartaba; ahora se conserva con su plazo (o «sin fecha escrita») junto al documento que lo indica.
+- Tabla `recordatorios` en **V13** (no V14: el sprint 37 no necesitó tabla), con RLS, cascada al borrar la cuenta o el expediente y la regla «confirmado exige fecha». Cada recordatorio es solo de quien lo creó.
+- API: `POST /expedientes/{id}/recordatorios/propuestas`, `GET /recordatorios`, `PATCH /recordatorios/{id}`, `GET /recordatorios/{id}/calendario.ics`. El `.ics` es neutro («Control médico», sin texto del documento) porque los calendarios se sincronizan con terceros.
+- Aviso diario a las 8:00 (Colombia) por correo, 3 días antes, una sola vez por fecha; el correo solo dice la fecha y lleva el enlace, sin datos de salud. `medtender.recordatorios.avisos-activos` lo apaga.
+- Pantalla «Recordatorios» en el menú (por confirmar, próximos, hechos) y botón «Buscar controles en mis documentos» en el expediente.
+- Pendiente opcional: notificaciones push de la app (claves VAPID).
+- Recorrido real con Gemini: `agente/scripts/recorrido_recordatorios_real.py`.
+
 ## Orden y dependencias
 
 36 (PWA) es independiente. 37 → 38 y 39 (las dos usan la cronología). Si se prefiere ver valor del agente antes, 37 puede ir primero.

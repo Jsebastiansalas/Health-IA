@@ -12,6 +12,8 @@ export {
   ArrowLeft,
   ArrowRight,
   ArrowsClockwise,
+  Bell,
+  CalendarPlus,
   CalendarBlank,
   ChartLine,
   ClockCounterClockwise,

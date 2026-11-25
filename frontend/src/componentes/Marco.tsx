@@ -2,7 +2,7 @@ import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
-import { ChevronsUpDown, FolderOpen, LogOut, Moon, Pill, Sun, Trash2 } from "../iconos";
+import { Bell, ChevronsUpDown, FolderOpen, LogOut, Moon, Pill, Sun, Trash2 } from "../iconos";
 import { cn } from "../lib/cn";
 import { useCompartido } from "../lib/compartido";
 import { useConsentimiento } from "../lib/consentimiento";
@@ -144,6 +144,11 @@ export function Marco({ children }: { children: ReactNode }) {
               <Pill className="size-4" aria-hidden />
               <span className="hidden sm:inline">Medicamentos</span>
               <span className="sr-only sm:hidden">Medicamentos</span>
+            </NavLink>
+            <NavLink to="/recordatorios" className={enlaceNav}>
+              <Bell className="size-4" aria-hidden />
+              <span className="hidden sm:inline">Recordatorios</span>
+              <span className="sr-only sm:hidden">Recordatorios</span>
             </NavLink>
           </nav>
           <MenuUsuario />
