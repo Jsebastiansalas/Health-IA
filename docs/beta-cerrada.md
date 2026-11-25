@@ -67,3 +67,13 @@ docker compose -f infra/docker-compose.yml up -d api
 | «Demasiadas solicitudes» para todos | `CONFIAR_PROXY` está en `false`: todos los visitantes cuentan como uno. |
 | No llegan correos | `docker logs medtender-api-1 2>&1 \| Select-String correo` y el panel de Brevo → Transaccional → Logs. |
 | Las respuestas tardan o dan «servicio de IA no disponible» | Google a veces sobrecarga el modelo gratuito; reintenta en un minuto. |
+
+## Usar Gemini en Google Cloud (Vertex) en lugar de la API gratuita
+
+1. Crea en Google Cloud el proyecto con facturación, habilita la API `aiplatform.googleapis.com`, crea una cuenta de servicio con el rol «Agent Platform User» y descarga su clave JSON fuera del repositorio. El crédito de prueba de Google no paga Gemini para cuentas creadas desde el 16-nov-2026: se cobra desde la primera llamada.
+2. En `infra/.env` añade `VERTEX_PROYECTO` y `VERTEX_CREDENCIALES_ARCHIVO` (ruta de la clave, con `/`).
+3. Pon un tope en `agente/.env`: `IA_TOPE_DIARIO_USD=2`.
+4. Levanta con los dos archivos: `docker compose -f infra/docker-compose.yml -f infra/docker-compose.vertex.yml up -d --build`.
+5. El consentimiento cambia solo: cada invitado lo acepta de nuevo.
+
+Para volver a la API gratuita, repite el paso 4 sin el segundo `-f`.

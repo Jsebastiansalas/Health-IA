@@ -24,8 +24,13 @@ log = logging.getLogger(__name__)
 COLOMBIA = timezone(timedelta(hours=-5))  # sin horario de verano
 
 # US$ por millón de tokens (entrada, salida). Referencia de noviembre de 2026; en Gemini los
-# tokens de razonamiento se cobran como salida.
+# tokens de razonamiento se cobran como salida. Para gemini-3.x son los precios de lista de Agent
+# Platform en «global»: otras regiones cuestan un 10 % más, y la promoción de 3.8 Flash hasta el
+# 31-dic-2026 (se devuelve la mitad como crédito) no se descuenta, para que el tope no se quede
+# corto.
 PRECIOS_REFERENCIA: dict[str, tuple[float, float]] = {
+    "gemini-3.8-flash": (1.50, 7.50),
+    "gemini-3.5-flash": (1.50, 9.00),
     "gemini-2.5-flash": (0.30, 2.50),
     "gemini-2.5-pro": (1.25, 10.00),
     "claude-opus-5-5": (4.00, 20.00),

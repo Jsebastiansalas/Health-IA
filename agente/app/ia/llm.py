@@ -11,8 +11,8 @@ diario. Las garantías deterministas (citas, cifras, posología, límites clíni
 después, sobre la respuesta, así que valen igual con cualquier proveedor.
 
 Dentro de Gemini, los modelos pueden devolver 503 por alta demanda: si el modelo principal está
-saturado (429/5xx/timeout tras sus reintentos), se intenta con los de respaldo en orden. Un error
-de la petición (4xx distinto de 429) no cambia de modelo: fallaría igual.
+saturado (429/5xx/timeout tras sus reintentos) o ya no existe (404), se intenta con los de
+respaldo en orden. Cualquier otro error de la petición no cambia de modelo: fallaría igual.
 """
 
 import json
@@ -57,9 +57,18 @@ def _es_saturacion(mensaje: str) -> bool:
     return mensaje.startswith(("HTTP 429", "HTTP 5", "Proveedor inaccesible"))
 
 
+def _no_existe(mensaje: str) -> bool:
+    """El proveedor no ofrece ese modelo en esa región: retirado o mal configurado."""
+    return mensaje.startswith("HTTP 404")
+
+
 def _no_disponible(mensaje: str) -> bool:
     """Fallos del proveedor (no de la petición): cuentan para el cortacircuitos."""
-    return _es_saturacion(mensaje) or mensaje.startswith(("HTTP 401", "HTTP 403", "Credencial"))
+    return (
+        _es_saturacion(mensaje)
+        or _no_existe(mensaje)
+        or mensaje.startswith(("HTTP 401", "HTTP 403", "Credencial"))
+    )
 
 
 # ---------- Gemini (AI Studio y Vertex AI) ----------
@@ -101,12 +110,19 @@ class GeminiLLM:
                 self._saturado_hasta.pop(modelo, None)
                 return RespuestaLLM(datos, modelo, self.proveedor, uso)
             except ErrorLLM as exc:
-                if not _es_saturacion(str(exc)):
+                if _no_existe(str(exc)):
+                    log.error(
+                        "LLM %s: el proveedor no lo ofrece (HTTP 404). Revisa el modelo y la "
+                        "región",
+                        modelo,
+                    )
+                elif not _es_saturacion(str(exc)):
                     raise
+                else:
+                    log.warning(
+                        "LLM %s saturado; se usa respaldo por %.0fs", modelo, self.enfriamiento_s
+                    )
                 self._saturado_hasta[modelo] = time.monotonic() + self.enfriamiento_s
-                log.warning(
-                    "LLM %s saturado; se usa respaldo por %.0fs", modelo, self.enfriamiento_s
-                )
                 ultimo = exc
         raise ultimo or ErrorLLM("Sin modelos configurados")
 

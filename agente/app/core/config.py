@@ -3,6 +3,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -105,11 +106,15 @@ class Settings(BaseSettings):
     #   usan para entrenar. Es el único permitido con ENTORNO=produccion.
     ia_proveedor: Literal["gemini_api", "vertex"] = "gemini_api"
     vertex_proyecto: str = ""
-    # «global» enruta a la región con capacidad; una región concreta (us-central1, us-east4…)
-    # fija dónde se procesan los datos.
-    vertex_region: str = "us-central1"
-    # Ruta al JSON de la cuenta de servicio (rol «Vertex AI User»). Vacío: servidor de metadatos
-    # de Google Cloud, si el agente corre allí.
+    # Región del modelo generativo: «global», una multirregión («us», «eu») o una región. Cada
+    # modelo se ofrece solo en algunas: gemini-3.8-flash está en global, us y eu, no en
+    # us-central1. Con «global» Google decide dónde se procesa.
+    vertex_region: str = "global"
+    # Región de los embeddings, aparte porque no tienen las mismas que el modelo generativo. La
+    # documentación de gemini-embedding-001 muestra us-central1.
+    vertex_region_embeddings: str = "us-central1"
+    # Ruta al JSON de la cuenta de servicio (rol «Agent Platform User», antes «Vertex AI User»).
+    # Vacío: servidor de metadatos de Google Cloud, si el agente corre allí.
     vertex_credenciales: str = ""
     # Peticiones simultáneas de embeddings a Vertex (gemini-embedding-001 recibe un texto por
     # petición).
@@ -154,6 +159,18 @@ class Settings(BaseSettings):
     # el endpoint no existe.
     metrics_token: str = ""
 
+    @model_validator(mode="after")
+    def _modelos_de_vertex(self):
+        """Vertex y la API de AI Studio no retiran los modelos a la vez: en Vertex,
+        gemini-2.5-flash salía el 20-oct-2026. Solo cambia lo que no se haya configurado."""
+        if self.ia_proveedor == "vertex":
+            configurado = set(self.model_fields_set)
+            if "llm_model" not in configurado:
+                self.llm_model = "gemini-3.8-flash"
+            if "llm_modelos_respaldo" not in configurado:
+                self.llm_modelos_respaldo = ["gemini-3.5-flash"]
+        return self
+
     def problemas_produccion(self) -> tuple[list[str], list[str]]:
         """(fatales, advertencias) de una configuración destinada a producción."""
         fatales: list[str] = []
@@ -171,6 +188,11 @@ class Settings(BaseSettings):
             )
         elif not self.vertex_proyecto:
             fatales.append("IA_PROVEEDOR=vertex requiere VERTEX_PROYECTO")
+        if self.ia_proveedor == "vertex" and self.llm_model.startswith("gemini-2.5"):
+            avisos.append(
+                f"LLM_MODEL={self.llm_model}: Google fijó su retiro de Vertex para el 20-oct-2026; "
+                "usa gemini-3.8-flash"
+            )
         if self.llm_respaldo_proveedor == "claude" and not self.anthropic_api_key:
             fatales.append("LLM_RESPALDO_PROVEEDOR=claude requiere ANTHROPIC_API_KEY")
         if not self.llm_respaldo_proveedor:
