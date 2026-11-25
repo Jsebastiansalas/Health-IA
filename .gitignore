@@ -43,3 +43,7 @@ target/
 
 # Material crudo del recorrido scroll-world (imágenes y videos originales de Flow)
 docs/scroll-world/crudo/
+
+# Herramientas locales: capturas de revisión de Impeccable y carpeta de AiderDesk
+.impeccable/review/
+.aider-desk/
