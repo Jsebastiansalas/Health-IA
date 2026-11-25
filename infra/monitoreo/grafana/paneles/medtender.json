@@ -1,0 +1,561 @@
+{
+  "uid": "medtender",
+  "title": "MedTender",
+  "timezone": "America/Bogota",
+  "refresh": "1m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Servicios arriba",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "up{job=~\"api|agente|respaldos\"}",
+          "legendFormat": "{{job}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Sitio visto desde fuera",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "probe_success{job=\"sitio\"}",
+          "legendFormat": "responde",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Días que le quedan al certificado",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "d"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "(probe_ssl_earliest_cert_expiry{job=\"sitio\"} - time()) / 86400",
+          "legendFormat": "días",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Alertas activas",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "count(ALERTS{alertstate=\"firing\"}) or vector(0)",
+          "legendFormat": "activas",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Solicitudes a la API por segundo",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (status) (rate(http_server_requests_seconds_count{application=\"medtender-api\"}[5m]))",
+          "legendFormat": "{{status}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Latencia de la API (95 %)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{application=\"medtender-api\"}[5m])))",
+          "legendFormat": "p95",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Consultas con IA por resultado",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (resultado) (increase(medtender_consultas_total[1h]))",
+          "legendFormat": "{{resultado}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Duración de las consultas con IA (95 %)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(medtender_consulta_duracion_segundos_bucket[15m])))",
+          "legendFormat": "p95",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Documentos por estado",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "medtender_documentos",
+          "legendFormat": "{{estado}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Atascados y archivos sin borrar",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "medtender_documentos_en_proceso_mas_de_1h",
+          "legendFormat": "más de 1 h",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "expr": "medtender_pdf_temporales_pendientes",
+          "legendFormat": "sin borrar",
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Gasto de IA de hoy y tope",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "medtender_ia_costo_hoy_usd",
+          "legendFormat": "gasto",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "expr": "medtender_ia_tope_diario_usd",
+          "legendFormat": "tope",
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Tokens por hora",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (proveedor, tipo) (increase(medtender_ia_tokens_total[1h]))",
+          "legendFormat": "{{proveedor}} {{tipo}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Horas desde la última copia",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "(time() - medtender_respaldo_ultimo_ok_timestamp_segundos) / 3600",
+          "legendFormat": "local",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "expr": "(time() - medtender_respaldo_remoto_ok_timestamp_segundos) / 3600 and medtender_respaldo_remoto_configurado == 1",
+          "legendFormat": "fuera",
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Restauración de prueba fallida",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 36,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "medtender_restauracion_fallo",
+          "legendFormat": "1 = falló",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Conexiones de la API a la base",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 36,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "hikaricp_connections_active",
+          "legendFormat": "activas",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "expr": "hikaricp_connections_pending",
+          "legendFormat": "en espera",
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "title": "Peticiones frenadas por límites",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (regla) (increase(medtender_limite_rechazos_total[1h]))",
+          "legendFormat": "{{regla}}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    }
+  ]
+}

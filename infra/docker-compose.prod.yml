@@ -220,9 +220,11 @@ services:
       BACKUP_REMOTO: ${BACKUP_REMOTO:-}
       BACKUP_REMOTO_RETENCION_DIAS: ${BACKUP_REMOTO_RETENCION_DIAS:-14}
       RESTAURACION_INTERVALO_DIAS: ${RESTAURACION_INTERVALO_DIAS:-30}
+      ESTADO_DIR: /estado  # métricas del respaldo para el monitoreo (sin las copias)
     volumes:
       - ./backup:/scripts:ro
       - ${BACKUP_DIR:-backups}:/backups
+      - estado:/estado
     healthcheck:
       # Sana si hubo una copia correcta en las últimas 36 h (y fuera del equipo, si está configurada) y la última
       # restauración de prueba no falló.
@@ -274,5 +276,6 @@ volumes:
   clamav-db:
   ephemeral:
   backups:
+  estado:
   caddy_data:
   caddy_config:

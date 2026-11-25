@@ -1,0 +1,47 @@
+# Lo genera arrancar-prometheus.sh (Prometheus no sustituye variables). __X__ son los huecos.
+global:
+  scrape_interval: __INTERVALO__
+  evaluation_interval: __INTERVALO__
+
+rule_files:
+  - /etc/medtender/alertas.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: api
+    metrics_path: /metrics
+    authorization:
+      credentials_file: /tmp/metrics_token
+    static_configs:
+      - targets: ["api:8080"]
+
+  - job_name: agente
+    metrics_path: /metrics
+    authorization:
+      credentials_file: /tmp/metrics_token
+    static_configs:
+      - targets: ["agente:8000"]
+
+  # Estado de los respaldos (node-exporter, solo su colector de archivos).
+  - job_name: respaldos
+    static_configs:
+      - targets: ["estado-respaldos:9100"]
+
+  # El sitio visto como lo ve una persona: que responda y cuánto le queda al certificado.
+  - job_name: sitio
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ["__URL_SITIO__"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115

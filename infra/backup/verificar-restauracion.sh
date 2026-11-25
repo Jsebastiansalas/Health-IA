@@ -12,6 +12,8 @@ set -euo pipefail
 
 BACKUP_DIR="${BACKUP_DIR:-/backups}"
 log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) [verificar] $*"; }
+# shellcheck source=estado.sh
+source "$(dirname "$0")/estado.sh"
 
 trabajo="$(mktemp -d)"
 datos="${trabajo}/pg"
@@ -27,6 +29,7 @@ terminar() {
         date -u +%s > "${BACKUP_DIR}/restauracion_fallo"
         log "ERROR: la restauración de prueba FALLÓ"
     fi
+    publicar_estado
 }
 trap terminar EXIT
 

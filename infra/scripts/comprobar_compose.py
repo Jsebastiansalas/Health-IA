@@ -29,7 +29,7 @@ NECESITAN_INTERNET = {
     "alertmanager": "correo de las alertas",
     "blackbox": "revisar el certificado del dominio",
 }
-SOLO_INTERNOS = {"postgres", "redis"}
+SOLO_INTERNOS = {"postgres", "redis", "prometheus", "estado-respaldos"}
 # Únicos puertos que se pueden publicar. Grafana solo en la propia máquina.
 PUEDEN_PUBLICAR = {"caddy", "grafana"}
 
