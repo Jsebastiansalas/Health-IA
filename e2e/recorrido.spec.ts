@@ -28,6 +28,16 @@ const enLaBase = (consulta: string) =>
   }).trim();
 
 test("una persona se registra, sube una foto, la entiende, se lleva sus datos y borra su cuenta", async ({ page, request }) => {
+  await test.step("la portada carga con sus escenas y sin errores", async () => {
+    const errores: string[] = [];
+    page.on("pageerror", (e) => errores.push(e.message));
+    await page.goto("/personas");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Entiende los documentos");
+    await expect(page.locator("video").first()).toBeAttached({ timeout: 30_000 });
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", /og-portada\.jpg$/);
+    expect(errores).toEqual([]);
+  });
+
   await test.step("crea su cuenta", async () => {
     await page.goto("/registro");
     await page.getByLabel("Tu nombre").fill("Persona Inventada");
@@ -84,6 +94,13 @@ test("una persona se registra, sube una foto, la entiende, se lleva sus datos y 
   await test.step("prepara la cita con preguntas para su médico", async () => {
     await page.getByRole("button", { name: "Preparar mi cita" }).click();
     await expect(page.getByText("¿Cuándo debo repetir estos exámenes?").first()).toBeVisible({ timeout: 60_000 });
+  });
+
+  await test.step("baja el resumen de la cita en PDF", async () => {
+    const espera = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Descargar PDF" }).click();
+    expect(readFileSync(await (await espera).path()).subarray(0, 5).toString()).toBe("%PDF-");
+    await page.keyboard.press("Escape");
   });
 
   await test.step("confirma un recordatorio propuesto por el documento", async () => {

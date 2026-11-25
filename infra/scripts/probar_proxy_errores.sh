@@ -49,6 +49,13 @@ comprobar "sin cookies, sesión, página, navegador, idioma ni IP" \
 comprobar "lo demás de GlitchTip no se publica" 'pedir /api/0/organizations/ | grep -q "^SOY-LA-API"'
 comprobar "la API sigue recibiendo lo suyo con su sesión" 'pedir /api/v1/auth/login | grep -q "secreto"'
 
+robots="$(curl -s -H 'Host: medtender.ejemplo' "http://127.0.0.1:$puerto/robots.txt")"
+comprobar "robots.txt protege lo privado y señala el mapa del sitio" \
+    'grep -qx "Disallow: /expedientes" <<< "$robots" && grep -qx "Sitemap: https://medtender.ejemplo/sitemap.xml" <<< "$robots"'
+mapa="$(curl -s -H 'Host: medtender.ejemplo' "http://127.0.0.1:$puerto/sitemap.xml")"
+comprobar "el mapa del sitio es XML y solo lista páginas públicas" \
+    'head -1 <<< "$mapa" | grep -q "^<?xml" && [ "$(grep -c "<loc>https://medtender.ejemplo/" <<< "$mapa")" = 4 ]'
+
 arrancar_caddy
 comprobar "sin GlitchTip configurado la recepción no llega a ningún lado" \
     '[ "$(curl -s -w "

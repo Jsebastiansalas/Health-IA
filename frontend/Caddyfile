@@ -36,6 +36,34 @@
 		respond 404
 	}
 
+	# Buscadores: solo la portada y las páginas legales. Se arman aquí porque dependen del dominio.
+	handle /robots.txt {
+		header Content-Type "text/plain; charset=utf-8"
+		respond <<TXT
+			User-agent: *
+			Disallow: /api/
+			Disallow: /expedientes
+			Disallow: /cuenta
+			Disallow: /recordatorios
+			Disallow: /compartir
+			Disallow: /verificar-correo
+			Disallow: /restablecer
+			Sitemap: https://{http.request.host}/sitemap.xml
+			TXT 200
+	}
+	handle /sitemap.xml {
+		header Content-Type "application/xml; charset=utf-8"
+		respond <<XML
+			<?xml version="1.0" encoding="UTF-8"?>
+			<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+			  <url><loc>https://{http.request.host}/</loc></url>
+			  <url><loc>https://{http.request.host}/personas</loc></url>
+			  <url><loc>https://{http.request.host}/privacidad</loc></url>
+			  <url><loc>https://{http.request.host}/terminos</loc></url>
+			</urlset>
+			XML 200
+	}
+
 	# Rastreo de errores de la web: solo la ruta de recepción va a GlitchTip, y sin nada que identifique a la
 	# persona (cookies, sesión, página, navegador, idioma ni IP). El panel de GlitchTip no se publica.
 	@errores path_regexp ^/api/[0-9]+/envelope/$

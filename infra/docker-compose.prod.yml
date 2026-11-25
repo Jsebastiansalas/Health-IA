@@ -245,6 +245,7 @@ services:
     build:
       context: ../frontend
       args:
+        VITE_URL_PUBLICA: https://${DOMINIO:?defina DOMINIO}
         VITE_RESPONSABLE: ${VITE_RESPONSABLE:-}
         VITE_CONTACTO_PRIVACIDAD: ${VITE_CONTACTO_PRIVACIDAD:-}
         VITE_ERRORES_DSN: ${VITE_ERRORES_DSN:-}
