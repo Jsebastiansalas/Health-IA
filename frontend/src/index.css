@@ -197,3 +197,46 @@
     transition-delay: 0s !important;
   }
 }
+
+/* Portada scroll-world (motor en src/lib/scrollWorld.js). Fuera de capas: gana a los valores por defecto del motor. */
+.mundo-medtender.sw-root {
+  --sw-bg: #f0f3f7;
+  --sw-ink: #14212e;
+  --sw-ink-soft: #4a5a6a;
+  --sw-accent: #0e7c86;
+  --sw-font-display: "Geist Variable", system-ui, sans-serif;
+  --sw-font-body: "Geist Variable", system-ui, sans-serif;
+}
+.mundo-medtender .sw-brand__mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #0b2e4a;
+  box-shadow: none;
+}
+.mundo-medtender .sw-brand__mark::after {
+  content: "M";
+  font: 700 15px/1 "Geist Variable", system-ui, sans-serif;
+  color: #fff;
+  border-bottom: 2px solid #fff0b3;
+}
+.mundo-medtender .sw-brand__name { font-weight: 600; letter-spacing: -0.01em; }
+.mundo-medtender .sw-topcta,
+.mundo-medtender .sw-btn--primary { background: #0b2e4a; border-radius: 8px; }
+.mundo-medtender .sw-btn--primary { background: #0e7c86; }
+.mundo-medtender .sw-btn--ghost { border-radius: 8px; }
+.mundo-medtender .sw-copy__title { font-weight: 600; letter-spacing: -0.02em; font-size: clamp(1.9rem, 3.3vw, 3rem); line-height: 1.05; }
+.mundo-medtender .sw-copy__eyebrow { font-family: "Geist Mono Variable", ui-monospace, monospace; font-weight: 500; letter-spacing: 0.08em; }
+/* En pantallas angostas la escena horizontal se ve completa arriba y el texto queda debajo, sobre el fondo. */
+@media (max-width: 860px) {
+  .mundo-medtender .sw-scene__still,
+  .mundo-medtender .sw-scene__video { object-fit: contain; object-position: center 16%; }
+  .mundo-medtender .sw-copylayer::before { height: 58%; }
+  .mundo-medtender .sw-route { display: none; }
+}
+/* El motor escribe su propio transform en cada texto y anula el translateY(-50%): se centra con flex. */
+@media (min-width: 861px) {
+  .mundo-medtender .sw-copy { top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; }
+}
