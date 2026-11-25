@@ -156,7 +156,8 @@ services:
         condition: service_healthy
       clamav:
         condition: service_healthy
-    networks: [interna]
+    # «externa» solo da salida a internet (correo SMTP y contraseñas filtradas); no publica puertos.
+    networks: [interna, externa]
 
   # Agente de IA (FastAPI). Solo la API Java le habla, con X-Internal-Token. Nunca se publica.
   agente:
@@ -233,7 +234,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    networks: [interna]
+    # «externa» solo da salida a internet (la copia fuera del equipo (BACKUP_REMOTO)); no publica puertos.
+    networks: [interna, externa]
 
   caddy:
     build:
@@ -256,7 +258,7 @@ services:
     networks: [externa, interna]
 
 networks:
-  # Sin salida a internet: aquí viven la base de datos, Redis y los respaldos.
+  # Sin salida a internet: por aquí se habla con la base de datos y Redis.
   interna:
     internal: true
   externa: {}
