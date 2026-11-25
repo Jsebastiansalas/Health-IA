@@ -11,7 +11,7 @@ describe("portadas", () => {
     enRuta(<PaginaBienvenida />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Respuestas sobre tus expedientes de salud");
     const acciones = screen.getAllByRole("link", { name: /Ingresar a mi organización/ });
-    expect(acciones).toHaveLength(3); // arriba, bloque de seguridad y cierre: todas al mismo destino
+    expect(acciones).toHaveLength(4); // primera y última escena del recorrido, bloque de seguridad y cierre: todas al mismo destino
     acciones.forEach((a) => expect(a).toHaveAttribute("href", "/ingreso"));
   });
 

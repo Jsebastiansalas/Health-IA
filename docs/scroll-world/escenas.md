@@ -92,3 +92,24 @@ Se produjo con **Google Flow (Veo)** en lugar de Higgsfield, y con una arquitect
 - El material original queda en `docs/scroll-world/crudo/` (ignorado por git).
 
 Pendiente: regenerar los tramos 3 y 4 sin oscurecer el fondo (añadir `Keep the plain light background #F0F3F7 throughout, no lens flare, no bokeh, no darkening.`) y recodificar con ffmpeg (`-g 8`, sin audio) si el scroll da tirones.
+
+## Videos de cada escena («entrada», como en la demo de la skill)
+
+En la referencia cada escena tiene su propio video: la cámara entra al diorama y se acerca a la gente. Aquí cada parada es todavía una imagen quieta. Para no rehacer los tramos, cada video de escena **empieza y termina en la misma imagen** (Flow, *Fotogramas a video*, primer y último fotograma = `escena N`): la cámara entra, se acerca y vuelve a salir al mismo encuadre, así empalma con los tramos que ya existen.
+
+Texto (cambiar los dos corchetes):
+
+```
+Single continuous cinematic camera move, no cuts. Start exactly on the first image: the [ESCENA] miniature clay diorama seen from above. The camera slowly glides forward and descends into the scene, sweeping in close toward [PUNTO FOCAL], as if flying inside the tiny world, while the little clay figures move gently and naturally. Then the camera smoothly rises and pulls back out, ending exactly on the same view as the last image. Keep the plain light background #F0F3F7 throughout, no lens flare, no bokeh, no darkening. Soft matte clay style, tilt-shift miniature, warm light. Smooth, graceful, slow motion, subtle parallax. No text, no captions, no new objects.
+```
+
+| Archivo | [ESCENA] | [PUNTO FOCAL] |
+|---|---|---|
+| `parada-1.mp4` | hospital entrance | the nurse at the triage desk greeting the family |
+| `parada-2.mp4` | waiting room | the nurse at the reception counter |
+| `parada-3.mp4` | doctor's consulting room | the doctor talking with the patient holding a folder |
+| `parada-4.mp4` | clinical laboratory | the technician looking into the microscope |
+| `parada-5.mp4` | radiology room | the technician at the monitor in the control booth |
+| `parada-6.mp4` | hospital room | the patient sitting up in bed reading |
+
+Duración: la más larga que ofrezca Flow (8 s), 16:9, descarga en 720p, guardar en `docs/scroll-world/crudo/`.

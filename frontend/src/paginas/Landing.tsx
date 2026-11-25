@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Check, FileText, List, Plus, ShieldCheck, X } from "../iconos";
+import { ArrowRight, Check, FileText, Plus, ShieldCheck } from "../iconos";
 import { Marca } from "../componentes/Marca";
 import { boton } from "../componentes/ui/Boton";
 import { Insignia } from "../componentes/ui/Insignia";
-import { RecorridoHospital, type ParadaRecorrido } from "../componentes/RecorridoHospital";
+import { MundoHospital, type ParadaRecorrido } from "../componentes/MundoHospital";
 import { cn } from "../lib/cn";
 import { CONTACTO_PRIVACIDAD } from "../lib/legal";
 
@@ -111,71 +111,6 @@ function Revelar({ children, className }: { children: React.ReactNode; className
   );
 }
 
-const ENLACES = [
-  ["#como-funciona", "Cómo funciona"],
-  ["#seguridad", "Seguridad"],
-  ["#preguntas", "Preguntas"],
-] as const;
-
-function Navegacion({ c }: { c: ContenidoLanding }) {
-  const [abierto, setAbierto] = useState(false);
-  return (
-    <>
-      <header className="fixed inset-x-0 top-4 z-40 flex justify-center px-4">
-        <div className="flex w-full max-w-3xl items-center gap-3 rounded-xl border border-borde bg-panel/80 p-2 pl-4 backdrop-blur-md">
-          <Link to="/" aria-label="MedTender, inicio" className="shrink-0">
-            <Marca />
-          </Link>
-          <nav className="ml-auto hidden items-center gap-1 md:flex" aria-label="Secciones de la página">
-            {ENLACES.map(([a, t]) => (
-              <a key={a} href={a} className="rounded-lg px-3 py-2 text-sm font-medium text-texto-2 transition-colors duration-300 hover:bg-panel-2 hover:text-texto">
-                {t}
-              </a>
-            ))}
-            <Link to={c.alterna.a} className="rounded-lg px-3 py-2 text-sm font-medium text-texto-2 transition-colors duration-300 hover:bg-panel-2 hover:text-texto">
-              {c.alterna.texto}
-            </Link>
-          </nav>
-          <Link to="/ingreso" className={cn(boton({ variante: "secundario", tamano: "sm" }), "ml-auto md:ml-2")}>
-            Ingresar
-          </Link>
-          <button
-            type="button"
-            className="grid size-8 place-items-center rounded-lg text-texto transition-colors duration-300 hover:bg-panel-2 md:hidden"
-            aria-label={abierto ? "Cerrar menú" : "Abrir menú"}
-            aria-expanded={abierto}
-            onClick={() => setAbierto((v) => !v)}
-          >
-            <span className="relative block size-4">
-              <List className={cn("absolute inset-0 size-4 transition-[opacity,transform] duration-500 ease-[var(--ease-salida)]", abierto ? "rotate-90 opacity-0" : "opacity-100")} aria-hidden />
-              <X className={cn("absolute inset-0 size-4 transition-[opacity,transform] duration-500 ease-[var(--ease-salida)]", abierto ? "opacity-100" : "-rotate-90 opacity-0")} aria-hidden />
-            </span>
-          </button>
-        </div>
-      </header>
-      {abierto && (
-        <div className="fixed inset-0 z-30 bg-fondo/95 px-6 pt-24 backdrop-blur-xl md:hidden" role="dialog" aria-label="Menú">
-          <nav className="flex flex-col gap-2" aria-label="Secciones de la página">
-            {[...ENLACES.map(([a, t]) => [a, t, false] as const), [c.alterna.a, c.alterna.texto, true] as const].map(([a, t, ruta], i) => {
-              const clase = "block rounded-xl px-3 py-3 text-2xl font-semibold text-texto animate-[aparecer_500ms_var(--ease-salida)_both]";
-              const estilo = { animationDelay: `${Math.min(i * 60, 400)}ms` };
-              return ruta ? (
-                <Link key={a} to={a} className={clase} style={estilo} onClick={() => setAbierto(false)}>
-                  {t}
-                </Link>
-              ) : (
-                <a key={a} href={a} className={clase} style={estilo} onClick={() => setAbierto(false)}>
-                  {t}
-                </a>
-              );
-            })}
-          </nav>
-        </div>
-      )}
-    </>
-  );
-}
-
 /** Ejemplo ilustrativo de una respuesta con su cita, dibujado en código con datos de demostración. */
 function MuestraRespuesta({ c }: { c: ContenidoLanding }) {
   return (
@@ -207,25 +142,27 @@ function MuestraRespuesta({ c }: { c: ContenidoLanding }) {
 export function Landing({ c }: { c: ContenidoLanding }) {
   return (
     <div className="min-h-screen bg-fondo">
-      <a href="#principal" className="sr-only rounded-lg bg-primario px-4 py-2 text-sm font-semibold text-primario-tx focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50">
+      <a href="#principal" className="sr-only rounded-lg bg-primario px-4 py-2 text-sm font-semibold text-primario-tx focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[80]">
         Saltar al contenido
       </a>
-      <Navegacion c={c} />
+      <h1 className="sr-only">{c.titular}</h1>
 
-      <main id="principal">
-        {/* Hero */}
-        <section className="mx-auto grid max-w-6xl items-center gap-12 px-6 pb-20 pt-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      {/* Portada: el hospital en miniatura a pantalla completa, recorrido con el scroll */}
+      <MundoHospital
+        titular={c.titular}
+        subtitular={c.subtitular}
+        cta={c.cta}
+        alterna={c.alterna}
+        paradas={c.recorrido.paradas}
+      />
+
+      {/* El resto de la página pasa por encima del escenario fijo, por debajo de la barra superior */}
+      <main id="principal" className="relative z-[45] -mt-[60vh] rounded-t-2xl bg-fondo pt-16 shadow-[0_-24px_48px_-24px_rgb(11_46_74/0.18)]">
+        {/* Ejemplo de respuesta con su cita */}
+        <section className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div>
-            <h1 className="max-w-[680px] bg-linear-to-r from-[#000000] to-[#666666] bg-clip-text text-5xl font-semibold leading-none text-transparent dark:from-white dark:to-[#9b9b9b] sm:text-6xl">
-              {c.titular}
-            </h1>
-            <p className="mt-6 max-w-[680px] text-lg text-texto-2">{c.subtitular}</p>
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link to={c.cta.a} className={boton({ variante: "primario", tamano: "lg" })}>
-                {c.cta.texto}
-                <ArrowRight className="size-5" aria-hidden />
-              </Link>
-            </div>
+            <h2 className="max-w-[680px] text-4xl font-semibold leading-10">Así se ve una respuesta</h2>
+            <p className="mt-4 max-w-[680px] text-lg text-texto-2">{c.subtitular}</p>
             <p className="mt-6 flex max-w-[680px] items-start gap-2 text-sm text-texto-2">
               <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primario" aria-hidden />
               {c.apoyo}
@@ -235,9 +172,6 @@ export function Landing({ c }: { c: ContenidoLanding }) {
             <MuestraRespuesta c={c} />
           </Revelar>
         </section>
-
-        {/* Recorrido por el hospital, movido por el scroll */}
-        <RecorridoHospital titulo={c.recorrido.titulo} paradas={c.recorrido.paradas} />
 
         {/* Lema */}
         <section className="mx-auto max-w-6xl px-6 py-24" aria-label="Lo que prometemos">
@@ -329,7 +263,7 @@ export function Landing({ c }: { c: ContenidoLanding }) {
         </section>
       </main>
 
-      <footer className="border-t border-borde px-6 py-8">
+      <footer className="relative z-[45] border-t border-borde bg-fondo px-6 py-8">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 text-sm text-texto-2">
           <Marca />
           <nav className="flex flex-wrap items-center gap-6" aria-label="Información legal">
