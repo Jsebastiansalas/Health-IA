@@ -64,6 +64,10 @@ management:
     health:
       probes:
         enabled: true
+  health:
+    mail:
+      # El correo no decide si la API está viva: caído o sin configurar, lo demás funciona.
+      enabled: false
   metrics:
     tags:
       application: medtender-api

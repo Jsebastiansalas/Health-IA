@@ -1,0 +1,51 @@
+# Aplicación completa AISLADA para las pruebas en navegador (infra/scripts/e2e.sh). Se usa encima del compose local,
+# con su propio nombre de proyecto, imágenes, puertos y volúmenes: no toca la beta ni sus datos.
+# Sin ClamAV (tarda minutos y necesita internet) y con una IA de mentira (sin red ni costo).
+name: medtender-e2e
+
+x-ia-falsa: &ia-falsa
+  IA_PROVEEDOR: gemini_api
+  GEMINI_API_KEY: clave-falsa-de-pruebas
+  GEMINI_BASE_URL: http://ia-falsa:9000/v1beta
+  VERIFICAR_MODELOS_AL_ARRANCAR: "false"
+  LLM_RESPALDO_PROVEEDOR: ""
+
+services:
+  api:
+    image: medtender-api:e2e
+    environment:
+      ANTIVIRUS_BACKEND: noop
+      CONTRASENAS_CONSULTAR_FILTRACIONES: "false"  # sin salir a internet
+      CORREO_VERIFICACION_OBLIGATORIA: "false"
+      CORREO_BASE_URL: http://localhost:18088
+    depends_on: !override
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  clamav:
+    profiles: ["sin-usar"]
+
+  agente:
+    image: medtender-agente:e2e
+    env_file: !override []
+    environment: *ia-falsa
+
+  worker:
+    pull_policy: never  # la imagen la construye «agente»
+    image: medtender-agente:e2e
+    env_file: !override []
+    environment: *ia-falsa
+
+  web:
+    image: medtender-web:e2e
+
+  ia-falsa:
+    pull_policy: never
+    image: medtender-agente:e2e
+    command: ["python", "/e2e/ia_falsa.py"]
+    volumes:
+      - ../e2e:/e2e:ro
+    ports:
+      - "127.0.0.1:18900:9000"
