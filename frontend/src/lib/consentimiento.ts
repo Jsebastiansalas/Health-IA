@@ -13,8 +13,10 @@ export function useConsentimiento() {
     staleTime: 5 * 60_000,
   });
   const aceptar = useMutation({
-    mutationFn: () => post<EstadoConsentimiento>("/consentimiento", {}),
+    // Se envía la versión que está en pantalla: el servidor la rechaza si el proveedor de IA cambió.
+    mutationFn: () => post<EstadoConsentimiento>("/consentimiento", { version: estado.data?.version }),
     onSuccess: (e) => cliente.setQueryData(CLAVE, e),
+    onError: () => cliente.invalidateQueries({ queryKey: CLAVE }),
   });
   const reenviar = useMutation({ mutationFn: () => post<void>("/auth/reenviar-verificacion", {}) });
   const pendiente = !!estado.data && estado.data.requerido && !estado.data.aceptado;

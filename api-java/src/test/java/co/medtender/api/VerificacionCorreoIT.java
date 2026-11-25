@@ -86,7 +86,7 @@ class VerificacionCorreoIT extends IntegracionBase {
         mvc.perform(getAuth("/api/v1/consentimiento", ana)).andExpect(jsonPath("$.correo_verificado").value(true));
         // verificado el correo, sigue faltando el consentimiento (cada exigencia por separado)
         preguntar(ana, exp).andExpect(status().isForbidden()).andExpect(jsonPath("$.codigo").value("consentimiento_requerido"));
-        mvc.perform(post("/api/v1/consentimiento").header("Authorization", bearer(ana))).andExpect(status().isOk());
+        aceptarConsentimiento(ana).andExpect(status().isOk());
         preguntar(ana, exp).andExpect(status().isOk());
     }
 

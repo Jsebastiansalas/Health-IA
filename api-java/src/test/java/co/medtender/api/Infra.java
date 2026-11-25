@@ -28,6 +28,8 @@ public final class Infra {
     public static final String JWT_SECRET = "secreto-de-pruebas-0123456789-abcdefghij-XYZ";
     public static final String METRICS_TOKEN = "token-metricas-de-prueba";
     public static final String AGENTE_TOKEN = "token-interno-de-prueba";
+    /** La misma de las pruebas del agente, para leer lo que él cifra. */
+    public static final String DATOS_CLAVE = "Y2xhdmUtZGUtcHJ1ZWJhcy1kZS0zMi1ieXRlcy1vayE=";
     public static final String EICAR = "X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*";
 
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
@@ -88,6 +90,8 @@ public final class Infra {
         r.add("medtender.ingesta.agente.token", () -> AGENTE_TOKEN);
         r.add("medtender.ingesta.agente.reintentos", () -> "3");
         r.add("medtender.ingesta.agente.retroceso-ms", () -> "10");
+        r.add("medtender.ia.proveedor-ttl-s", () -> "0"); // cada prueba cambia el proveedor del agente falso
+        r.add("medtender.datos.clave", () -> DATOS_CLAVE);
         // Las pruebas no salen a internet: la consulta de contraseñas filtradas se prueba con un servidor falso.
         r.add("medtender.contrasenas.consultar-filtraciones", () -> "false");
     }
@@ -176,11 +180,17 @@ public final class Infra {
             servidor.createContext("/internal/v1/", ex -> {
                 String ruta = ex.getRequestURI().getPath();
                 String cuerpo = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-                llamadas.add(new Llamada(ex.getRequestMethod(), ruta, ex.getRequestURI().getRawQuery(),
-                        ex.getRequestHeaders().getFirst("X-Internal-Token"), cuerpo));
+                boolean infoIa = ruta.equals("/internal/v1/ia"); // no lleva datos de nadie: no cuenta como llamada
+                if (!infoIa) {
+                    llamadas.add(new Llamada(ex.getRequestMethod(), ruta, ex.getRequestURI().getRawQuery(),
+                            ex.getRequestHeaders().getFirst("X-Internal-Token"), cuerpo));
+                }
+                Respuesta porDefecto = infoIa
+                        ? new Respuesta(200, "{\"proveedor\":\"gemini_api\",\"respaldo\":\"\"}")
+                        : new Respuesta(404, "{\"detail\":\"sin configurar\"}");
                 Respuesta r = ruta.startsWith("/internal/v1/documentos/")
                         ? new Respuesta(respuestaProcesar.get(), "")
-                        : respuestas.getOrDefault(ex.getRequestMethod() + " " + ruta, new Respuesta(404, "{\"detail\":\"sin configurar\"}"));
+                        : respuestas.getOrDefault(ex.getRequestMethod() + " " + ruta, porDefecto);
                 byte[] bytes = r.cuerpo().getBytes(StandardCharsets.UTF_8);
                 ex.getResponseHeaders().add("Content-Type", "application/json");
                 ex.sendResponseHeaders(r.estado(), bytes.length == 0 ? -1 : bytes.length);

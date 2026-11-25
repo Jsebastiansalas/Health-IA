@@ -265,7 +265,7 @@ def construir_router(s: Settings) -> EmbeddingRouter:
             "gemini-embedding-001",
             1536,
             proyecto=s.vertex_proyecto,
-            region=s.vertex_region,
+            region=s.vertex_region_embeddings,
             credencial=credencial_para(s.vertex_credenciales),
             concurrencia=s.vertex_embeddings_concurrencia,
             **comun,

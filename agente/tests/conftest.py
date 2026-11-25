@@ -25,6 +25,7 @@ os.environ.update(
         "EMBEDDING_MODEL_DEFAULT": "gemini-embedding-001",
         "DB_NULL_POOL": "true",
         "METRICS_TOKEN": "token-de-metricas-de-pruebas",
+        "DATOS_CLAVE": "Y2xhdmUtZGUtcHJ1ZWJhcy1kZS0zMi1ieXRlcy1vayE=",
     }
 )
 

@@ -5,7 +5,7 @@ from collections.abc import AsyncIterator
 
 from fastapi import FastAPI
 
-from app.api import interno, sistema
+from app.api import interno, proveedor_ia, sistema
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
 from app.core.logs import configurar_logging
@@ -89,6 +89,7 @@ def create_app() -> FastAPI:
 
     app.include_router(sistema.router)
     app.include_router(interno.router)
+    app.include_router(proveedor_ia.router)
     return app
 
 

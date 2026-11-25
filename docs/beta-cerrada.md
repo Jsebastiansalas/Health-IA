@@ -2,7 +2,7 @@
 
 Para que unas pocas personas que conoces usen MedTender **sin pagar servidor ni dominio**. Tu PC corre todo (los datos quedan en tu casa) y Cloudflare solo le presta una dirección pública con HTTPS.
 
-> **Antes de invitar a alguien:** que haya aceptado el consentimiento (la aplicación se lo pide sola), que entienda que es una **prueba** y qué proveedor de IA recibe el texto: si la beta corre con la API gratuita de Gemini (desarrollo), Google puede usar lo que se le envía; con Vertex AI (sprint 41) no. Invita solo a quien conozcas.
+> **Antes de invitar a alguien:** que haya aceptado el consentimiento (la aplicación se lo pide sola), que entienda que es una **prueba** y qué proveedor de IA recibe el texto: el consentimiento lo dice según lo que esté configurado en `agente/.env`. Con la API gratuita de Gemini (lo normal en la beta), Google puede usar lo que se le envía; con Vertex AI no. Invita solo a quien conozcas.
 
 ## Lo que necesitas
 - MedTender corriendo en Docker (`docker compose -f infra/docker-compose.yml up -d`).
@@ -67,3 +67,19 @@ docker compose -f infra/docker-compose.yml up -d api
 | «Demasiadas solicitudes» para todos | `CONFIAR_PROXY` está en `false`: todos los visitantes cuentan como uno. |
 | No llegan correos | `docker logs medtender-api-1 2>&1 \| Select-String correo` y el panel de Brevo → Transaccional → Logs. |
 | Las respuestas tardan o dan «servicio de IA no disponible» | Google a veces sobrecarga el modelo gratuito; reintenta en un minuto. |
+
+## Usar Gemini en Google Cloud (Vertex) en lugar de la API gratuita
+
+1. Crea en Google Cloud el proyecto con facturación, habilita la API `aiplatform.googleapis.com`, crea una cuenta de servicio con el rol «Agent Platform User» y descarga su clave JSON fuera del repositorio. El crédito de prueba de Google no paga Gemini para cuentas creadas desde el 16-nov-2026: se cobra desde la primera llamada.
+2. En `infra/.env` añade `VERTEX_PROYECTO` y `VERTEX_CREDENCIALES_ARCHIVO` (ruta de la clave, con `/`).
+3. Pon un tope en `agente/.env`: `IA_TOPE_DIARIO_USD=2`.
+4. Levanta con los dos archivos: `docker compose -f infra/docker-compose.yml -f infra/docker-compose.vertex.yml up -d --build`.
+5. El consentimiento cambia solo: cada invitado lo acepta de nuevo.
+
+Para volver a la API gratuita, repite el paso 4 sin el segundo `-f`.
+
+## Antes de recibir documentos de otras personas: lo que protege los datos
+
+- **Disco cifrado en el PC:** activa BitLocker o «Cifrado de dispositivo» en Windows y guarda la clave de recuperación fuera del PC.
+- **`DATOS_CLAVE` en `infra/.env`** (32 bytes en base64): cifra en la base las preguntas y respuestas. Guárdala aparte; si se pierde, el historial no se recupera. Para cifrar lo que ya había: `docker compose -f infra/docker-compose.yml exec agente python -m app.cli cifrar-historial`.
+- **El Docker local no hace respaldos:** el servicio de respaldos solo está en `docker-compose.prod.yml`. Si se daña el disco de la beta, se pierde todo.

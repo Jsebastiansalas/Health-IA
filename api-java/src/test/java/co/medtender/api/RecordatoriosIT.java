@@ -169,7 +169,7 @@ class RecordatoriosIT extends IntegracionBase {
         JsonNode ana = cuerpo(r);
         String exp = crearExpediente(ana, "PERS-R");
         proponer(ana, exp).andExpect(status().isForbidden()).andExpect(jsonPath("$.codigo").value("consentimiento_requerido"));
-        mvc.perform(post("/api/v1/consentimiento").header("Authorization", bearer(ana))).andExpect(status().isOk());
+        aceptarConsentimiento(ana).andExpect(status().isOk());
         proponer(ana, exp).andExpect(status().isOk());
     }
 }

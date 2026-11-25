@@ -2,7 +2,7 @@ import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Toaster } from "sonner";
-import { Bell, ChevronsUpDown, FolderOpen, LogOut, Moon, Pill, ShieldCheck, Sun, Trash2 } from "../iconos";
+import { Bell, ChevronsUpDown, DownloadSimple, FolderOpen, LogOut, Moon, Pill, ShieldCheck, Sun, Trash2 } from "../iconos";
 import { EVENTO_DOS_PASOS_REQUERIDO } from "../api/cliente";
 import { toast as avisar } from "sonner";
 import { cn } from "../lib/cn";
@@ -91,6 +91,12 @@ function MenuUsuario() {
               <ShieldCheck className="size-4" aria-hidden />
               Seguridad de la cuenta
             </Menu.Item>
+            {esPersonal && (
+              <Menu.Item onSelect={() => navegar("/cuenta/datos")} className={itemMenu}>
+                <DownloadSimple className="size-4" aria-hidden />
+                Mis datos
+              </Menu.Item>
+            )}
             <Menu.Item onSelect={salir} className={itemMenu}>
               <LogOut className="size-4" aria-hidden />
               Cerrar sesión

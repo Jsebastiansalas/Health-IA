@@ -26,13 +26,19 @@ _METADATOS = (
 _MARGEN_S = 60
 
 
+def vertex_host(region: str) -> str:
+    """«global», las multirregiones (us, eu) y las regiones tienen cada una su forma de host."""
+    if region == "global":
+        return "aiplatform.googleapis.com"
+    if region in ("us", "eu"):
+        return f"aiplatform.{region}.rep.googleapis.com"
+    return f"{region}-aiplatform.googleapis.com"
+
+
 def vertex_url(proyecto: str, region: str, modelo: str, metodo: str) -> str:
-    """URL de un modelo de Google en Vertex AI. «global» no lleva la región en el host."""
-    host = "aiplatform.googleapis.com"
-    if region != "global":
-        host = f"{region}-{host}"
+    """URL de un modelo de Google en Vertex AI."""
     return (
-        f"https://{host}/v1/projects/{proyecto}/locations/{region}"
+        f"https://{vertex_host(region)}/v1/projects/{proyecto}/locations/{region}"
         f"/publishers/google/models/{modelo}:{metodo}"
     )
 

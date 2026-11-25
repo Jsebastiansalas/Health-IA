@@ -70,7 +70,7 @@ class PreparacionCitaIT extends IntegracionBase {
         String exp = crearExpediente(ana, "PERS-P");
         pedir(ana, exp).andExpect(status().isForbidden()).andExpect(jsonPath("$.codigo").value("consentimiento_requerido"));
         assertThat(Infra.AGENTE.llamadas()).isEmpty();
-        mvc.perform(post("/api/v1/consentimiento").header("Authorization", bearer(ana))).andExpect(status().isOk());
+        aceptarConsentimiento(ana).andExpect(status().isOk());
         pedir(ana, exp).andExpect(status().isOk());
     }
 

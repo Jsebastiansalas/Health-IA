@@ -54,7 +54,10 @@ Hoy todo va a la API gratuita de Gemini (que puede usar lo que recibe) y a un so
 - Claude (Anthropic, `claude-opus-5-5`, SDK oficial con salida JSON estructurada) como segundo proveedor. Si Gemini falla, se satura o rechaza la credencial, responde Claude; el cortacircuitos deja de insistir sobre el caído durante 2 minutos tras 3 fallos seguidos. Una prueba confirma que la salida del respaldo pasa por las mismas garantías.
 - Tokens y costo estimado por llamada en métricas y log (solo cifras), y tope diario `IA_TOPE_DIARIO_USD` que corta las llamadas hasta el otro día. Límite: el contador del día está en memoria y se reinicia con el agente.
 - Con `ENTORNO=produccion` el agente no arranca con la API gratuita de AI Studio, ni con Vertex sin proyecto, ni con Claude sin clave. El compose de producción monta la cuenta de servicio como secreto (`VERTEX_CREDENCIALES_ARCHIVO`).
-- Consentimiento `2026-11-v4`, página legal, preguntas frecuentes y `docs/revision-legal.md` con Google Cloud y Anthropic como encargados.
+- Consentimiento, página legal, preguntas frecuentes y `docs/revision-legal.md` con Google Cloud y Anthropic como encargados.
+- **Corrección posterior (25-nov-2026):** la v4 integrada decía Vertex AI sin mirar el proveedor configurado, así que en la beta (API gratuita) habría sido falsa. Ahora el texto y su versión salen del proveedor que el agente tiene activo (`2026-11-v3`, `-v3-claude`, `-v5`, `-v5-claude`), la v4 queda retirada y ningún texto afirma que haya contratos firmados. No llegó a desplegarse en la beta desde este repositorio.
+- **Corrección (25-nov-2026), antes de la prueba real:** los valores por defecto no habrían funcionado en Vertex: `gemini-2.5-flash` tenía retiro el 20-oct-2026, `us-central1` no ofrece `gemini-3.8-flash`, las multirregiones usan otro host y el compose local no entregaba la clave. Ahora: `gemini-3.8-flash` con respaldo `gemini-3.5-flash` en `global`, embeddings en `us-central1`, un 404 pasa al siguiente modelo, precios de lista de ambos y `infra/docker-compose.vertex.yml`. Las pruebas con respuestas simuladas no detectan esto: modelos y regiones se revisan en la documentación antes de cada despliegue.
+- **Por confirmar en la prueba real:** que la clave JSON de una cuenta de servicio nueva sirva (Google anunció el 27-ago-2026 una restricción temporal a la «Gemini API» desde cuentas de servicio sin decir si incluye Vertex), la dirección que usa la verificación de modelos al arrancar y que 3.8 Flash acepte la petición tal como se envía.
 - **Pendiente del dueño:** D1 (proyecto de Google Cloud con facturación, Vertex AI habilitado y la cuenta de servicio) y D2 (clave de Anthropic) para el recorrido real; aceptar los DPA de los dos.
 
 ## Sprint 42: Derechos sobre los datos y respaldos que sobreviven
@@ -64,6 +67,15 @@ Hoy todo va a la API gratuita de Gemini (que puede usar lo que recibe) y a un so
 - **Cifrado en reposo:** disco cifrado documentado como requisito (BitLocker en el PC, LUKS en el VPS) y cifrado de columna para el texto de los fragmentos y las respuestas, con la clave fuera de la base.
 - **Respaldos fuera del equipo** (D3): copia cifrada a un bucket con rclone después de cada respaldo, con su propia retención.
 - **Restauración de prueba** automática cada mes en un contenedor aparte, con verificación de conteos y de RLS; si falla, alerta.
+
+**Hecho (25-nov-2026):**
+- «Mis datos»: descarga en ZIP (JSON y página legible, con la contraseña) y retención del historial a 3, 6, 12 o 24 meses con aviso de lo que se borra. V15.
+- Preguntas y respuestas cifradas en la base con `DATOS_CLAVE`, con comando para cifrar lo anterior.
+- Copia fuera del equipo con rclone (solo cifrada) y restauración de prueba mensual con conteos exactos y RLS. Probado de punta a punta con PostgreSQL real y una carpeta como «bucket» (`infra/scripts/probar_respaldos.sh`).
+- Corregido: la retención dejaba vivir las copias hasta 15 o 16 días aunque el consentimiento dice 14.
+- **No se hizo: cifrar el texto de los fragmentos.** El plan lo pedía, pero `fragmentos.fts_vector` se genera en la base a partir de ese texto y es la mitad de la búsqueda; además un índice de palabras sin cifrar revelaría casi el mismo contenido. Queda cubierto solo por el disco cifrado (requisito). **Decisión del dueño** si quiere otra cosa.
+- **Pendiente del dueño:** D3 (bucket y su clave limitada) para la prueba con un destino real; activar el disco cifrado; guardar `DATOS_CLAVE` y `BACKUP_PASSPHRASE` fuera del servidor.
+- Alerta: hoy es el estado `unhealthy` y el registro; el correo llega con el sprint 43.
 
 ## Sprint 43: Operación, monitoreo y CI completa
 

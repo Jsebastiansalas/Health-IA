@@ -134,6 +134,9 @@ export interface EstadoConsentimiento {
   /** Las cuentas personales deben confirmar su correo (si el servidor lo exige). */
   correo_requerido: boolean;
   correo_verificado: boolean;
+  /** Proveedor de IA al que corresponde `version`. */
+  proveedor_ia: string;
+  respaldo_ia: string;
 }
 
 export interface RespuestaConsulta {

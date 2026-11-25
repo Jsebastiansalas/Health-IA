@@ -97,6 +97,13 @@ public abstract class IntegracionBase {
         return cuerpo(r).get("id").asText();
     }
 
+    /** Acepta el consentimiento como lo hace la interfaz: con la versión que la API acaba de mostrar. */
+    protected org.springframework.test.web.servlet.ResultActions aceptarConsentimiento(JsonNode tokens) throws Exception {
+        String version = cuerpo(mvc.perform(getAuth("/api/v1/consentimiento", tokens)).andReturn()).get("version").asText();
+        return mvc.perform(post("/api/v1/consentimiento").header("Authorization", bearer(tokens))
+                .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("version", version))));
+    }
+
     protected MockHttpServletRequestBuilder getAuth(String url, JsonNode tokens) {
         return get(url).header("Authorization", bearer(tokens));
     }

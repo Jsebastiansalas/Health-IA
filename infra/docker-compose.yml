@@ -52,6 +52,8 @@ services:
       context: ../api-java
     image: medtender-api:dev
     environment:
+      # La misma que el agente (se define una sola vez, en infra/.env): cifra el historial.
+      DATOS_CLAVE: ${DATOS_CLAVE:-}
       DATABASE_URL: jdbc:postgresql://postgres:5432/medtender
       # La API opera con el rol sin privilegios `medtender_app` (RLS en vigor); Flyway migra como propietario.
       DATABASE_USER: medtender_app
@@ -107,6 +109,7 @@ services:
     env_file:
       - ../agente/.env
     environment: &entorno_agente
+      DATOS_CLAVE: ${DATOS_CLAVE:-}
       DATABASE_URL: postgresql+asyncpg://medtender_app:${APP_DB_PASSWORD:-medtender_app}@postgres:5432/medtender
       REDIS_URL: redis://redis:6379/0
       EPHEMERAL_DIR: /var/medtender-ephemeral

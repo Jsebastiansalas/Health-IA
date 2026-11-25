@@ -332,16 +332,19 @@ async def _cronologia_de(
     modelo) o una nueva, que queda en el historial. Puede lanzar ErrorLLM."""
     huella = await cronologia.huella_actual(session, expediente)
     if not rehacer:
-        guardada = await session.scalar(
+        # La pregunta está cifrada, así que se busca por la huella y se confirma al leer.
+        candidatas = await session.scalars(
             select(Consulta)
             .where(
                 Consulta.tenant_id == expediente.tenant_id,
                 Consulta.expediente_id == expediente.id,
-                Consulta.pregunta == cronologia.PREGUNTA_HISTORIAL,
                 Consulta.respuesta["huella"].astext == huella,
             )
             .order_by(Consulta.created_at.desc())
-            .limit(1)
+            .limit(5)
+        )
+        guardada = next(
+            (c for c in candidatas if c.pregunta == cronologia.PREGUNTA_HISTORIAL), None
         )
         if guardada is not None:
             return {

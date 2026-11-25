@@ -21,7 +21,7 @@ import httpx
 from app.core.config import Settings
 from app.core.metricas import MODELO_DISPONIBLE
 from app.ia.embeddings import EmbeddingRouter, ErrorEmbeddings
-from app.ia.google_auth import ErrorCredencial, credencial_para
+from app.ia.google_auth import ErrorCredencial, credencial_para, vertex_host
 
 log = logging.getLogger(__name__)
 
@@ -48,9 +48,7 @@ async def _verificar_embeddings(s: Settings, router: EmbeddingRouter) -> Resulta
 
 async def _ficha_gemini(s: Settings, modelo: str, cliente: httpx.AsyncClient) -> httpx.Response:
     if s.ia_proveedor == "vertex":
-        host = "aiplatform.googleapis.com"
-        if s.vertex_region != "global":
-            host = f"{s.vertex_region}-{host}"
+        host = vertex_host(s.vertex_region)
         token = await credencial_para(s.vertex_credenciales).token()
         return await cliente.get(
             f"https://{host}/v1beta1/publishers/google/models/{modelo}",

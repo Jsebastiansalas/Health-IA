@@ -79,6 +79,9 @@ medtender:
   # Cuentas personales (pacientes y familias): se pueden abrir aunque el alta de organizaciones este cerrada.
   registro-personal-abierto: ${REGISTRO_PERSONAL_ABIERTO:true}
   # Cuentas seguras (sprint 40).
+  datos:
+    # La misma clave del agente: la API solo la usa para «Descargar mis datos».
+    clave: ${DATOS_CLAVE:}
   cifrado:
     clave: ${CIFRADO_CLAVE:}             # 32 bytes en base64 (openssl rand -base64 32); cifra los secretos TOTP
   contrasenas:

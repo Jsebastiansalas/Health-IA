@@ -32,10 +32,12 @@ x-agente: &agente
     REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
     INTERNAL_TOKEN: ${INTERNAL_TOKEN:?defina INTERNAL_TOKEN}
     METRICS_TOKEN: ${METRICS_TOKEN:-}
+    DATOS_CLAVE: ${DATOS_CLAVE:?defina DATOS_CLAVE (openssl rand -base64 32)}
     # En producción solo Vertex AI (el agente no arranca con la API gratuita de AI Studio).
     IA_PROVEEDOR: vertex
     VERTEX_PROYECTO: ${VERTEX_PROYECTO:?defina VERTEX_PROYECTO}
-    VERTEX_REGION: ${VERTEX_REGION:-us-central1}
+    VERTEX_REGION: ${VERTEX_REGION:-global}
+    VERTEX_REGION_EMBEDDINGS: ${VERTEX_REGION_EMBEDDINGS:-us-central1}
     VERTEX_CREDENCIALES: /run/secrets/vertex
     LLM_RESPALDO_PROVEEDOR: ${LLM_RESPALDO_PROVEEDOR:-claude}
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
@@ -43,7 +45,7 @@ x-agente: &agente
     IA_TOPE_DIARIO_USD: ${IA_TOPE_DIARIO_USD:-10}
     OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     EMBEDDING_MODEL_DEFAULT: ${EMBEDDING_MODEL_DEFAULT:-gemini-embedding-001}
-    LLM_MODEL: ${LLM_MODEL:-gemini-2.5-flash}
+    LLM_MODEL: ${LLM_MODEL:-gemini-3.8-flash}
     COLA_BACKEND: arq
     EPHEMERAL_DIR: /var/medtender-ephemeral
     BARRIDO_HABILITADO: "false"  # el barrido de purga lo ejecuta el worker
@@ -113,6 +115,7 @@ services:
       CORREO_VERIFICACION_OBLIGATORIA: "true"
       # Sprint 40: secretos TOTP cifrados con su propia clave y dos pasos obligatorios para administradores.
       CIFRADO_CLAVE: ${CIFRADO_CLAVE:?defina CIFRADO_CLAVE (openssl rand -base64 32)}
+      DATOS_CLAVE: ${DATOS_CLAVE:?defina DATOS_CLAVE (openssl rand -base64 32)}
       DOS_PASOS_ADMINS: "true"
       CORREO_BASE_URL: https://${DOMINIO:?defina DOMINIO}
       SPRING_MAIL_HOST: ${SMTP_HOST:-}
@@ -195,8 +198,14 @@ services:
         condition: service_healthy
 
   backup:
-    image: pgvector/pgvector:pg16
+    build:
+      context: ./backup
+    image: medtender-backup:prod
     restart: unless-stopped
+    # Credenciales del destino remoto (ver backup/rclone.env.example). Sin el archivo, solo copias locales.
+    env_file:
+      - path: ./backup/rclone.env
+        required: false
     entrypoint: ["bash", "/scripts/backup.sh"]
     command: ["loop"]
     environment:
@@ -207,12 +216,16 @@ services:
       BACKUP_PASSPHRASE: ${BACKUP_PASSPHRASE:?defina BACKUP_PASSPHRASE porque los respaldos contienen texto confidencial}
       RETENCION_DIAS: ${BACKUP_RETENCION_DIAS:-14}
       INTERVALO_HORAS: ${BACKUP_INTERVALO_HORAS:-24}
+      BACKUP_REMOTO: ${BACKUP_REMOTO:-}
+      BACKUP_REMOTO_RETENCION_DIAS: ${BACKUP_REMOTO_RETENCION_DIAS:-14}
+      RESTAURACION_INTERVALO_DIAS: ${RESTAURACION_INTERVALO_DIAS:-30}
     volumes:
       - ./backup:/scripts:ro
       - ${BACKUP_DIR:-backups}:/backups
     healthcheck:
-      # Sana si hubo una copia correcta en las últimas 36 h.
-      test: ["CMD-SHELL", "test -f /backups/ultimo_ok && [ $$(( $$(date +%s) - $$(cat /backups/ultimo_ok) )) -lt 129600 ]"]
+      # Sana si hubo una copia correcta en las últimas 36 h (y fuera del equipo, si está configurada) y la última
+      # restauración de prueba no falló.
+      test: ["CMD-SHELL", "reciente() { test -f $$1 && [ $$(( $$(date +%s) - $$(cat $$1) )) -lt 129600 ]; }; reciente /backups/ultimo_ok && test ! -f /backups/restauracion_fallo && { test -z \"$$BACKUP_REMOTO\" || reciente /backups/remoto_ok; }"]
       interval: 1h
       timeout: 10s
       retries: 1
@@ -249,7 +262,7 @@ networks:
   externa: {}
 
 secrets:
-  # JSON de la cuenta de servicio de Google Cloud (rol «Vertex AI User»). Fuera del repositorio.
+  # JSON de la cuenta de servicio de Google Cloud (rol «Agent Platform User»). Fuera del repositorio.
   vertex:
     file: ${VERTEX_CREDENCIALES_ARCHIVO:?defina VERTEX_CREDENCIALES_ARCHIVO con la ruta del JSON de la cuenta de servicio}
 

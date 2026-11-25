@@ -73,10 +73,10 @@ class PrivacidadIT extends IntegracionBase {
                 .andExpect(jsonPath("$.codigo").value("consentimiento_requerido"));
         assertThat(Infra.AGENTE.llamadas()).isEmpty(); // sin consentimiento no se llama al agente
 
-        mvc.perform(post("/api/v1/consentimiento").header("Authorization", bearer(ana))).andExpect(status().isOk())
+        aceptarConsentimiento(ana).andExpect(status().isOk())
                 .andExpect(jsonPath("$.aceptado").value(true));
         // Aceptar dos veces no duplica la constancia ni la auditoria.
-        mvc.perform(post("/api/v1/consentimiento").header("Authorization", bearer(ana))).andExpect(status().isOk());
+        aceptarConsentimiento(ana).andExpect(status().isOk());
         assertThat(jdbc.queryForObject("select count(*) from consentimientos", Integer.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from auditoria where accion='CONSENTIMIENTO_ACEPTADO'", Integer.class)).isEqualTo(1);
 
@@ -95,7 +95,7 @@ class PrivacidadIT extends IntegracionBase {
     void elConsentimientoDeUnaPersonaNoSeVeDesdeOtraCuenta() throws Exception {
         JsonNode ana = registrarPersonal("ana@correo.co");
         JsonNode luis = registrarPersonal("luis@correo.co");
-        mvc.perform(post("/api/v1/consentimiento").header("Authorization", bearer(ana))).andExpect(status().isOk());
+        aceptarConsentimiento(ana).andExpect(status().isOk());
         mvc.perform(getAuth("/api/v1/consentimiento", luis)).andExpect(jsonPath("$.aceptado").value(false));
     }
 
@@ -119,7 +119,7 @@ class PrivacidadIT extends IntegracionBase {
     void eliminarLaCuentaExigeLaContrasenaYBorraTodoMenosLaAuditoria() throws Exception {
         JsonNode ana = registrarPersonal("ana@correo.co");
         crearExpediente(ana, "PERS-1");
-        mvc.perform(post("/api/v1/consentimiento").header("Authorization", bearer(ana))).andExpect(status().isOk());
+        aceptarConsentimiento(ana).andExpect(status().isOk());
 
         mvc.perform(post("/api/v1/cuenta/eliminar").header("Authorization", bearer(ana)).contentType(MediaType.APPLICATION_JSON)
                 .content(json.writeValueAsString(Map.of("password", "otra-clave-incorrecta")))).andExpect(status().isForbidden());
