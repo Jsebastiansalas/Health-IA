@@ -12,6 +12,7 @@ import { AvisoSalud, AvisoUrgencia } from "./AvisoSalud";
 import { CruceMedicamentos } from "./CruceMedicamentos";
 import { ExplicacionDocumento } from "./ExplicacionDocumento";
 import { LineaDeTiempo } from "./LineaDeTiempo";
+import { PreparacionCita } from "./PreparacionCita";
 import { useArmarLineaDeTiempo } from "../lib/lineaDeTiempo";
 import { Boton } from "./ui/Boton";
 import { Esqueleto } from "./ui/Esqueleto";
@@ -267,7 +268,9 @@ function Intercambio({
               ? "Ver advertencias de mis medicamentos"
               : r.modo === "cronologia"
                 ? "Ver mi línea de tiempo"
-                : (r.pregunta ?? "")
+                : r.modo === "preparacion"
+                  ? "Preparar mi cita"
+                  : (r.pregunta ?? "")
         }
       />
       <div className="flex gap-4">
@@ -279,6 +282,8 @@ function Intercambio({
               <ExplicacionDocumento respuesta={r} alIrACita={irACita} />
             ) : r.modo === "cruce" ? (
               <CruceMedicamentos respuesta={r} alIrACita={irACita} />
+            ) : r.modo === "preparacion" ? (
+              <PreparacionCita respuesta={r} alIrACita={irACita} />
             ) : r.modo === "cronologia" ? (
               <LineaDeTiempo respuesta={r} alIrACita={irACita} alRehacer={alRehacer} rehaciendo={rehaciendo} />
             ) : (

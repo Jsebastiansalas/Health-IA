@@ -133,3 +133,17 @@ def test_las_evidencias_para_la_nube_no_llevan_datos_ni_nombre_de_archivo_y_las_
     assert original.contenido_texto.startswith(
         "Paciente: Ana Ruiz"
     ) and original.nombre_archivo.endswith(".pdf")
+
+
+@pytest.mark.parametrize(
+    "texto",
+    [
+        "FORMULA MEDICA Paciente: Carlos Ruiz Mejia. CC 79.123.456.",
+        "ORDEN MEDICA PACIENTE: CARLOS RUIZ MEJIA",
+        "EPICRISIS MEDICO Nombre: Carlos Ruiz Mejia",
+    ],
+)
+def test_un_titulo_con_una_etiqueta_no_se_come_la_etiqueta_real_del_nombre(texto):
+    """«FORMULA MEDICA Paciente: …»: «MEDICA» no puede tomar «Paciente» como nombre y dejar el real al aire."""
+    enmascarado = enmascarar_texto(texto)
+    assert "carlos" not in enmascarado.lower() and "[PERSONA_1]" in enmascarado

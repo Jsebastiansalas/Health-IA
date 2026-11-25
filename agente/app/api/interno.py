@@ -26,7 +26,7 @@ from app.ia.llm import ErrorLLM, ProveedorLLM, get_llm
 from app.medicamentos import busqueda as med_busqueda
 from app.medicamentos import consulta as med_consulta
 from app.models import Consulta, Documento, Expediente, Reindexacion
-from app.rag import cronologia, cruce, explicar, garantias, motor, seguridad
+from app.rag import cronologia, cruce, explicar, garantias, motor, preparacion, seguridad
 from app.schemas import ModeloEmbeddingOut, ReindexacionIn, ReindexacionOut
 from app.services import reindexacion
 from app.services.cola import ColaProcesamiento, get_cola
@@ -312,23 +312,22 @@ class CronologiaIn(BaseModel):
     rehacer: bool = False
 
 
-@router.post("/cronologias")
-async def armar_cronologia(
-    data: CronologiaIn,
-    session: SessionDep,
-    llm: Annotated[ProveedorLLM, Depends(get_llm)],
+async def _cronologia_de(
+    session: AsyncSession,
+    expediente: Expediente,
+    usuario_id: uuid.UUID,
+    rehacer: bool,
+    llm: ProveedorLLM,
 ) -> dict:
-    """Eventos con fecha y valores de laboratorio de los documentos del expediente, ordenados y
-    con cita en cada dato. No interpreta resultados. Si los documentos no cambiaron desde la
-    última vez, se devuelve la guardada sin llamar al modelo."""
-    expediente = await _expediente(session, data.tenant_id, data.expediente_id)
+    """La línea de tiempo del expediente: la guardada si los documentos no cambiaron (sin llamar al
+    modelo) o una nueva, que queda en el historial. Puede lanzar ErrorLLM."""
     huella = await cronologia.huella_actual(session, expediente)
-    if not data.rehacer:
+    if not rehacer:
         guardada = await session.scalar(
             select(Consulta)
             .where(
-                Consulta.tenant_id == data.tenant_id,
-                Consulta.expediente_id == data.expediente_id,
+                Consulta.tenant_id == expediente.tenant_id,
+                Consulta.expediente_id == expediente.id,
                 Consulta.pregunta == cronologia.PREGUNTA_HISTORIAL,
                 Consulta.respuesta["huella"].astext == huella,
             )
@@ -341,38 +340,103 @@ async def armar_cronologia(
                 "guardada": True,
                 "generadaAt": guardada.created_at.isoformat(),
             }
-    try:
-        r = await cronologia.armar(session, expediente, llm, get_settings(), huella)
-    except ErrorLLM as exc:
-        CONSULTAS.labels("error_ia").inc()
-        log.error("Línea de tiempo fallida expediente=%s: %s", data.expediente_id, exc)
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE,
-            "El servicio de IA no está disponible en este momento; intente de nuevo.",
-        ) from exc
+    r = await cronologia.armar(session, expediente, llm, get_settings(), huella)
     CONSULTAS.labels("sin_evidencia" if r.sin_evidencia else "con_evidencia").inc()
     consulta_id = uuid.uuid4()
     cuerpo = cronologia.a_json(r, consulta_id, expediente.embedding_model_activo)
+    generada = await _guardar_en_historial(
+        expediente, usuario_id, cronologia.PREGUNTA_HISTORIAL, cuerpo, r.sin_evidencia,
+        r.modelo_llm, r.fragmentos, r.latencia_ms,
+    )  # fmt: skip
+    return {**cuerpo, "guardada": False, "generadaAt": generada}
+
+
+async def _guardar_en_historial(
+    expediente: Expediente,
+    usuario_id: uuid.UUID,
+    pregunta: str,
+    cuerpo: dict,
+    sin_evidencia: bool,
+    modelo_llm: str | None,
+    fragmentos: int,
+    latencia_ms: int,
+) -> str:
+    """Guarda la respuesta en `consultas` con una sesión propia (la de la petición pudo cerrarse
+    mientras respondía el modelo) y devuelve la fecha en que quedó guardada."""
     async with get_sessionmaker()() as guardar:
-        fijar_tenant(guardar, data.tenant_id)
+        fijar_tenant(guardar, expediente.tenant_id)
         fila = Consulta(
-            id=consulta_id,
-            tenant_id=data.tenant_id,
-            expediente_id=data.expediente_id,
-            usuario_id=data.usuario_id,
-            pregunta=cronologia.PREGUNTA_HISTORIAL,
+            id=uuid.UUID(cuerpo["consultaId"]),
+            tenant_id=expediente.tenant_id,
+            expediente_id=expediente.id,
+            usuario_id=usuario_id,
+            pregunta=pregunta,
             respuesta=cuerpo,
-            sin_evidencia=r.sin_evidencia,
+            sin_evidencia=sin_evidencia,
             modelo_embeddings=expediente.embedding_model_activo,
-            modelo_llm=r.modelo_llm,
-            fragmentos_recuperados=r.fragmentos,
-            latencia_ms=r.latencia_ms,
+            modelo_llm=modelo_llm,
+            fragmentos_recuperados=fragmentos,
+            latencia_ms=latencia_ms,
         )
         guardar.add(fila)
         await guardar.commit()
         await guardar.refresh(fila)
-        generada = fila.created_at.isoformat()
-    return {**cuerpo, "guardada": False, "generadaAt": generada}
+        return fila.created_at.isoformat()
+
+
+def _sin_ia(exc: Exception, que: str, expediente_id: uuid.UUID) -> HTTPException:
+    CONSULTAS.labels("error_ia").inc()
+    log.error("%s fallida expediente=%s: %s", que, expediente_id, exc)
+    return HTTPException(
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        "El servicio de IA no está disponible en este momento; intente de nuevo.",
+    )
+
+
+@router.post("/cronologias")
+async def armar_cronologia(
+    data: CronologiaIn,
+    session: SessionDep,
+    llm: Annotated[ProveedorLLM, Depends(get_llm)],
+) -> dict:
+    """Eventos con fecha y valores de laboratorio de los documentos del expediente, ordenados y
+    con cita en cada dato. No interpreta resultados. Si los documentos no cambiaron desde la
+    última vez, se devuelve la guardada sin llamar al modelo."""
+    expediente = await _expediente(session, data.tenant_id, data.expediente_id)
+    try:
+        return await _cronologia_de(session, expediente, data.usuario_id, data.rehacer, llm)
+    except ErrorLLM as exc:
+        raise _sin_ia(exc, "Línea de tiempo", data.expediente_id) from exc
+
+
+# ---------- Preparar mi cita
+class PreparacionIn(BaseModel):
+    tenant_id: uuid.UUID
+    expediente_id: uuid.UUID
+    usuario_id: uuid.UUID
+
+
+@router.post("/preparaciones")
+async def preparar_cita(
+    data: PreparacionIn,
+    session: SessionDep,
+    llm: Annotated[ProveedorLLM, Depends(get_llm)],
+) -> dict:
+    """Resumen de una página para llevar a la cita: lo reciente, lo que cambió, los medicamentos,
+    diagnósticos y alergias que escriben los documentos (con cita) y preguntas sugeridas para el
+    médico. No diagnostica, no receta y no interpreta resultados."""
+    expediente = await _expediente(session, data.tenant_id, data.expediente_id)
+    try:
+        linea = await _cronologia_de(session, expediente, data.usuario_id, False, llm)
+        r = await preparacion.preparar(expediente, llm, get_settings(), linea)
+    except ErrorLLM as exc:
+        raise _sin_ia(exc, "Preparación de cita", data.expediente_id) from exc
+    CONSULTAS.labels("sin_evidencia" if r["sinEvidencia"] else "con_evidencia").inc()
+    generada = await _guardar_en_historial(
+        expediente, data.usuario_id, preparacion.PREGUNTA_HISTORIAL, r, r["sinEvidencia"],
+        r.get("modeloLlm"), r.get("fragmentosRecuperados", 0), r.get("latenciaMs", 0),
+    )  # fmt: skip
+    return {**r, "generadaAt": generada}
 
 
 # ---------- Medicamentos (datos abiertos de INVIMA) ----------

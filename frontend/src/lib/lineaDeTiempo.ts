@@ -20,3 +20,15 @@ export function useArmarLineaDeTiempo(expedienteId: string, alListo?: () => void
     },
   });
 }
+
+/** «Preparar mi cita»: pide el resumen y lo pone arriba del historial de la consola. */
+export function usePrepararCita(expedienteId: string, alListo?: () => void) {
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: () => post<RespuestaConsulta>(`/expedientes/${expedienteId}/preparacion`, {}),
+    onSuccess: (r) => {
+      cliente.setQueryData<RespuestaConsulta[]>(["consultas", expedienteId], (h) => [r, ...(h ?? [])]);
+      alListo?.();
+    },
+  });
+}
