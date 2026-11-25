@@ -37,7 +37,7 @@ const ORGANIZACIONES: ContenidoLanding = {
     { p: "¿Qué pasa si el documento no responde mi pregunta?", r: "MedTender se abstiene y lo dice de forma explícita. No completa con conocimiento propio." },
     { p: "¿Da dosis, diagnósticos o recomendaciones?", r: "No. Explica y cita lo que dicen los documentos. Si alguien pide una dosis o un diagnóstico, remite a su médico o farmacéutico." },
     { p: "¿Puedo abrir el documento original?", r: "Sí, desde tu propio equipo. El visor compara la huella SHA 256 del archivo con la registrada. El archivo nunca se sube." },
-    { p: "¿Usa inteligencia artificial de terceros?", r: "Sí, Google Gemini. Antes de enviarle el texto se ocultan nombres, cédulas, teléfonos y correos cuando aparecen con una etiqueta. En esta etapa se usa su versión gratuita." },
+    { p: "¿Usa inteligencia artificial de terceros?", r: "Sí: Gemini en Google Cloud y, solo si ese servicio falla, Claude de Anthropic, los dos con contrato y sin usar tus datos para entrenar. Antes de enviarles el texto se ocultan nombres, cédulas, teléfonos y correos cuando aparecen con una etiqueta." },
     { p: "¿Quién puede usarlo hoy?", r: "MedTender está en pruebas cerradas con personas invitadas. Si tu organización quiere probarlo, escríbenos." },
   ],
   riesgo: {
@@ -84,7 +84,7 @@ const PERSONAS: ContenidoLanding = {
     { p: "¿MedTender me da un diagnóstico?", r: "No. Explica y cita lo que dice tu documento. No diagnostica, no receta y no indica dosis." },
     { p: "¿Qué pasa con mi documento después de subirlo?", r: "El archivo original se elimina del servidor después de leerlo. Guardamos fragmentos de texto y tus preguntas mientras tengas la cuenta." },
     { p: "¿Quién ve mis documentos?", r: "Solo tú. Cada cuenta personal es un espacio aparte, y confirmas tu correo para activarla." },
-    { p: "¿Se envía mi información a otra empresa?", r: "Sí: el texto se envía a Google Gemini para leerlo, con los datos personales ocultos cuando aparecen con una etiqueta. Es una versión gratuita que Google puede usar para mejorar sus productos, así que sube solo lo necesario." },
+    { p: "¿Se envía mi información a otra empresa?", r: "Sí: el texto se envía a Gemini en Google Cloud para leerlo (y a Claude de Anthropic si Google falla), con los datos personales ocultos cuando aparecen con una etiqueta. Ninguno de los dos lo usa para entrenar sus modelos; aun así, sube solo lo necesario." },
     { p: "¿Cómo borro mi cuenta?", r: "Desde el menú de tu usuario, en «Eliminar mi cuenta». Se borra todo su contenido. Las copias de seguridad lo conservan hasta 14 días más." },
     { p: "¿Funciona con una foto del celular?", r: "Sí, con fotos de JPG, PNG y HEIC. Si la foto sale borrosa, te pedimos que la repitas con buena luz y de frente." },
   ],

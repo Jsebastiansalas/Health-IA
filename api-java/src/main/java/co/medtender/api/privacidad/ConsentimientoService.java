@@ -25,8 +25,10 @@ public class ConsentimientoService {
      * v2: el texto pasa a decir que los datos personales se enmascaran antes de enviarlos al proveedor.
      * v3: pruebas cerradas con la versión gratuita de Gemini, respaldos de 14 días, registro de accesos sin
      * vencimiento, documentos de terceros y menores, y responsable del tratamiento.
+     * v4: el proveedor real de producción: Gemini en Google Cloud (Vertex AI), Claude de Anthropic como
+     * respaldo, sin entrenamiento con los datos (el agente no arranca en producción con la API gratuita).
      */
-    public static final String VERSION_VIGENTE = "2026-11-v3";
+    public static final String VERSION_VIGENTE = "2026-11-v4";
 
     public record Estado(String version, boolean requerido, boolean aceptado, Instant aceptadoAt, TipoTenant tipoCuenta) {}
 

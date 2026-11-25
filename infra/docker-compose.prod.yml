@@ -32,7 +32,15 @@ x-agente: &agente
     REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
     INTERNAL_TOKEN: ${INTERNAL_TOKEN:?defina INTERNAL_TOKEN}
     METRICS_TOKEN: ${METRICS_TOKEN:-}
-    GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    # En producción solo Vertex AI (el agente no arranca con la API gratuita de AI Studio).
+    IA_PROVEEDOR: vertex
+    VERTEX_PROYECTO: ${VERTEX_PROYECTO:?defina VERTEX_PROYECTO}
+    VERTEX_REGION: ${VERTEX_REGION:-us-central1}
+    VERTEX_CREDENCIALES: /run/secrets/vertex
+    LLM_RESPALDO_PROVEEDOR: ${LLM_RESPALDO_PROVEEDOR:-claude}
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    CLAUDE_MODELO: ${CLAUDE_MODELO:-claude-opus-5-5}
+    IA_TOPE_DIARIO_USD: ${IA_TOPE_DIARIO_USD:-10}
     OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     EMBEDDING_MODEL_DEFAULT: ${EMBEDDING_MODEL_DEFAULT:-gemini-embedding-001}
     LLM_MODEL: ${LLM_MODEL:-gemini-2.5-flash}
@@ -150,6 +158,7 @@ services:
   # Agente de IA (FastAPI). Solo la API Java le habla, con X-Internal-Token. Nunca se publica.
   agente:
     <<: *agente
+    secrets: [vertex]
     volumes:
       - ephemeral:/var/medtender-ephemeral
     healthcheck:
@@ -170,6 +179,7 @@ services:
   worker:
     <<: *agente
     command: ["arq", "app.worker.WorkerSettings"]
+    secrets: [vertex]
     volumes:
       - ephemeral:/var/medtender-ephemeral
     healthcheck:
@@ -237,6 +247,11 @@ networks:
   interna:
     internal: true
   externa: {}
+
+secrets:
+  # JSON de la cuenta de servicio de Google Cloud (rol «Vertex AI User»). Fuera del repositorio.
+  vertex:
+    file: ${VERTEX_CREDENCIALES_ARCHIVO:?defina VERTEX_CREDENCIALES_ARCHIVO con la ruta del JSON de la cuenta de servicio}
 
 volumes:
   pgdata:

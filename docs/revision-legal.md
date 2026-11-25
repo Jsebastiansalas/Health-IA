@@ -22,11 +22,12 @@ Una persona (paciente o familiar, con cuenta propia) o una organización sube do
 
 | Destino | Qué sale | Protección aplicada | Pendiente |
 |---|---|---|---|
-| **Google (API de Gemini)**, tercero en EE. UU. por confirmar | (a) texto de los fragmentos con datos personales **enmascarados por patrones**, para generar embeddings; (b) en cada consulta, explicación o cruce: la pregunta y los fragmentos relevantes enmascarados, con nombre de archivo neutro («documento-1») | Anonimización previa reversible solo en el servidor propio (`agente/app/privacidad/anonimizar.py`), interruptor `anonimizar_antes_de_nube` (activo por defecto), consentimiento informado previo (cuentas personales) | Contrato/DPA con Google, ubicación del tratamiento, si el plan usado permite que Google entrene con los datos (**por confirmar**; depende de la cuenta/plan de la API) |
+| **Google Cloud (Vertex AI, Gemini)**, encargado; región configurable (`VERTEX_REGION`) | (a) texto de los fragmentos con datos personales **enmascarados por patrones**, para generar embeddings; (b) en cada consulta, explicación o cruce: la pregunta y los fragmentos relevantes enmascarados, con nombre de archivo neutro («documento-1») | Anonimización previa reversible solo en el servidor propio (`agente/app/privacidad/anonimizar.py`), interruptor `anonimizar_antes_de_nube` (activo por defecto), consentimiento informado previo (cuentas personales). Desde el sprint 41 el agente **no arranca en producción** con la API gratuita de AI Studio (`IA_PROVEEDOR=vertex` obligatorio) | Aceptar el DPA de Google Cloud (Cloud Data Processing Addendum), elegir la región y confirmar que Vertex no entrena con los datos ni los conserva más allá de su caché |
+| **Anthropic (Claude)**, encargado en EE. UU., solo como respaldo si Vertex falla (`LLM_RESPALDO_PROVEEDOR=claude`) | Lo mismo que (b): la pregunta y los fragmentos enmascarados de una consulta, explicación o cruce. No recibe texto para embeddings | La misma anonimización previa; solo se usa cuando el principal falla o está saturado | Aceptar el DPA comercial de Anthropic y revisar su plazo de retención de las solicitudes a la API |
 | Servidor SMTP (proveedor de correo por elegir) | Correo electrónico de la persona y un enlace de un solo uso | Enlace de un solo uso, vence en 24 h, solo se guarda su hash | Elegir proveedor y revisar sus condiciones |
 | Nadie más | Tesseract (OCR) y ClamAV (antivirus) corren dentro del mismo servidor | — | — |
 
-**Límite de la anonimización (declarado también en el consentimiento):** solo se enmascaran datos personales que aparecen *con etiqueta* («Paciente:», «CC», «Teléfono:», «Correo:»…). Un nombre suelto dentro de una frase puede no detectarse y viajar a Google. Los números sin etiqueta (CUM, INVIMA, NIT) no se tocan a propósito.
+**Límite de la anonimización (declarado también en el consentimiento):** solo se enmascaran datos personales que aparecen *con etiqueta* («Paciente:», «CC», «Teléfono:», «Correo:»…). Un nombre suelto dentro de una frase puede no detectarse y viajar al proveedor de IA. Los números sin etiqueta (CUM, INVIMA, NIT) no se tocan a propósito.
 
 ## 4. Conservación y supresión
 
@@ -48,10 +49,10 @@ Una persona (paciente o familiar, con cuenta propia) o una organización sube do
 - Secretos fuera del repositorio, rotación documentada (README, «Rotación de secretos»).
 
 ## 6. Textos que ve la persona (para revisar)
-**Consentimiento informado (versión `2026-11-v3`, `frontend/src/componentes/Consentimiento.tsx`)** — la persona debe aceptarlo antes de subir o consultar:
+**Consentimiento informado (versión `2026-11-v4`, `frontend/src/componentes/Consentimiento.tsx`)** — la persona debe aceptarlo antes de subir o consultar:
 1. MedTender está en pruebas cerradas: puede equivocarse. Compara siempre con tu médico o tu farmacéutico antes de decidir algo sobre tu salud.
 2. Subirás documentos médicos (historias clínicas, resultados, órdenes, prospectos). Son datos sensibles. Si subes documentos de otra persona, declaras que tienes derecho a hacerlo o su autorización. Si eres menor de edad, usa esta cuenta con un adulto responsable.
-3. Para leerlos y responderte usamos un servicio de inteligencia artificial de un tercero: Google Gemini, que puede procesar la información fuera de Colombia. En esta etapa usamos su versión gratuita, y Google puede conservar y usar lo que se le envía para mejorar sus productos. Por eso sube solo lo que necesites.
+3. Para leerlos y responderte usamos servicios de inteligencia artificial de terceros con los que tenemos contrato: Gemini en Google Cloud (Vertex AI) y, solo si ese servicio falla, Claude de Anthropic. Pueden procesar la información fuera de Colombia. Ninguno de los dos usa lo que les enviamos para entrenar sus modelos. Aun así, sube solo lo que necesites.
 4. Antes de enviarle el texto ocultamos nombres, cédulas, teléfonos, correos y direcciones cuando aparecen con una etiqueta (por ejemplo «Paciente:» o «CC»). Este ocultamiento no es perfecto: un nombre suelto dentro de una frase puede no detectarse.
 5. El archivo original se elimina del servidor después de leerlo. Guardamos fragmentos de texto tal como aparecen en el documento (con tus datos) y tus preguntas, para poder responderte y citar el texto exacto.
 6. Puedes borrar tu historial de preguntas y eliminar tu cuenta con todo su contenido cuando quieras. Las copias de seguridad conservan los datos hasta 14 días más. El registro de accesos (tu correo, la fecha y tu dirección IP, nunca el contenido de tus documentos ni de tus preguntas) se conserva sin fecha de vencimiento.
@@ -61,7 +62,7 @@ Además, si se configuran `VITE_RESPONSABLE` y `VITE_CONTACTO_PRIVACIDAD` al con
 
 **Aviso permanente** (en las pantallas de consulta): «Información de apoyo, no atención médica. Explica y cita lo que dicen tus documentos y las fuentes; no diagnostica ni receta, y no sustituye a un profesional de la salud. En una urgencia, llama al 123.»
 
-**Qué falta en esos textos (a decidir con el abogado):** el nombre y el contacto reales del responsable (hoy se configuran por variable y, si no están, la línea no aparece); si lo de «versión gratuita de Gemini» sigue siendo cierto el día que se publique (si se pasa a un plan de pago hay que cambiar el punto 3 y subir la versión); texto para el caso de que la persona sea una institución; política de tratamiento y aviso de privacidad completos con enlace desde esta pantalla; términos y condiciones.
+**Qué falta en esos textos (a decidir con el abogado):** el nombre y el contacto reales del responsable (hoy se configuran por variable y, si no están, la línea no aparece); que el punto 3 (Vertex AI y Claude, sin entrenamiento) coincida con los contratos firmados el día que se publique; texto para el caso de que la persona sea una institución; política de tratamiento y aviso de privacidad completos con enlace desde esta pantalla; términos y condiciones.
 
 ## 7. Límites conocidos del producto (para no prometer de más)
 - La anonimización por patrones no es perfecta (sección 3).

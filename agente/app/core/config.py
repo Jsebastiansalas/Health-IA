@@ -96,6 +96,37 @@ class Settings(BaseSettings):
     # Un modelo que se cuelga no se reintenta: se pasa al respaldo tras este plazo.
     llm_timeout_s: float = 30.0
     llm_intentos_por_modelo: int = 1
+
+    # ---------- IA de producción (Sprint 41) ----------
+    # Por dónde llega Gemini (generación y embeddings de gemini-embedding-001):
+    # - gemini_api: API de Google AI Studio con GEMINI_API_KEY. Su capa gratuita puede usar lo
+    #   que recibe para mejorar los productos de Google: solo para desarrollo.
+    # - vertex: Gemini en Google Cloud (Vertex AI) con una cuenta de servicio; los datos no se
+    #   usan para entrenar. Es el único permitido con ENTORNO=produccion.
+    ia_proveedor: Literal["gemini_api", "vertex"] = "gemini_api"
+    vertex_proyecto: str = ""
+    # «global» enruta a la región con capacidad; una región concreta (us-central1, us-east4…)
+    # fija dónde se procesan los datos.
+    vertex_region: str = "us-central1"
+    # Ruta al JSON de la cuenta de servicio (rol «Vertex AI User»). Vacío: servidor de metadatos
+    # de Google Cloud, si el agente corre allí.
+    vertex_credenciales: str = ""
+    # Peticiones simultáneas de embeddings a Vertex (gemini-embedding-001 recibe un texto por
+    # petición).
+    vertex_embeddings_concurrencia: int = 8
+    # Segundo proveedor, que responde si Gemini falla o se satura. Vacío = sin respaldo.
+    llm_respaldo_proveedor: Literal["", "claude"] = ""
+    anthropic_api_key: str = ""
+    claude_modelo: str = "claude-opus-5-5"
+    claude_esfuerzo: Literal["low", "medium", "high"] = "medium"
+    # Cortacircuitos: tras N fallos seguidos de un proveedor, no se le envían llamadas durante
+    # este tiempo (va directo al siguiente). Pasado el plazo se le da otra oportunidad.
+    ia_cortacircuitos_fallos: int = 3
+    ia_cortacircuitos_s: float = 120.0
+    # Tope de gasto diario estimado del modelo generativo en dólares (0 = sin tope).
+    ia_tope_diario_usd: float = 0.0
+    # Precios propios por modelo, US$ por millón de tokens: {"modelo": [entrada, salida]}.
+    ia_precios: dict[str, tuple[float, float]] = {}
     # «Explícame este documento»: tope de fragmentos que se envían al modelo (≈ 700 tokens c/u).
     explicar_max_fragmentos: int = 30
     # Línea de tiempo: tope de fragmentos del expediente que van al modelo en una sola llamada.
@@ -133,7 +164,20 @@ class Settings(BaseSettings):
             fatales.append("DATABASE_URL usa la contraseña de desarrollo 'medtender'")
         if self.cola_backend != "arq":
             fatales.append("COLA_BACKEND debe ser 'arq' para que los documentos se procesen")
-        if not self.gemini_api_key and not self.openai_api_key:
+        if self.ia_proveedor == "gemini_api":
+            fatales.append(
+                "IA_PROVEEDOR=gemini_api: la API de Google AI Studio puede usar los datos para "
+                "mejorar sus productos; en producción usa IA_PROVEEDOR=vertex"
+            )
+        elif not self.vertex_proyecto:
+            fatales.append("IA_PROVEEDOR=vertex requiere VERTEX_PROYECTO")
+        if self.llm_respaldo_proveedor == "claude" and not self.anthropic_api_key:
+            fatales.append("LLM_RESPALDO_PROVEEDOR=claude requiere ANTHROPIC_API_KEY")
+        if not self.llm_respaldo_proveedor:
+            avisos.append("Sin proveedor de respaldo: si Gemini falla, la IA no responde")
+        if self.ia_tope_diario_usd <= 0:
+            avisos.append("IA_TOPE_DIARIO_USD sin definir: el gasto en IA no tiene tope")
+        if self.ia_proveedor == "gemini_api" and not (self.gemini_api_key or self.openai_api_key):
             avisos.append("Sin API key de embeddings: no se podrán vectorizar documentos")
         if not self.metrics_token:
             avisos.append("METRICS_TOKEN vacío: /metrics queda deshabilitado")

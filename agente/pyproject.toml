@@ -22,6 +22,8 @@ dependencies = [
     "httpx>=0.28",
     "prometheus-client>=0.21",
     "pillow-heif>=1.8.1",
+    "anthropic>=1",
+    "pyjwt[crypto]>=2.10",
 ]
 
 [dependency-groups]

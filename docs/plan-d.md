@@ -49,6 +49,14 @@ Hoy todo va a la API gratuita de Gemini (que puede usar lo que recibe) y a un so
 - Configuración por entorno: en producción, la API gratuita queda prohibida (el agente no arranca con ella si `ENTORNO=produccion`).
 - Política de privacidad y consentimiento v4 con el proveedor real.
 
+**Hecho (25-nov-2026):**
+- `IA_PROVEEDOR=vertex`: Gemini en Google Cloud para generar y para embeddings, con token OAuth firmado localmente desde la cuenta de servicio (o el servidor de metadatos). `gemini-embedding-001` conserva su nombre: no hay que reindexar.
+- Claude (Anthropic, `claude-opus-5-5`, SDK oficial con salida JSON estructurada) como segundo proveedor. Si Gemini falla, se satura o rechaza la credencial, responde Claude; el cortacircuitos deja de insistir sobre el caído durante 2 minutos tras 3 fallos seguidos. Una prueba confirma que la salida del respaldo pasa por las mismas garantías.
+- Tokens y costo estimado por llamada en métricas y log (solo cifras), y tope diario `IA_TOPE_DIARIO_USD` que corta las llamadas hasta el otro día. Límite: el contador del día está en memoria y se reinicia con el agente.
+- Con `ENTORNO=produccion` el agente no arranca con la API gratuita de AI Studio, ni con Vertex sin proyecto, ni con Claude sin clave. El compose de producción monta la cuenta de servicio como secreto (`VERTEX_CREDENCIALES_ARCHIVO`).
+- Consentimiento `2026-11-v4`, página legal, preguntas frecuentes y `docs/revision-legal.md` con Google Cloud y Anthropic como encargados.
+- **Pendiente del dueño:** D1 (proyecto de Google Cloud con facturación, Vertex AI habilitado y la cuenta de servicio) y D2 (clave de Anthropic) para el recorrido real; aceptar los DPA de los dos.
+
 ## Sprint 42: Derechos sobre los datos y respaldos que sobreviven
 
 - **Descargar mis datos:** un ZIP con lo que hay de la persona (cuenta, expedientes, texto de sus documentos con su página, consultas, explicaciones, línea de tiempo, recordatorios y consentimientos) en JSON y en una versión legible. Se genera bajo demanda y no se guarda.

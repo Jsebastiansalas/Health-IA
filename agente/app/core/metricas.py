@@ -48,6 +48,43 @@ LLM_RESPUESTAS = Counter(
     ["modelo"],
     registry=REGISTRO,
 )
+IA_TOKENS = Counter(
+    "medtender_ia_tokens_total",
+    "Tokens del modelo generativo",
+    ["proveedor", "modelo", "tipo"],  # tipo: entrada | salida
+    registry=REGISTRO,
+)
+IA_COSTO = Counter(
+    "medtender_ia_costo_usd_total",
+    "Costo estimado del modelo generativo en dólares",
+    ["proveedor", "modelo"],
+    registry=REGISTRO,
+)
+IA_COSTO_HOY = Gauge(
+    "medtender_ia_costo_hoy_usd",
+    "Costo estimado del día (hora de Colombia) en este proceso",
+    registry=REGISTRO,
+)
+IA_TOPE_DIARIO = Gauge(
+    "medtender_ia_tope_diario_usd", "Tope diario configurado (0 = sin tope)", registry=REGISTRO
+)
+IA_TOPE_RECHAZOS = Counter(
+    "medtender_ia_tope_rechazos_total",
+    "Llamadas al modelo rechazadas por haber alcanzado el tope diario",
+    registry=REGISTRO,
+)
+IA_RESPALDOS = Counter(
+    "medtender_ia_respaldos_total",
+    "Veces que respondió el proveedor de respaldo porque el anterior falló",
+    ["desde", "hacia"],
+    registry=REGISTRO,
+)
+IA_CIRCUITO_ABIERTO = Gauge(
+    "medtender_ia_circuito_abierto",
+    "1 mientras el cortacircuitos de un proveedor está abierto (no se le envían llamadas)",
+    ["proveedor"],
+    registry=REGISTRO,
+)
 
 MODELO_DISPONIBLE = Gauge(
     "medtender_modelo_disponible",
