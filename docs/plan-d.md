@@ -68,6 +68,15 @@ Hoy todo va a la API gratuita de Gemini (que puede usar lo que recibe) y a un so
 - **Respaldos fuera del equipo** (D3): copia cifrada a un bucket con rclone después de cada respaldo, con su propia retención.
 - **Restauración de prueba** automática cada mes en un contenedor aparte, con verificación de conteos y de RLS; si falla, alerta.
 
+**Hecho (25-nov-2026):**
+- «Mis datos»: descarga en ZIP (JSON y página legible, con la contraseña) y retención del historial a 3, 6, 12 o 24 meses con aviso de lo que se borra. V15.
+- Preguntas y respuestas cifradas en la base con `DATOS_CLAVE`, con comando para cifrar lo anterior.
+- Copia fuera del equipo con rclone (solo cifrada) y restauración de prueba mensual con conteos exactos y RLS. Probado de punta a punta con PostgreSQL real y una carpeta como «bucket» (`infra/scripts/probar_respaldos.sh`).
+- Corregido: la retención dejaba vivir las copias hasta 15 o 16 días aunque el consentimiento dice 14.
+- **No se hizo: cifrar el texto de los fragmentos.** El plan lo pedía, pero `fragmentos.fts_vector` se genera en la base a partir de ese texto y es la mitad de la búsqueda; además un índice de palabras sin cifrar revelaría casi el mismo contenido. Queda cubierto solo por el disco cifrado (requisito). **Decisión del dueño** si quiere otra cosa.
+- **Pendiente del dueño:** D3 (bucket y su clave limitada) para la prueba con un destino real; activar el disco cifrado; guardar `DATOS_CLAVE` y `BACKUP_PASSPHRASE` fuera del servidor.
+- Alerta: hoy es el estado `unhealthy` y el registro; el correo llega con el sprint 43.
+
 ## Sprint 43: Operación, monitoreo y CI completa
 
 - **Monitoreo:** Prometheus recoge las métricas que ya existen (API, agente, base, cola) y Grafana las muestra; **alertas por correo** (D4) por errores, latencia, cola atascada, respaldo vencido, certificado y costo de IA.

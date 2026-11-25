@@ -34,11 +34,15 @@ Una persona (paciente o familiar, con cuenta propia) o una organización sube do
 | Dato | Cuánto se conserva | Cómo se borra |
 |---|---|---|
 | Archivo original | Hasta terminar de indexar (inmediato) o 60 min (política diferida, solo organizaciones) | Automático; acta de purga con huella |
-| Fragmentos, vectores, consultas | Hasta que la persona los borre | Botón «Borrar historial de preguntas» (consultas de un expediente) y «Eliminar mi cuenta» (todo el contenido); una organización elimina por expediente |
+| Fragmentos, vectores, consultas | Hasta que la persona los borre. Las **consultas** (preguntas, respuestas, explicaciones, líneas de tiempo) además pueden vencer solas si la persona elige 3, 6, 12 o 24 meses en «Mis datos» (por defecto no vencen) | Botón «Borrar historial de preguntas», plazo de «Mis datos» y «Eliminar mi cuenta»; una organización elimina por expediente |
 | Cuenta personal | Hasta que la persona la elimine | `POST /api/v1/cuenta/eliminar` (pide la contraseña): borra expedientes, documentos, fragmentos, consultas, consentimientos, verificaciones, usuarios y el espacio personal |
 | Auditoría | **Sin fecha de vencimiento** (diseñada para sobrevivir al borrado) | No se borra al eliminar la cuenta: conserva correo, IP e ids. **Por confirmar**: si debe anonimizarse o vencer |
-| **Respaldos de la base** | **14 días** (`RETENCION_DIAS`), cifrados con AES-256 si hay `BACKUP_PASSPHRASE` | Vencen solos. **Una cuenta eliminada sigue existiendo en los respaldos hasta 14 días**; hay que decirlo en la política de tratamiento |
+| **Respaldos de la base** | **Máximo 14 días**, dentro y fuera del equipo, cifrados con AES-256 (`BACKUP_PASSPHRASE`) | Vencen solos al hacerse una copia nueva; si las copias dejan de correr, la limpieza también. **Una cuenta eliminada sigue en los respaldos hasta 14 días** |
 | Registros del servidor (logs) | Según la configuración de despliegue | Por definir; no contienen preguntas ni documentos |
+
+**Acceso y portabilidad:** una cuenta personal descarga desde «Mis datos» un ZIP con su información (JSON y versión legible), con su contraseña y dejando constancia en la auditoría sin contenido. No incluye los archivos originales (se eliminan). En una organización lo gestiona la institución.
+
+**Copia fuera del equipo (si el dueño la activa):** un proveedor de almacenamiento (p. ej. Backblaze B2 o Cloudflare R2, por decidir) recibiría los respaldos **ya cifrados**, sin la frase para abrirlos. **Por decidir con el abogado:** si es un encargado que deba nombrarse en el consentimiento y la política (hoy el texto no lo nombra), su país y su acuerdo. El versionado y el bloqueo de objetos del bucket deben quedar desactivados para que se cumplan los 14 días.
 
 ## 5. Medidas de seguridad implementadas
 - **Aislamiento por persona/organización en la base** (Row Level Security con rol sin privilegios; una consulta de otro tenant devuelve «no encontrado»); probado en la suite y en una copia de datos reales.
@@ -47,6 +51,9 @@ Una persona (paciente o familiar, con cuenta propia) o una organización sube do
 - Antivirus (ClamAV) y validación del contenido real del archivo (no de su extensión) antes de procesar.
 - Prompt-injection: el contenido de los documentos se trata como datos; lo que devuelve el modelo se acota por esquema y por verificación de citas.
 - Secretos fuera del repositorio, rotación documentada (README, «Rotación de secretos»).
+
+- **Cifrado en reposo:** las preguntas y respuestas guardadas van cifradas en la base (AES-256-GCM, clave fuera de la base). **El texto de los documentos no se cifra en la base** (la búsqueda lo necesita); lo protege el cifrado del disco, que es un requisito de despliegue que el dueño debe activar y que no protege frente a quien acceda al sistema en marcha.
+- Cada 30 días se restaura de prueba el último respaldo y se comprueba el aislamiento entre cuentas.
 
 ## 6. Textos que ve la persona (para revisar)
 **Consentimiento informado** (`frontend/src/componentes/Consentimiento.tsx`) — la persona debe aceptarlo antes de subir o consultar. El punto 3 depende del proveedor de IA que esté activo, y cada texto tiene su versión (`ConsentimientoService.java`); al cambiar de proveedor hay que aceptarlo de nuevo. Abajo va la lista con el texto de producción (`2026-11-v5-claude`); las otras tres variantes del punto 3 están después y también hay que revisarlas.

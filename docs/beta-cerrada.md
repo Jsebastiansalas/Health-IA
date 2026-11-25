@@ -77,3 +77,9 @@ docker compose -f infra/docker-compose.yml up -d api
 5. El consentimiento cambia solo: cada invitado lo acepta de nuevo.
 
 Para volver a la API gratuita, repite el paso 4 sin el segundo `-f`.
+
+## Antes de recibir documentos de otras personas: lo que protege los datos
+
+- **Disco cifrado en el PC:** activa BitLocker o «Cifrado de dispositivo» en Windows y guarda la clave de recuperación fuera del PC.
+- **`DATOS_CLAVE` en `infra/.env`** (32 bytes en base64): cifra en la base las preguntas y respuestas. Guárdala aparte; si se pierde, el historial no se recupera. Para cifrar lo que ya había: `docker compose -f infra/docker-compose.yml exec agente python -m app.cli cifrar-historial`.
+- **El Docker local no hace respaldos:** el servicio de respaldos solo está en `docker-compose.prod.yml`. Si se daña el disco de la beta, se pierde todo.

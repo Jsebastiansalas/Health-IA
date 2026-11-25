@@ -6,6 +6,7 @@
 # Uso: restore.sh <archivo.dump[.enc]> [base_destino]
 # Variables: PGHOST PGUSER PGPASSWORD, BACKUP_PASSPHRASE (si el archivo es .enc),
 #            BASE_ORIGEN (opcional): compara los conteos con esa base y falla si difieren.
+#            CONTEOS (opcional): archivo .conteos escrito al copiar; exige esos conteos exactos.
 set -euo pipefail
 
 archivo="${1:?Uso: restore.sh <archivo.dump[.enc]> [base_destino]}"
@@ -60,6 +61,15 @@ for t in $tablas; do
     fi
     echo "$linea"
 done
+if [ -n "${CONTEOS:-}" ]; then
+    while read -r t esperado; do
+        n="$(conteo "$destino" "$t" 2> /dev/null || echo 'no existe')"
+        if [ "$n" != "$esperado" ]; then
+            log "ERROR: ${t} tiene ${n} filas y al copiar había ${esperado}"
+            estado=1
+        fi
+    done < "$CONTEOS"
+fi
 vectores="$(psql -d "$destino" -tAc "SELECT count(*) FROM fragmentos WHERE embedding IS NOT NULL")"
 hnsw="$(psql -d "$destino" -tAc "SELECT count(*) FROM pg_indexes WHERE indexname='idx_fragmentos_embedding_hnsw'")"
 # Flyway (API Java) es quien migra; el historial de Alembic solo existe en bases anteriores.

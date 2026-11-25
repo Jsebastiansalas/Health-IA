@@ -6,6 +6,8 @@ from typing import Literal
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.privacidad.cifrado_columnas import CifradorDatos, ErrorCifrado
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -98,6 +100,11 @@ class Settings(BaseSettings):
     llm_timeout_s: float = 30.0
     llm_intentos_por_modelo: int = 1
 
+    # ---------- Datos en reposo (Sprint 42) ----------
+    # Clave (32 bytes en base64) con la que se cifran en la base las preguntas y respuestas. La API
+    # Java necesita la misma. Vacía: se guardan sin cifrar (solo desarrollo).
+    datos_clave: str = ""
+
     # ---------- IA de producción (Sprint 41) ----------
     # Por dónde llega Gemini (generación y embeddings de gemini-embedding-001):
     # - gemini_api: API de Google AI Studio con GEMINI_API_KEY. Su capa gratuita puede usar lo
@@ -181,6 +188,12 @@ class Settings(BaseSettings):
             fatales.append("DATABASE_URL usa la contraseña de desarrollo 'medtender'")
         if self.cola_backend != "arq":
             fatales.append("COLA_BACKEND debe ser 'arq' para que los documentos se procesen")
+        try:
+            CifradorDatos(self.datos_clave)
+        except ErrorCifrado:
+            fatales.append(
+                "DATOS_CLAVE debe ser de 32 bytes en base64: cifra el historial en la base"
+            )
         if self.ia_proveedor == "gemini_api":
             fatales.append(
                 "IA_PROVEEDOR=gemini_api: la API de Google AI Studio puede usar los datos para "

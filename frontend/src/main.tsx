@@ -25,6 +25,7 @@ const PaginaRecordatorios = lazy(() => import("./paginas/Recordatorios").then((m
 const PaginaOlvideContrasena = lazy(() => import("./paginas/Contrasena").then((m) => ({ default: m.PaginaOlvideContrasena })));
 const PaginaRestablecer = lazy(() => import("./paginas/Contrasena").then((m) => ({ default: m.PaginaRestablecer })));
 const PaginaSeguridad = lazy(() => import("./paginas/Seguridad").then((m) => ({ default: m.PaginaSeguridad })));
+const PaginaMisDatos = lazy(() => import("./paginas/MisDatos").then((m) => ({ default: m.PaginaMisDatos })));
 const PaginaCompartir = lazy(() => import("./paginas/Compartir").then((m) => ({ default: m.PaginaCompartir })));
 const PaginaExpediente = lazy(() => import("./paginas/Expediente").then((m) => ({ default: m.PaginaExpediente })));
 
@@ -69,6 +70,7 @@ function Rutas() {
         <Route path="/compartir" element={<PaginaCompartir />} />
         <Route path="/recordatorios" element={<PaginaRecordatorios />} />
         <Route path="/cuenta/seguridad" element={<PaginaSeguridad />} />
+        <Route path="/cuenta/datos" element={<PaginaMisDatos />} />
         <Route path="/restablecer" element={<PaginaRestablecer />} />
         <Route path="/privacidad" element={<PaginaPrivacidad />} />
         <Route path="/terminos" element={<PaginaTerminos />} />

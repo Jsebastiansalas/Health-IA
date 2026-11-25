@@ -104,7 +104,7 @@ public class ConsentimientoService {
         }
     }
 
-    private TipoTenant tipoDe(UsuarioActual u) {
+    public TipoTenant tipoDe(UsuarioActual u) {
         return tenants.findById(u.tenantId()).map(t -> t.getTipo()).orElse(TipoTenant.ORGANIZACION);
     }
 

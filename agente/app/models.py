@@ -20,6 +20,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+from app.privacidad.cifrado_columnas import JsonCifrado, TextoCifrado
+
 EMBEDDING_DIM = 1536
 
 
@@ -178,8 +180,10 @@ class Consulta(Base):
         ForeignKey("expedientes.id", ondelete="CASCADE")
     )
     usuario_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"))
-    pregunta: Mapped[str] = mapped_column(Text)
-    respuesta: Mapped[dict] = mapped_column(JSONB)
+    # Cifradas en la base con DATOS_CLAVE (ver app/privacidad/cifrado_columnas.py). No se puede
+    # filtrar por su contenido en SQL.
+    pregunta: Mapped[str] = mapped_column(TextoCifrado)
+    respuesta: Mapped[dict] = mapped_column(JsonCifrado)
     sin_evidencia: Mapped[bool] = mapped_column(Boolean)
     modelo_embeddings: Mapped[str] = mapped_column(String(80))
     modelo_llm: Mapped[str | None] = mapped_column(String(80))

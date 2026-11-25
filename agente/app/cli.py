@@ -17,13 +17,17 @@ import os
 import sys
 
 from pydantic import EmailStr, TypeAdapter, ValidationError
+from sqlalchemy import Text, or_, select, type_coerce
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.core.config import get_settings
-from app.core.db import get_engine, get_sessionmaker
+from app.core.db import fijar_sistema, get_engine, get_sessionmaker
 from app.core.enums import PoliticaBorrado, RolGlobal
 from app.core.security import hash_password
-from app.models import Tenant, Usuario
+from app.models import Consulta, Tenant, Usuario
+from app.privacidad.cifrado_columnas import PREFIJO
 
 
 def verificar_config() -> int:
@@ -125,10 +129,34 @@ async def _cargar_fichas(principios: list[str], por_principio: int) -> int:
         await get_engine().dispose()
 
 
+async def _cifrar_historial(lote: int = 200) -> int:
+    """Cifra las preguntas y respuestas guardadas antes de tener DATOS_CLAVE. Se puede repetir.
+    Devuelve cuántas cifró."""
+    if not get_settings().datos_clave:
+        raise SystemExit("Define DATOS_CLAVE antes de cifrar el historial")
+    pendientes = or_(
+        ~type_coerce(Consulta.pregunta, Text).startswith(PREFIJO, autoescape=True),
+        ~type_coerce(Consulta.respuesta, JSONB).has_key("cifrado"),
+    )
+    total = 0
+    while True:
+        async with get_sessionmaker()() as session:
+            fijar_sistema(session)
+            filas = (await session.scalars(select(Consulta).where(pendientes).limit(lote))).all()
+            if not filas:
+                return total
+            for fila in filas:  # al reescribirlas, el tipo de columna las cifra
+                flag_modified(fila, "pregunta")
+                flag_modified(fila, "respuesta")
+            await session.commit()
+            total += len(filas)
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m app.cli")
     sub = p.add_subparsers(dest="comando", required=True)
     sub.add_parser("verificar-config", help="Revisa la configuración de producción")
+    sub.add_parser("cifrar-historial", help="Cifra el historial guardado antes de DATOS_CLAVE")
     m = sub.add_parser(
         "cargar-medicamentos",
         help="Descarga los datos abiertos de INVIMA (datos.gov.co) a la base de medicamentos",
@@ -162,6 +190,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.comando == "verificar-config":
         return verificar_config()
+    if args.comando == "cifrar-historial":
+        print(f"Respuestas guardadas cifradas: {asyncio.run(_cifrar_historial())}")
+        return 0
     if args.comando == "cargar-medicamentos":
         todas = ["VIGENTE", "RENOVACION", "OTROS", "VENCIDO", "PRECIO"]
         return asyncio.run(_cargar_medicamentos(args.fuente or todas))

@@ -96,13 +96,18 @@ export async function api<T>(ruta: string, opciones: RequestInit = {}, reintento
 export const post = <T>(ruta: string, cuerpo: unknown) =>
   api<T>(ruta, { method: "POST", body: JSON.stringify(cuerpo) });
 
-/** Descarga un archivo de la API con la sesión (p. ej. el .ics de un recordatorio). */
-export async function descargar(ruta: string, reintento = true): Promise<Blob> {
+/** Descarga un archivo de la API con la sesión (p. ej. el .ics de un recordatorio). Con `cuerpo` va por POST. */
+export async function descargar(ruta: string, cuerpo?: unknown, reintento = true): Promise<Blob> {
   const headers = new Headers();
   if (tokens) headers.set("Authorization", `Bearer ${tokens.access_token}`);
-  const r = await fetch(`${BASE}${ruta}`, { headers });
+  let opciones: RequestInit = { headers };
+  if (cuerpo !== undefined) {
+    headers.set("Content-Type", "application/json");
+    opciones = { headers, method: "POST", body: JSON.stringify(cuerpo) };
+  }
+  const r = await fetch(`${BASE}${ruta}`, opciones);
   if (r.status === 401 && tokens && reintento) {
-    if (await refrescar()) return descargar(ruta, false);
+    if (await refrescar()) return descargar(ruta, cuerpo, false);
     expirar();
   }
   if (!r.ok) {

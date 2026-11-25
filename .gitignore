@@ -47,3 +47,6 @@ docs/scroll-world/crudo/
 # Herramientas locales: capturas de revisión de Impeccable y carpeta de AiderDesk
 .impeccable/review/
 .aider-desk/
+
+# Credenciales del destino de los respaldos
+infra/backup/rclone.env

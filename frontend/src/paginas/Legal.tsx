@@ -64,7 +64,8 @@ export function PaginaPrivacidad() {
         <h2>Cuánto tiempo se conservan</h2>
         <ul>
           <li>El archivo original se elimina del servidor después de leerlo.</li>
-          <li>Los fragmentos de texto y tus preguntas se conservan hasta que los borres o elimines tu cuenta.</li>
+          <li>Los fragmentos de texto y tus preguntas se conservan hasta que los borres o elimines tu cuenta. En «Mis datos» puedes
+            hacer que tus preguntas y respuestas se borren solas pasado un plazo y descargar una copia de lo que hay sobre ti.</li>
           <li>Las copias de seguridad conservan los datos hasta 14 días más después de borrarlos.</li>
           <li>El registro de accesos se conserva sin fecha de vencimiento.</li>
         </ul>

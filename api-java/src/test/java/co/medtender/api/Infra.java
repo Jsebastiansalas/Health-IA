@@ -28,6 +28,8 @@ public final class Infra {
     public static final String JWT_SECRET = "secreto-de-pruebas-0123456789-abcdefghij-XYZ";
     public static final String METRICS_TOKEN = "token-metricas-de-prueba";
     public static final String AGENTE_TOKEN = "token-interno-de-prueba";
+    /** La misma de las pruebas del agente, para leer lo que él cifra. */
+    public static final String DATOS_CLAVE = "Y2xhdmUtZGUtcHJ1ZWJhcy1kZS0zMi1ieXRlcy1vayE=";
     public static final String EICAR = "X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*";
 
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
@@ -89,6 +91,7 @@ public final class Infra {
         r.add("medtender.ingesta.agente.reintentos", () -> "3");
         r.add("medtender.ingesta.agente.retroceso-ms", () -> "10");
         r.add("medtender.ia.proveedor-ttl-s", () -> "0"); // cada prueba cambia el proveedor del agente falso
+        r.add("medtender.datos.clave", () -> DATOS_CLAVE);
         // Las pruebas no salen a internet: la consulta de contraseñas filtradas se prueba con un servidor falso.
         r.add("medtender.contrasenas.consultar-filtraciones", () -> "false");
     }
