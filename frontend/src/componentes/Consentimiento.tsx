@@ -1,19 +1,41 @@
 import { ShieldCheck } from "../iconos";
 import { CONTACTO_PRIVACIDAD, RESPONSABLE } from "../lib/legal";
+import { textoConsentimientoIa, type ProveedorIa } from "../lib/proveedorIa";
 import { Boton } from "./ui/Boton";
+
+/** Marca el punto cuyo texto depende del proveedor de IA activo. */
+const PUNTO_IA = "proveedor-ia";
 
 /** Lo que la persona acepta antes de usar sus documentos de salud. El texto cambia con la versión del servidor. */
 const PUNTOS = [
   "MedTender está en pruebas cerradas: puede equivocarse. Compara siempre con tu médico o tu farmacéutico antes de decidir algo sobre tu salud.",
   "Subirás documentos médicos (historias clínicas, resultados, órdenes, prospectos). Son datos sensibles. Si subes documentos de otra persona, declaras que tienes derecho a hacerlo o su autorización. Si eres menor de edad, usa esta cuenta con un adulto responsable.",
-  "Para leerlos y responderte usamos servicios de inteligencia artificial de terceros con los que tenemos contrato: Gemini en Google Cloud (Vertex AI) y, solo si ese servicio falla, Claude de Anthropic. Pueden procesar la información fuera de Colombia. Ninguno de los dos usa lo que les enviamos para entrenar sus modelos. Aun así, sube solo lo que necesites.",
+  PUNTO_IA,
   "Antes de enviarle el texto ocultamos nombres, cédulas, teléfonos, correos y direcciones cuando aparecen con una etiqueta (por ejemplo «Paciente:» o «CC»). Este ocultamiento no es perfecto: un nombre suelto dentro de una frase puede no detectarse.",
   "El archivo original se elimina del servidor después de leerlo. Guardamos fragmentos de texto tal como aparecen en el documento (con tus datos) y tus preguntas, para poder responderte y citar el texto exacto.",
   "Puedes borrar tu historial de preguntas y eliminar tu cuenta con todo su contenido cuando quieras. Las copias de seguridad conservan los datos hasta 14 días más. El registro de accesos (tu correo, la fecha y tu dirección IP, nunca el contenido de tus documentos ni de tus preguntas) se conserva sin fecha de vencimiento.",
   "MedTender explica y cita lo que dicen tus documentos. No es un médico, no diagnostica, no receta ni indica dosis. Si es una urgencia, llama al 123.",
 ];
 
-export function Consentimiento({ version, aceptando, error, alAceptar }: { version: string; aceptando: boolean; error?: string; alAceptar: () => void }) {
+interface Props {
+  version: string;
+  /** El proveedor que corresponde a esa versión; `null` si el servidor no pudo saberlo. */
+  ia: ProveedorIa | null;
+  aceptando: boolean;
+  error?: string;
+  alAceptar: () => void;
+}
+
+export function Consentimiento({ version, ia, aceptando, error, alAceptar }: Props) {
+  if (!ia) {
+    return (
+      <p role="alert" className="panel mb-8 p-6 text-sm text-peligro">
+        No pudimos comprobar qué servicio de inteligencia artificial está activo, así que todavía no puedes aceptar. Recarga la página en un
+        momento.
+      </p>
+    );
+  }
+  const puntos = PUNTOS.map((p) => (p === PUNTO_IA ? textoConsentimientoIa(ia) : p));
   return (
     <section aria-labelledby="titulo-consentimiento" className="panel mb-8 border-l-0 p-6 sm:p-8">
       <h2 id="titulo-consentimiento" className="flex items-center gap-3 text-xl">
@@ -22,7 +44,7 @@ export function Consentimiento({ version, aceptando, error, alAceptar }: { versi
       </h2>
       <p className="mt-2 text-texto-2">Lee esto con calma. Necesitamos tu aceptación para continuar.</p>
       <ul className="mt-4 max-w-3xl space-y-3 text-sm leading-relaxed">
-        {PUNTOS.map((p) => (
+        {puntos.map((p) => (
           <li key={p} className="flex gap-3">
             <span className="mt-2 size-2 shrink-0 rounded-full bg-texto-3" aria-hidden />
             <span>{p}</span>

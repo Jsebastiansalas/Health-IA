@@ -16,6 +16,7 @@ import { Esqueleto } from "../componentes/ui/Esqueleto";
 import { Insignia } from "../componentes/ui/Insignia";
 import { cn } from "../lib/cn";
 import { useConsentimiento } from "../lib/consentimiento";
+import { proveedorDe } from "../lib/proveedorIa";
 import { esConsultable, TIPOS_EXPEDIENTE } from "../lib/formato";
 import { useMediaQuery } from "../lib/useMediaQuery";
 
@@ -141,6 +142,7 @@ export function PaginaExpediente() {
       {consentimiento.pendiente && !consentimiento.correoPendiente && consentimiento.estado && (
         <Consentimiento
           version={consentimiento.estado.version}
+          ia={proveedorDe(consentimiento.estado.proveedor_ia, consentimiento.estado.respaldo_ia)}
           aceptando={consentimiento.aceptar.isPending}
           error={consentimiento.aceptar.error ? (consentimiento.aceptar.error as Error).message : undefined}
           alAceptar={() => consentimiento.aceptar.mutate()}

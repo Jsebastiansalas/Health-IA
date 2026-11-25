@@ -49,20 +49,27 @@ Una persona (paciente o familiar, con cuenta propia) o una organización sube do
 - Secretos fuera del repositorio, rotación documentada (README, «Rotación de secretos»).
 
 ## 6. Textos que ve la persona (para revisar)
-**Consentimiento informado (versión `2026-11-v4`, `frontend/src/componentes/Consentimiento.tsx`)** — la persona debe aceptarlo antes de subir o consultar:
+**Consentimiento informado** (`frontend/src/componentes/Consentimiento.tsx`) — la persona debe aceptarlo antes de subir o consultar. El punto 3 depende del proveedor de IA que esté activo, y cada texto tiene su versión (`ConsentimientoService.java`); al cambiar de proveedor hay que aceptarlo de nuevo. Abajo va la lista con el texto de producción (`2026-11-v5-claude`); las otras tres variantes del punto 3 están después y también hay que revisarlas.
 1. MedTender está en pruebas cerradas: puede equivocarse. Compara siempre con tu médico o tu farmacéutico antes de decidir algo sobre tu salud.
 2. Subirás documentos médicos (historias clínicas, resultados, órdenes, prospectos). Son datos sensibles. Si subes documentos de otra persona, declaras que tienes derecho a hacerlo o su autorización. Si eres menor de edad, usa esta cuenta con un adulto responsable.
-3. Para leerlos y responderte usamos servicios de inteligencia artificial de terceros con los que tenemos contrato: Gemini en Google Cloud (Vertex AI) y, solo si ese servicio falla, Claude de Anthropic. Pueden procesar la información fuera de Colombia. Ninguno de los dos usa lo que les enviamos para entrenar sus modelos. Aun así, sube solo lo que necesites.
+3. Para leerlos y responderte usamos servicios de inteligencia artificial de terceros: Gemini en Google Cloud (Vertex AI) y, solo si ese servicio falla, Claude de Anthropic. Pueden procesar la información fuera de Colombia. Ninguno de los dos usa lo que les enviamos para entrenar sus modelos. Aun así, sube solo lo que necesites.
 4. Antes de enviarle el texto ocultamos nombres, cédulas, teléfonos, correos y direcciones cuando aparecen con una etiqueta (por ejemplo «Paciente:» o «CC»). Este ocultamiento no es perfecto: un nombre suelto dentro de una frase puede no detectarse.
 5. El archivo original se elimina del servidor después de leerlo. Guardamos fragmentos de texto tal como aparecen en el documento (con tus datos) y tus preguntas, para poder responderte y citar el texto exacto.
 6. Puedes borrar tu historial de preguntas y eliminar tu cuenta con todo su contenido cuando quieras. Las copias de seguridad conservan los datos hasta 14 días más. El registro de accesos (tu correo, la fecha y tu dirección IP, nunca el contenido de tus documentos ni de tus preguntas) se conserva sin fecha de vencimiento.
 7. MedTender explica y cita lo que dicen tus documentos. No es un médico, no diagnostica, no receta ni indica dosis. Si es una urgencia, llama al 123.
 
+**Las otras variantes del punto 3:**
+- `2026-11-v3` (API gratuita de Gemini, la de la beta actual): «Para leerlos y responderte usamos un servicio de inteligencia artificial de un tercero: Google Gemini, que puede procesar la información fuera de Colombia. En esta etapa usamos su versión gratuita, y Google puede conservar y usar lo que se le envía para mejorar sus productos. Por eso sube solo lo que necesites.»
+- `2026-11-v3-claude` (API gratuita con Claude de respaldo): el texto anterior más «Si Gemini falla, tu pregunta y fragmentos de tus documentos pueden ir a Claude, de Anthropic, otra empresa que no usa lo que le enviamos para entrenar sus modelos.»
+- `2026-11-v5` (Vertex AI sin respaldo): «Para leerlos y responderte usamos un servicio de inteligencia artificial de un tercero: Gemini en Google Cloud (Vertex AI), que puede procesar la información fuera de Colombia. Google no usa lo que le enviamos para entrenar sus modelos. Aun así, sube solo lo que necesites.»
+
+Los textos no afirman que ya exista un contrato firmado: los acuerdos de tratamiento de datos con Google Cloud y Anthropic siguen pendientes (sección 3). La afirmación de que no entrenan con los datos se apoya en las condiciones de servicio de pago de cada proveedor y **hay que confirmarla**.
+
 Además, si se configuran `VITE_RESPONSABLE` y `VITE_CONTACTO_PRIVACIDAD` al construir la web, la pantalla muestra «Responsable del tratamiento: … · contacto: …».
 
 **Aviso permanente** (en las pantallas de consulta): «Información de apoyo, no atención médica. Explica y cita lo que dicen tus documentos y las fuentes; no diagnostica ni receta, y no sustituye a un profesional de la salud. En una urgencia, llama al 123.»
 
-**Qué falta en esos textos (a decidir con el abogado):** el nombre y el contacto reales del responsable (hoy se configuran por variable y, si no están, la línea no aparece); que el punto 3 (Vertex AI y Claude, sin entrenamiento) coincida con los contratos firmados el día que se publique; texto para el caso de que la persona sea una institución; política de tratamiento y aviso de privacidad completos con enlace desde esta pantalla; términos y condiciones.
+**Qué falta en esos textos (a decidir con el abogado):** el nombre y el contacto reales del responsable (hoy se configuran por variable y, si no están, la línea no aparece); que cada variante del punto 3 coincida con las condiciones y acuerdos de cada proveedor el día que se publique; texto para el caso de que la persona sea una institución; política de tratamiento y aviso de privacidad completos con enlace desde esta pantalla; términos y condiciones.
 
 ## 7. Límites conocidos del producto (para no prometer de más)
 - La anonimización por patrones no es perfecta (sección 3).

@@ -1,10 +1,57 @@
-import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
-import { PaginaBienvenida, PaginaPersonas } from "./Bienvenida";
-import { PaginaNoEncontrada, PaginaPrivacidad } from "./Legal";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const enRuta = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>);
+const publico = vi.hoisted(() => ({ ia: null as null | { proveedor: string; respaldo: string } }));
+vi.mock("../api/cliente", () => ({
+  api: async () => {
+    if (!publico.ia) throw new Error("sin respuesta");
+    return publico.ia;
+  },
+}));
+
+const { PaginaBienvenida, PaginaPersonas } = await import("./Bienvenida");
+const { PaginaNoEncontrada, PaginaPrivacidad } = await import("./Legal");
+
+const enRuta = (ui: React.ReactElement) =>
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>,
+  );
+
+beforeEach(() => {
+  publico.ia = null;
+});
+
+describe("las páginas públicas nombran al proveedor de IA activo", () => {
+  const paginas = [
+    ["organizaciones", () => <PaginaBienvenida />],
+    ["personas", () => <PaginaPersonas />],
+    ["privacidad", () => <PaginaPrivacidad />],
+  ] as const;
+
+  it.each(paginas)("%s: con la API gratuita avisa que Google puede usar lo que recibe", async (_n, pagina) => {
+    publico.ia = { proveedor: "gemini_api", respaldo: "" };
+    const { container } = enRuta(pagina());
+    await waitFor(() => expect(container.textContent).toMatch(/versión gratuita de Google, que puede usar lo que recibe/));
+    expect(container.textContent).not.toMatch(/Vertex|Claude/);
+  });
+
+  it.each(paginas)("%s: con Vertex y respaldo nombra a los dos, sin hablar de contratos", async (_n, pagina) => {
+    publico.ia = { proveedor: "vertex", respaldo: "claude" };
+    const { container } = enRuta(pagina());
+    await waitFor(() => expect(container.textContent).toMatch(/Gemini en Google Cloud \(Vertex AI\).*Claude, de Anthropic/));
+    expect(container.textContent).not.toMatch(/gratuita|con contrato/);
+  });
+
+  it.each(paginas)("%s: si no se puede saber, no afirma nada sobre el uso de los datos", (_n, pagina) => {
+    const { container } = enRuta(pagina());
+    expect(container.textContent).toMatch(/Antes de aceptar el consentimiento verás cuáles son/);
+    expect(container.textContent).not.toMatch(/Gemini|Claude|para entrenar|gratuita/);
+  });
+});
 
 describe("portadas", () => {
   it("la de organizaciones tiene una sola acción principal arriba y la misma al cierre", () => {

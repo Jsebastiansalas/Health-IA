@@ -2,7 +2,7 @@
 
 Para que unas pocas personas que conoces usen MedTender **sin pagar servidor ni dominio**. Tu PC corre todo (los datos quedan en tu casa) y Cloudflare solo le presta una dirección pública con HTTPS.
 
-> **Antes de invitar a alguien:** que haya aceptado el consentimiento (la aplicación se lo pide sola), que entienda que es una **prueba** y qué proveedor de IA recibe el texto: si la beta corre con la API gratuita de Gemini (desarrollo), Google puede usar lo que se le envía; con Vertex AI (sprint 41) no. Invita solo a quien conozcas.
+> **Antes de invitar a alguien:** que haya aceptado el consentimiento (la aplicación se lo pide sola), que entienda que es una **prueba** y qué proveedor de IA recibe el texto: el consentimiento lo dice según lo que esté configurado en `agente/.env`. Con la API gratuita de Gemini (lo normal en la beta), Google puede usar lo que se le envía; con Vertex AI no. Invita solo a quien conozcas.
 
 ## Lo que necesitas
 - MedTender corriendo en Docker (`docker compose -f infra/docker-compose.yml up -d`).

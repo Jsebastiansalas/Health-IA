@@ -54,7 +54,8 @@ Hoy todo va a la API gratuita de Gemini (que puede usar lo que recibe) y a un so
 - Claude (Anthropic, `claude-opus-5-5`, SDK oficial con salida JSON estructurada) como segundo proveedor. Si Gemini falla, se satura o rechaza la credencial, responde Claude; el cortacircuitos deja de insistir sobre el caído durante 2 minutos tras 3 fallos seguidos. Una prueba confirma que la salida del respaldo pasa por las mismas garantías.
 - Tokens y costo estimado por llamada en métricas y log (solo cifras), y tope diario `IA_TOPE_DIARIO_USD` que corta las llamadas hasta el otro día. Límite: el contador del día está en memoria y se reinicia con el agente.
 - Con `ENTORNO=produccion` el agente no arranca con la API gratuita de AI Studio, ni con Vertex sin proyecto, ni con Claude sin clave. El compose de producción monta la cuenta de servicio como secreto (`VERTEX_CREDENCIALES_ARCHIVO`).
-- Consentimiento `2026-11-v4`, página legal, preguntas frecuentes y `docs/revision-legal.md` con Google Cloud y Anthropic como encargados.
+- Consentimiento, página legal, preguntas frecuentes y `docs/revision-legal.md` con Google Cloud y Anthropic como encargados.
+- **Corrección posterior (25-nov-2026):** la v4 integrada decía Vertex AI sin mirar el proveedor configurado, así que en la beta (API gratuita) habría sido falsa. Ahora el texto y su versión salen del proveedor que el agente tiene activo (`2026-11-v3`, `-v3-claude`, `-v5`, `-v5-claude`), la v4 queda retirada y ningún texto afirma que haya contratos firmados. No llegó a desplegarse en la beta desde este repositorio.
 - **Pendiente del dueño:** D1 (proyecto de Google Cloud con facturación, Vertex AI habilitado y la cuenta de servicio) y D2 (clave de Anthropic) para el recorrido real; aceptar los DPA de los dos.
 
 ## Sprint 42: Derechos sobre los datos y respaldos que sobreviven

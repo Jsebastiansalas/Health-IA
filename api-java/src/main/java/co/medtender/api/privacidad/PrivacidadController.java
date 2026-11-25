@@ -10,6 +10,7 @@ import co.medtender.api.security.UsuarioActual;
 import co.medtender.api.web.ApiException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
@@ -30,12 +31,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class PrivacidadController {
 
     public record ConsentimientoOut(String version, boolean requerido, boolean aceptado, Instant aceptadoAt,
-                                    String tipoCuenta, boolean correoRequerido, boolean correoVerificado) {
+                                    String tipoCuenta, boolean correoRequerido, boolean correoVerificado,
+                                    String proveedorIa, String respaldoIa) {
         static ConsentimientoOut de(ConsentimientoService.Estado e, VerificacionCorreoService.Estado c) {
             return new ConsentimientoOut(e.version(), e.requerido(), e.aceptado(), e.aceptadoAt(), e.tipoCuenta().name(),
-                    c.requerido(), c.verificado());
+                    c.requerido(), c.verificado(), e.proveedorIa(), e.respaldoIa());
         }
     }
+
+    /** La version del texto que la persona tenia en pantalla al aceptar. */
+    public record AceptarIn(@NotBlank @Size(max = 30) String version) {}
 
     public record EliminarCuentaIn(@NotBlank String password) {}
 
@@ -66,9 +71,10 @@ public class PrivacidadController {
     }
 
     @PostMapping("/consentimiento")
-    public ConsentimientoOut aceptar(@AuthenticationPrincipal UsuarioActual user) {
+    public ConsentimientoOut aceptar(@Valid @RequestBody AceptarIn in,
+                                     @AuthenticationPrincipal UsuarioActual user) {
         var antes = consentimiento.estado(user);
-        var despues = consentimiento.aceptar(user);
+        var despues = consentimiento.aceptar(user, in.version());
         if (!antes.aceptado()) {
             auditoria.auditar(Accion.CONSENTIMIENTO_ACEPTADO, user, "usuario", user.id(),
                     Map.of("version", despues.version()));

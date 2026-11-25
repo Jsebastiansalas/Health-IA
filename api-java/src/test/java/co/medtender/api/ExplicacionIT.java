@@ -98,7 +98,7 @@ class ExplicacionIT extends IntegracionBase {
         explicar(ana, exp, doc).andExpect(status().isForbidden()).andExpect(jsonPath("$.codigo").value("consentimiento_requerido"));
         assertThat(Infra.AGENTE.llamadas()).isEmpty();
 
-        mvc.perform(post("/api/v1/consentimiento").header("Authorization", bearer(ana))).andExpect(status().isOk());
+        aceptarConsentimiento(ana).andExpect(status().isOk());
         explicar(ana, exp, doc).andExpect(status().isOk());
     }
 

@@ -3,6 +3,7 @@ import { ArrowLeft } from "../iconos";
 import { Marca } from "../componentes/Marca";
 import { boton } from "../componentes/ui/Boton";
 import { CONTACTO_PRIVACIDAD } from "../lib/legal";
+import { resumenIa, useProveedorIa } from "../lib/proveedorIa";
 
 function Hoja({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
@@ -40,6 +41,7 @@ function Hoja({ titulo, children }: { titulo: string; children: React.ReactNode 
 }
 
 export function PaginaPrivacidad() {
+  const ia = useProveedorIa();
   return (
     <Hoja titulo="Privacidad">
       <section>
@@ -54,10 +56,8 @@ export function PaginaPrivacidad() {
       <section>
         <h2>Adónde van</h2>
         <p>
-          Para leer los documentos y responder usamos Gemini en Google Cloud (Vertex AI) y, solo si ese servicio falla, Claude de Anthropic:
-          servicios de inteligencia artificial de terceros, con contrato, que pueden procesar la información fuera de Colombia y que no usan lo
-          que reciben para entrenar sus modelos. Antes de enviarles el texto ocultamos nombres, cédulas, teléfonos, correos y direcciones cuando
-          aparecen con una etiqueta. Ese ocultamiento no es perfecto.
+          {resumenIa(ia)} Antes de enviar el texto ocultamos nombres, cédulas, teléfonos, correos y direcciones cuando aparecen con una
+          etiqueta. Ese ocultamiento no es perfecto.
         </p>
       </section>
       <section>
