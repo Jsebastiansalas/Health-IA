@@ -1,9 +1,10 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useState, type ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { ChevronsUpDown, FolderOpen, LogOut, Moon, Pill, Sun, Trash2 } from "../iconos";
 import { cn } from "../lib/cn";
+import { useCompartido } from "../lib/compartido";
 import { useConsentimiento } from "../lib/consentimiento";
 import { useTema } from "../lib/tema";
 import { useSesion } from "../sesion";
@@ -102,6 +103,21 @@ const enlaceNav = ({ isActive }: { isActive: boolean }) =>
     isActive ? "text-texto after:opacity-100" : "text-texto-2 after:opacity-0 hover:text-texto",
   );
 
+/** Si quedó un archivo de «Compartir» sin subir (p. ej. había que ingresar primero), se ofrece retomarlo. */
+function AvisoCompartido() {
+  const { archivo } = useCompartido();
+  const { pathname } = useLocation();
+  if (!archivo || pathname === "/compartir") return null;
+  return (
+    <p role="status" className="panel mb-6 flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+      <span>Tienes un archivo compartido sin subir: {archivo.name || "archivo"}.</span>
+      <Link to="/compartir" className="font-medium text-primario-osc underline underline-offset-4">
+        Elegir expediente
+      </Link>
+    </p>
+  );
+}
+
 export function Marco({ children }: { children: ReactNode }) {
   const { tema } = useTema();
   return (
@@ -135,6 +151,7 @@ export function Marco({ children }: { children: ReactNode }) {
       </header>
 
       <main id="contenido" className="mx-auto max-w-[1400px] px-4 py-8 sm:px-8 lg:py-10">
+        <AvisoCompartido />
         {children}
       </main>
       <Toaster

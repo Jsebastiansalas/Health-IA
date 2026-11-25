@@ -4,7 +4,9 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ErrorApi } from "./api/cliente";
 import "./index.css";
+import { AvisosApp } from "./componentes/AvisosApp";
 import { Marco } from "./componentes/Marco";
+import { aplicarVersionNueva, registrarApp } from "./pwa";
 
 import { ProveedorSesion, useSesion } from "./sesion";
 
@@ -19,6 +21,7 @@ const PaginaVerificarCorreo = lazy(() => import("./paginas/VerificarCorreo").the
 const PaginaIngreso = lazy(() => import("./paginas/Ingreso").then((m) => ({ default: m.PaginaIngreso })));
 const PaginaExpedientes = lazy(() => import("./paginas/Expedientes").then((m) => ({ default: m.PaginaExpedientes })));
 const PaginaMedicamentos = lazy(() => import("./paginas/Medicamentos").then((m) => ({ default: m.PaginaMedicamentos })));
+const PaginaCompartir = lazy(() => import("./paginas/Compartir").then((m) => ({ default: m.PaginaCompartir })));
 const PaginaExpediente = lazy(() => import("./paginas/Expediente").then((m) => ({ default: m.PaginaExpediente })));
 
 const consultas = new QueryClient({
@@ -42,6 +45,8 @@ function Rutas() {
         <Route path="/verificar-correo" element={<PaginaVerificarCorreo />} />
         <Route path="/privacidad" element={<PaginaPrivacidad />} />
         <Route path="/terminos" element={<PaginaTerminos />} />
+        {/* Llegó un archivo desde «Compartir» sin sesión: queda guardado en el teléfono y se ofrece al ingresar. */}
+        <Route path="/compartir" element={<Navigate to="/ingreso" replace />} />
         <Route path="*" element={<PaginaNoEncontrada />} />
       </Routes>
     );
@@ -55,6 +60,7 @@ function Rutas() {
         <Route path="/verificar-correo" element={<PaginaVerificarCorreo />} />
         <Route path="/medicamentos" element={<PaginaMedicamentos />} />
         <Route path="/expedientes/:id" element={<PaginaExpediente />} />
+        <Route path="/compartir" element={<PaginaCompartir />} />
         <Route path="/privacidad" element={<PaginaPrivacidad />} />
         <Route path="/terminos" element={<PaginaTerminos />} />
         <Route path="*" element={<PaginaNoEncontrada />} />
@@ -71,8 +77,11 @@ createRoot(document.getElementById("root")!).render(
           <Suspense fallback={<div className="min-h-screen" aria-busy />}>
             <Rutas />
           </Suspense>
+          <AvisosApp alActualizar={aplicarVersionNueva} />
         </ProveedorSesion>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,
 );
+
+registrarApp();

@@ -96,11 +96,22 @@ export function PanelDocumentos({
   );
 }
 
-function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; clinico: boolean }) {
+/** Formulario de carga. `archivoInicial` llega ya elegido (p. ej. desde «Compartir»); `alSubir` avisa al terminar. */
+export function FormularioSubida({
+  expedienteId,
+  clinico,
+  archivoInicial,
+  alSubir,
+}: {
+  expedienteId: string;
+  clinico: boolean;
+  archivoInicial?: File | null;
+  alSubir?: () => void;
+}) {
   const cliente = useQueryClient();
   const entrada = useRef<HTMLInputElement>(null);
   const camara = useRef<HTMLInputElement>(null);
-  const [archivo, setArchivo] = useState<File | null>(null);
+  const [archivo, setArchivo] = useState<File | null>(archivoInicial ?? null);
   const [tipo, setTipo] = useState<TipoDocumento>(clinico ? "HISTORIA_CLINICA" : "PLIEGO");
   const [numero, setNumero] = useState(1);
   const [progreso, setProgreso] = useState<number | null>(null);
@@ -122,6 +133,7 @@ function FormularioSubida({ expedienteId, clinico }: { expedienteId: string; cli
       setArchivo(null);
       if (entrada.current) entrada.current.value = "";
       cliente.invalidateQueries({ queryKey: ["documentos", expedienteId] });
+      alSubir?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cargar el documento.");
     } finally {
