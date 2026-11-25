@@ -46,9 +46,12 @@ public class TenantUsuariosController {
     private final IdentidadService identidad;
     private final PasswordService passwords;
     private final AuditoriaService auditoria;
+    private final co.medtender.api.auth.PoliticaContrasena politica;
 
     public TenantUsuariosController(TenantRepository tenants, UsuarioRepository usuarios, IdentidadService identidad,
-                                    PasswordService passwords, AuditoriaService auditoria) {
+                                    PasswordService passwords, AuditoriaService auditoria,
+                                    co.medtender.api.auth.PoliticaContrasena politica) {
+        this.politica = politica;
         this.tenants = tenants;
         this.usuarios = usuarios;
         this.identidad = identidad;
@@ -82,9 +85,7 @@ public class TenantUsuariosController {
     @PostMapping("/usuarios")
     @ResponseStatus(HttpStatus.CREATED)
     public UsuarioOut crear(@Valid @RequestBody UsuarioCreate in, @AuthenticationPrincipal UsuarioActual admin) {
-        if (PasswordService.excedeLimite(in.password())) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "La contraseña no puede superar 72 bytes");
-        }
+        politica.exigir(in.password(), in.email(), in.nombreCompleto());
         String hash = passwords.hash(in.password());
         var u = identidad.crearUsuario(admin.tenantId(), in.email().toLowerCase(Locale.ROOT), hash,
                 in.nombreCompleto(), in.rolGlobal());

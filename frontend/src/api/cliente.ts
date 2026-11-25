@@ -13,6 +13,13 @@ let tokens: Tokens | null = (() => {
 })();
 
 export const EVENTO_SESION_EXPIRADA = "medtender:sesion-expirada";
+/** La API exige activar la verificación en dos pasos (administradores de organizaciones). */
+export const EVENTO_DOS_PASOS_REQUERIDO = "medtender:dos-pasos-requerido";
+
+/** El token de renovación vigente (para cerrar la sesión en el servidor). */
+export function refreshActual(): string | null {
+  return tokens?.refresh_token ?? null;
+}
 
 export function haySesion(): boolean {
   return tokens !== null;
@@ -80,6 +87,7 @@ export async function api<T>(ruta: string, opciones: RequestInit = {}, reintento
   const cuerpo = r.headers.get("content-type")?.includes("json") ? await r.json() : await r.text();
   if (!r.ok) {
     const c = cuerpo as { detail?: unknown; codigo?: string };
+    if (c?.codigo === "dos_pasos_requerido") window.dispatchEvent(new Event(EVENTO_DOS_PASOS_REQUERIDO));
     throw new ErrorApi(r.status, c?.detail ?? cuerpo, c?.codigo);
   }
   return cuerpo as T;

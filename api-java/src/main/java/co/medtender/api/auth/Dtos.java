@@ -39,11 +39,22 @@ public final class Dtos {
         }
     }
 
+    /** Respuesta del ingreso: los tokens o, si la cuenta tiene verificación en dos pasos, el desafío. */
+    public record LoginOut(String accessToken, String refreshToken, String tokenType, boolean requiere2fa, String desafio) {
+        public static LoginOut de(TokensOut t) {
+            return new LoginOut(t.accessToken(), t.refreshToken(), t.tokenType(), false, null);
+        }
+
+        public static LoginOut dosPasos(String desafio) {
+            return new LoginOut(null, null, null, true, desafio);
+        }
+    }
+
     public record UsuarioOut(UUID id, UUID tenantId, String email, String nombreCompleto, RolGlobal rolGlobal,
-                             boolean activo, Instant createdAt) {
+                             boolean activo, Instant createdAt, boolean dosPasos) {
         public static UsuarioOut de(Usuario u) {
             return new UsuarioOut(u.getId(), u.getTenantId(), u.getEmail(), u.getNombreCompleto(),
-                    u.getRolGlobal(), u.isActivo(), u.getCreatedAt());
+                    u.getRolGlobal(), u.isActivo(), u.getCreatedAt(), u.isTotpActivo());
         }
     }
 

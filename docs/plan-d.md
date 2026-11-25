@@ -28,6 +28,16 @@ Hoy no se puede recuperar una contraseña olvidada, ni cambiarla, ni cerrar sesi
 - **Verificación en dos pasos (TOTP)** opcional para todos y obligatoria para administradores de organizaciones, con códigos de respaldo.
 - Pruebas: rotación y reutilización de tokens, enlaces vencidos y usados, enumeración de cuentas, TOTP con reloj desfasado.
 
+**Hecho (25-nov-2026):**
+- V14: `sesiones` (hash del jti, familia, rotación, revocación), `restablecimientos_clave`, `codigos_respaldo` y en `usuarios` la fecha desde la que valen los tokens y el TOTP cifrado. Todo con RLS.
+- Los tokens llevan `emitido_ms`: el `iat` en segundos no alcanzaba para invalidar sesiones en el mismo segundo.
+- Endpoints: `/auth/logout`, `/auth/cerrar-sesiones`, `/auth/cambiar-contrasena`, `/auth/olvide-contrasena`, `/auth/restablecer-contrasena`, `/auth/2fa` (estado, iniciar, activar, desactivar, verificar). El ingreso devuelve un desafío de 5 minutos cuando la cuenta tiene dos pasos.
+- Política de contraseñas en registro, alta por administrador, cambio y restablecimiento: mínimo 10, comunes, con el nombre o el correo, y filtradas (Have I Been Pwned por k-anonimato; si no responde, no bloquea).
+- Dos pasos obligatorios para administradores de organizaciones con `DOS_PASOS_ADMINS=true` (activado en el compose de producción). Secretos TOTP cifrados con `CIFRADO_CLAVE`.
+- Correos de aviso en cada cambio sensible, ahora enviados en segundo plano (antes la respuesta esperaba ~6 s a Brevo).
+- Frontend: segundo paso en el ingreso, «¿Olvidaste tu contraseña?», página de restablecer y «Seguridad de la cuenta» (QR dibujado en el navegador, códigos de respaldo, cambio de contraseña y cerrar las demás sesiones). «Cerrar sesión» ahora también la cierra en el servidor.
+- Efecto del despliegue: los tokens emitidos antes de V14 no tienen sesión registrada, así que cada persona vuelve a ingresar una vez.
+
 ## Sprint 41: IA de producción
 
 Hoy todo va a la API gratuita de Gemini (que puede usar lo que recibe) y a un solo proveedor.

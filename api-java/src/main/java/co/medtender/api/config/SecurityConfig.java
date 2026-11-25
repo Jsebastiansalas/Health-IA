@@ -52,7 +52,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh",
                                 "/api/v1/auth/registro-tenant", "/api/v1/auth/registro-personal",
-                                "/api/v1/auth/verificar-correo").permitAll()
+                                "/api/v1/auth/verificar-correo", "/api/v1/auth/logout",
+                                "/api/v1/auth/olvide-contrasena", "/api/v1/auth/restablecer-contrasena",
+                                "/api/v1/auth/2fa/verificar").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(o -> o
                         .jwt(j -> j.decoder(decoder).jwtAuthenticationConverter(conversor))

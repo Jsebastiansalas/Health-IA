@@ -78,6 +78,13 @@ medtender:
   allow-tenant-signup: ${ALLOW_TENANT_SIGNUP:true}
   # Cuentas personales (pacientes y familias): se pueden abrir aunque el alta de organizaciones este cerrada.
   registro-personal-abierto: ${REGISTRO_PERSONAL_ABIERTO:true}
+  # Cuentas seguras (sprint 40).
+  cifrado:
+    clave: ${CIFRADO_CLAVE:}             # 32 bytes en base64 (openssl rand -base64 32); cifra los secretos TOTP
+  contrasenas:
+    consultar-filtraciones: ${CONTRASENAS_CONSULTAR_FILTRACIONES:true}   # Have I Been Pwned por k-anonimato
+  seguridad:
+    dos-pasos-admins: ${DOS_PASOS_ADMINS:false}   # obliga a los administradores de organizaciones
   correo:
     # Si es true, una cuenta personal sin correo verificado no puede subir ni consultar. Actívalo en producción.
     verificacion-obligatoria: ${CORREO_VERIFICACION_OBLIGATORIA:false}

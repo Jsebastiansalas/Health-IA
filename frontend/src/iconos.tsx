@@ -12,6 +12,8 @@ export {
   ArrowLeft,
   ArrowRight,
   ArrowsClockwise,
+  Key,
+  QrCode,
   Bell,
   CalendarPlus,
   CalendarBlank,

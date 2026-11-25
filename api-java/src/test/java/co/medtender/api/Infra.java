@@ -65,6 +65,10 @@ public final class Infra {
         // La aplicacion usa el rol sin privilegios que crea V8 (RLS en vigor); Flyway, el propietario.
         r.add("spring.datasource.username", () -> APP_USUARIO);
         r.add("spring.datasource.password", () -> APP_PASSWORD);
+        // Spring guarda un contexto por cada configuración de prueba distinta, cada uno con su pool: con pools de 10
+        // se agotan las conexiones del Postgres de pruebas. Con 3 por contexto alcanza y sobra.
+        r.add("spring.datasource.hikari.maximum-pool-size", () -> "3");
+        r.add("spring.datasource.hikari.minimum-idle", () -> "1");
         r.add("spring.flyway.url", POSTGRES::getJdbcUrl);
         r.add("spring.flyway.user", POSTGRES::getUsername);
         r.add("spring.flyway.password", POSTGRES::getPassword);
@@ -84,6 +88,8 @@ public final class Infra {
         r.add("medtender.ingesta.agente.token", () -> AGENTE_TOKEN);
         r.add("medtender.ingesta.agente.reintentos", () -> "3");
         r.add("medtender.ingesta.agente.retroceso-ms", () -> "10");
+        // Las pruebas no salen a internet: la consulta de contraseñas filtradas se prueba con un servidor falso.
+        r.add("medtender.contrasenas.consultar-filtraciones", () -> "false");
     }
 
     // ------------------------------------------------------------------------------------------
