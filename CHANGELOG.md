@@ -60,6 +60,8 @@ Generado con `python infra/scripts/changelog.py`.
 - sprint 1 - infraestructura, seguridad multi-tenant y expedientes
 
 ### Correcciones
+- las pruebas en navegador destruyen su aplicación al terminar
+- parches de seguridad en las imágenes de la API, el agente y los respaldos
 - en producción la API y los respaldos no tenían salida a internet
 - Vertex con modelo, región y precios vigentes, y compose para el Docker local
 - el consentimiento dice la verdad sobre el proveedor de IA que está activo

@@ -55,6 +55,8 @@ Una persona (paciente o familiar, con cuenta propia) o una organización sube do
 - **Cifrado en reposo:** las preguntas y respuestas guardadas van cifradas en la base (AES-256-GCM, clave fuera de la base). **El texto de los documentos no se cifra en la base** (la búsqueda lo necesita); lo protege el cifrado del disco, que es un requisito de despliegue que el dueño debe activar y que no protege frente a quien acceda al sistema en marcha.
 - Cada 30 días se restaura de prueba el último respaldo y se comprueba el aislamiento entre cuentas.
 
+- **Rastreo de errores y monitoreo (opcionales, autoalojados):** GlitchTip recibe solo el tipo de error y el punto del código, sin mensajes, usuarios, direcciones ni IP; las alertas por correo llevan solo nombres de servicios y cifras. Si se usara un servicio de rastreo o de correo de un tercero, habría que añadirlo a los encargados.
+
 ## 6. Textos que ve la persona (para revisar)
 **Consentimiento informado** (`frontend/src/componentes/Consentimiento.tsx`) — la persona debe aceptarlo antes de subir o consultar. El punto 3 depende del proveedor de IA que esté activo, y cada texto tiene su versión (`ConsentimientoService.java`); al cambiar de proveedor hay que aceptarlo de nuevo. Abajo va la lista con el texto de producción (`2026-11-v5-claude`); las otras tres variantes del punto 3 están después y también hay que revisarlas.
 1. MedTender está en pruebas cerradas: puede equivocarse. Compara siempre con tu médico o tu farmacéutico antes de decidir algo sobre tu salud.
