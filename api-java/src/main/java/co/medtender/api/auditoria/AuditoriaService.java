@@ -42,7 +42,10 @@ public class AuditoriaService {
     /** Evento realizado por un usuario autenticado. */
     public void auditar(Accion accion, UsuarioActual usuario, String recursoTipo, UUID recursoId,
                         Map<String, Object> detalle) {
-        guardar(accion, usuario.tenantId(), usuario.id(), usuario.email(), "OK", recursoTipo, recursoId, detalle);
+        var contexto = ContextoTenant.actual();
+        // Un cuidador actua en el expediente de otra persona: el evento es del registro de ella.
+        UUID tenant = contexto.expedienteInvitado() != null ? contexto.tenantId() : usuario.tenantId();
+        guardar(accion, tenant, usuario.id(), usuario.email(), "OK", recursoTipo, recursoId, detalle);
     }
 
     /** Evento con identidad parcial o sin ella (login fallido, registro, acceso denegado...). */
@@ -59,8 +62,8 @@ public class AuditoriaService {
                     recursoTipo, recursoId, MDC.get("ip"), MDC.get("request_id"),
                     detalle == null ? Map.of() : detalle);
             // Se escribe como proceso del sistema: a que cuenta pertenece el evento lo decide este codigo, no el
-            // contexto de la peticion. Sin esto se perdian en silencio los eventos de endpoints sin sesion
-            // (cerrar sesion, confirmar el correo).
+            // contexto de la peticion. Sin esto se perdian en silencio los eventos de endpoints sin sesion (cerrar
+            // sesion, confirmar el correo) y los del registro de otra cuenta (un cuidador).
             ContextoTenant.comoSistema(() -> tx.executeWithoutResult(s -> repo.save(registro)));
         } catch (RuntimeException e) {
             metricas.counter("medtender_auditoria_fallos_total").increment();

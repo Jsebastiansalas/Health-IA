@@ -14,9 +14,12 @@ import java.util.function.Supplier;
  */
 public final class ContextoTenant {
 
-    /** Tenant visible y si la hebra actua como proceso del sistema. */
-    public record Contexto(UUID tenantId, boolean sistema) {
-        static final Contexto NINGUNO = new Contexto(null, false);
+    /**
+     * Tenant visible, si la hebra actua como proceso del sistema y, para un cuidador, el UNICO expediente
+     * ajeno al que se limita la base mientras actua con el tenant de su dueña (V17).
+     */
+    public record Contexto(UUID tenantId, boolean sistema, UUID expedienteInvitado) {
+        static final Contexto NINGUNO = new Contexto(null, false, null);
     }
 
     private static final ThreadLocal<Contexto> ACTUAL = ThreadLocal.withInitial(() -> Contexto.NINGUNO);
@@ -29,7 +32,26 @@ public final class ContextoTenant {
 
     /** Fija el tenant de la peticion. Lo limpia {@link ContextoTenantFilter} al terminarla. */
     public static void fijarTenant(UUID tenantId) {
-        ACTUAL.set(new Contexto(tenantId, false));
+        ACTUAL.set(new Contexto(tenantId, false, null));
+    }
+
+    /**
+     * Lo que queda de la peticion es de un cuidador: tenant de la dueña, limitado a un expediente. Solo lo
+     * llama {@code AutorizacionExpediente} tras comprobar la invitacion aceptada.
+     */
+    public static void entrarComoInvitado(UUID tenantDeLaDuena, UUID expedienteId) {
+        ACTUAL.set(new Contexto(tenantDeLaDuena, false, expedienteId));
+    }
+
+    /** Lee o escribe lo de la propia cuenta (consentimiento, recordatorios) y restaura el contexto previo. */
+    public static <T> T enLoPropio(UUID tenantId, Supplier<T> accion) {
+        Contexto previo = ACTUAL.get();
+        fijarTenant(tenantId);
+        try {
+            return accion.get();
+        } finally {
+            ACTUAL.set(previo);
+        }
     }
 
     public static void limpiar() {
@@ -39,7 +61,7 @@ public final class ContextoTenant {
     /** Ejecuta como proceso del sistema (ve todos los tenants) y restaura el contexto previo. */
     public static <T> T comoSistema(Supplier<T> accion) {
         Contexto previo = ACTUAL.get();
-        ACTUAL.set(new Contexto(null, true));
+        ACTUAL.set(new Contexto(null, true, null));
         try {
             return accion.get();
         } finally {

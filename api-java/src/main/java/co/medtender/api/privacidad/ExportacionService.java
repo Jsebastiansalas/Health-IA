@@ -96,14 +96,22 @@ public class ExportacionService {
                             where a.tenant_id = ? and d.expediente_id = ? order by a.purged_at""",
                             new String[] {"sha256_original", "sha256_original", "motivo", "motivo", "fecha", "purged_at"},
                             tenantId, id));
+                    e.set("compartido_con", lista("""
+                            select correo_invitado, permiso, estado, created_at, aceptada_at, ultimo_acceso_at, revocada_at
+                            from comparticiones where tenant_id = ? and expediente_id = ? order by created_at""",
+                            new String[] {"correo", "correo_invitado", "permiso", "permiso", "estado", "estado",
+                                    "invitado_at", "created_at", "aceptada_at", "aceptada_at",
+                                    "ultimo_acceso_at", "ultimo_acceso_at", "revocada_at", "revocada_at"},
+                            tenantId, id));
                     conteos[0]++;
                     conteos[1] += documentos.size();
                     conteos[2] += consultas.size();
                 }, tenantId);
 
         datos.set("recordatorios", lista("""
-                select r.texto, r.fecha_texto, r.fecha, r.estado, r.created_at, e.titulo from recordatorios r
-                join expedientes e on e.id = r.expediente_id
+                select r.texto, r.fecha_texto, r.fecha, r.estado, r.created_at,
+                       coalesce(e.titulo, 'Expediente que comparten contigo') as titulo from recordatorios r
+                left join expedientes e on e.id = r.expediente_id
                 where r.tenant_id = ? and r.usuario_id = ? order by r.created_at""",
                 new String[] {"texto", "texto", "fecha_en_el_documento", "fecha_texto", "fecha", "fecha", "estado", "estado",
                         "creado_at", "created_at", "expediente", "titulo"},

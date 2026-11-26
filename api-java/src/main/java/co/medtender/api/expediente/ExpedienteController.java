@@ -54,10 +54,13 @@ public class ExpedienteController {
     private final ExpedienteService servicio;
     private final AutorizacionExpediente autorizacion;
     private final AuditoriaService auditoria;
+    private final co.medtender.api.compartir.ComparticionService comparticiones;
 
     public ExpedienteController(ExpedienteRepository expedientes, ExpedientePermisoRepository permisos,
                                 UsuarioRepository usuarios, ExpedienteService servicio,
-                                AutorizacionExpediente autorizacion, AuditoriaService auditoria) {
+                                AutorizacionExpediente autorizacion, AuditoriaService auditoria,
+                                co.medtender.api.compartir.ComparticionService comparticiones) {
+        this.comparticiones = comparticiones;
         this.expedientes = expedientes;
         this.permisos = permisos;
         this.usuarios = usuarios;
@@ -94,8 +97,9 @@ public class ExpedienteController {
 
     @GetMapping("/{expedienteId}")
     public ExpedienteOut obtener(@PathVariable UUID expedienteId, @AuthenticationPrincipal UsuarioActual user) {
-        var a = autorizacion.obtener(user, expedienteId, Permiso.LECTOR);
-        return ExpedienteOut.de(a.expediente(), a.permiso());
+        var a = autorizacion.obtenerCompartible(user, expedienteId, Permiso.LECTOR);
+        return ExpedienteOut.de(a.expediente(), a.permiso(),
+                a.invitado() ? comparticiones.quienComparte(user, expedienteId) : null);
     }
 
     @PatchMapping("/{expedienteId}")

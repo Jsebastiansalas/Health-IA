@@ -53,8 +53,8 @@ public class ExplicacionController {
     @PostMapping
     public JsonNode explicar(@PathVariable UUID expedienteId, @PathVariable UUID documentoId,
                              @AuthenticationPrincipal UsuarioActual user) {
-        autorizacion.obtener(user, expedienteId, Permiso.LECTOR);
-        documentos.findByIdAndExpedienteIdAndTenantId(documentoId, expedienteId, user.tenantId())
+        UUID tenant = autorizacion.obtenerCompartible(user, expedienteId, Permiso.LECTOR).expediente().getTenantId();
+        documentos.findByIdAndExpedienteIdAndTenantId(documentoId, expedienteId, tenant)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Documento no encontrado"));
         consentimiento.exigir(user);
         // Cada explicacion cuesta una llamada al modelo generativo, igual que una consulta.
@@ -63,7 +63,7 @@ public class ExplicacionController {
         limitador.exigir("consulta_dia", user.id().toString(), rl.consultaUsuarioDia(), 86400);
 
         Map<String, Object> cuerpo = new LinkedHashMap<>();
-        cuerpo.put("tenant_id", user.tenantId());
+        cuerpo.put("tenant_id", tenant);
         cuerpo.put("expediente_id", expedienteId);
         cuerpo.put("documento_id", documentoId);
         cuerpo.put("usuario_id", user.id());

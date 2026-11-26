@@ -4,6 +4,7 @@ import co.medtender.api.domain.Consentimiento;
 import co.medtender.api.domain.ConsentimientoRepository;
 import co.medtender.api.domain.TenantRepository;
 import co.medtender.api.domain.TipoTenant;
+import co.medtender.api.security.ContextoTenant;
 import co.medtender.api.security.UsuarioActual;
 import co.medtender.api.web.ApiException;
 import java.time.Instant;
@@ -92,6 +93,18 @@ public class ConsentimientoService {
 
     /** 403 con codigo estable para que la interfaz muestre el consentimiento en lugar de un error generico. */
     public void exigir(UsuarioActual u) {
+        // El consentimiento y el correo son de quien pide, tambien cuando entra a un expediente compartido.
+        ContextoTenant.enLoPropio(u.tenantId(), () -> {
+            exigirEnLoPropio(u);
+            return null;
+        });
+    }
+
+    public void exigirCorreoVerificado(UsuarioActual u) {
+        verificacionCorreo.exigir(u);
+    }
+
+    private void exigirEnLoPropio(UsuarioActual u) {
         verificacionCorreo.exigir(u); // las cuentas personales confirman su correo antes que nada
         if (tipoDe(u) != TipoTenant.PERSONAL) {
             return;

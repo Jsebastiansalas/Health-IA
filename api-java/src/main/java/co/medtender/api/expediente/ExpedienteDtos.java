@@ -30,11 +30,15 @@ public final class ExpedienteDtos {
     public record ExpedienteOut(UUID id, UUID tenantId, String codigoExpediente, String titulo,
                                 String entidadContratante, TipoExpediente tipoExpediente, EstadoExpediente estado,
                                 String embeddingModelActivo, int embeddingDimension, UUID createdBy,
-                                Instant createdAt, Permiso miPermiso) {
+                                Instant createdAt, Permiso miPermiso, String compartidoPor) {
         public static ExpedienteOut de(Expediente e, Permiso permiso) {
+            return de(e, permiso, null);
+        }
+
+        public static ExpedienteOut de(Expediente e, Permiso permiso, String compartidoPor) {
             return new ExpedienteOut(e.getId(), e.getTenantId(), e.getCodigoExpediente(), e.getTitulo(),
                     e.getEntidadContratante(), e.getTipoExpediente(), e.getEstado(), e.getEmbeddingModelActivo(),
-                    e.getEmbeddingDimension(), e.getCreatedBy(), e.getCreatedAt(), permiso);
+                    e.getEmbeddingDimension(), e.getCreatedBy(), e.getCreatedAt(), permiso, compartidoPor);
         }
     }
 
