@@ -91,7 +91,9 @@ export function PaginaExpediente() {
           Expedientes
         </Link>
         <ChevronRight className="size-4" aria-hidden />
-        <span className="font-mono text-texto-2">{expediente.codigo_expediente}</span>
+        <span className={cn("text-texto-2", !consentimiento.esPersonal && "font-mono")}>
+          {consentimiento.esPersonal ? expediente.titulo : expediente.codigo_expediente}
+        </span>
       </nav>
 
       <header className="panel mb-6 p-6">
@@ -111,7 +113,7 @@ export function PaginaExpediente() {
               {expediente.mi_permiso ? PERMISO[expediente.mi_permiso] : "Sin permiso"}
             </Insignia>
             {/* Compartir es de la persona dueña, en su cuenta personal. */}
-            {consentimiento.esPersonal && expediente.mi_permiso === "ADMIN" && !expediente.compartido_por && (
+            {consentimiento.esPersonal && !consentimiento.bloqueado && expediente.mi_permiso === "ADMIN" && !expediente.compartido_por && (
               <CompartirExpediente expedienteId={id} />
             )}
             {puedeSubir && expediente.estado === "ABIERTO" && (
