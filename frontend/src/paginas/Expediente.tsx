@@ -98,9 +98,11 @@ export function PaginaExpediente() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 max-w-4xl">
             <h1 className="text-3xl font-semibold leading-9">{expediente.titulo}</h1>
-            <p className="mt-2 text-base text-texto-2">
-              {expediente.entidad_contratante ?? "Entidad no registrada"} · {TIPOS_EXPEDIENTE[expediente.tipo_expediente]}
-            </p>
+            {!consentimiento.esPersonal && (
+              <p className="mt-2 text-base text-texto-2">
+                {expediente.entidad_contratante ?? "Entidad no registrada"} · {TIPOS_EXPEDIENTE[expediente.tipo_expediente]}
+              </p>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Insignia tono={expediente.estado === "ABIERTO" ? "accion" : "neutro"}>{expediente.estado}</Insignia>

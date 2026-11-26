@@ -68,7 +68,7 @@ function MenuUsuario() {
           <Avatar nombre={usuario?.nombre_completo} />
           <span className="hidden min-w-0 leading-tight sm:block">
             <span className="block max-w-40 truncate text-sm font-medium">{usuario?.nombre_completo ?? "…"}</span>
-            <span className="block max-w-40 truncate text-xs text-texto-3">{usuario ? ROLES[usuario.rol_global] : ""}</span>
+            <span className="block max-w-40 truncate text-xs text-texto-3">{usuario ? (esPersonal ? "Cuenta personal" : ROLES[usuario.rol_global]) : ""}</span>
           </span>
           <ChevronsUpDown className="size-4 text-texto-3 transition-colors group-hover:text-texto" aria-hidden />
         </Menu.Trigger>

@@ -49,7 +49,7 @@ const ORGANIZACIONES: ContenidoLanding = {
     texto: "Se elimina después de indexarlo, con verificación y un acta de purga. Puedes comprobar la fuente siempre desde tu propio equipo.",
   },
   cierre: "Tu próxima licitación o auditoría, con la fuente a un clic.",
-  alterna: { texto: "Para personas", a: "/personas" },
+  alterna: { texto: "Para personas", a: "/" },
 };
 
 const PERSONAS: ContenidoLanding = {
@@ -97,7 +97,7 @@ const PERSONAS: ContenidoLanding = {
     texto: "Eliminas tu historial de preguntas o tu cuenta completa desde tu menú. El archivo original ya se eliminó del servidor al leerlo.",
   },
   cierre: "Entiende tus documentos antes de tu próxima cita.",
-  alterna: { texto: "Para organizaciones", a: "/" },
+  alterna: { texto: "Para organizaciones", a: "/organizaciones" },
 };
 
 /** La respuesta sobre la IA de terceros se completa con el proveedor que está activo. */

@@ -47,10 +47,12 @@ function Rutas() {
   if (!autenticado) {
     return (
       <Routes>
-        <Route path="/" element={<PaginaBienvenida />} />
+        {/* El producto principal es el de las personas; las organizaciones tienen su portada aparte. */}
+        <Route path="/" element={<PaginaPersonas />} />
+        <Route path="/organizaciones" element={<PaginaBienvenida />} />
         <Route path="/ingreso" element={<PaginaIngreso />} />
         <Route path="/registro" element={<PaginaRegistro />} />
-        <Route path="/personas" element={<PaginaPersonas />} />
+        <Route path="/personas" element={<Navigate to="/" replace />} />
         <Route path="/verificar-correo" element={<PaginaVerificarCorreo />} />
         <Route path="/olvide-contrasena" element={<PaginaOlvideContrasena />} />
         <Route path="/restablecer" element={<PaginaRestablecer />} />

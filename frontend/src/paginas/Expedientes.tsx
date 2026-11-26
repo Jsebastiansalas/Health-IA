@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { api, post } from "../api/cliente";
 import type { Expediente, TipoExpediente } from "../api/tipos";
 import { CompartidosConmigo } from "../componentes/Cuidadores";
+import { useConsentimiento } from "../lib/consentimiento";
 import { Boton } from "../componentes/ui/Boton";
 import { Campo } from "../componentes/ui/Campo";
 import { Dialogo } from "../componentes/ui/Dialogo";
@@ -38,6 +39,11 @@ export function PaginaExpedientes() {
   const [creando, setCreando] = useState(false);
   const buscador = useRef<HTMLInputElement>(null);
   const puedeCrear = !!usuario && usuario.rol_global !== "LECTOR";
+  // Una persona no maneja códigos, entidades ni tipos de proceso.
+  const { esPersonal } = useConsentimiento();
+  const columnas = esPersonal
+    ? "lg:grid-cols-[minmax(0,1fr)_6.5rem_7.5rem]"
+    : "lg:grid-cols-[8.5rem_minmax(0,1fr)_9rem_6.5rem_7.5rem]";
 
   // Atajo: «/» enfoca el buscador (salvo que ya se esté escribiendo).
   useEffect(() => {
@@ -85,7 +91,7 @@ export function PaginaExpedientes() {
             ref={buscador}
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
-            placeholder="Buscar por código, título o entidad"
+            placeholder={esPersonal ? "Buscar por nombre" : "Buscar por código, título o entidad"}
             aria-label="Buscar expedientes"
             className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none"
           />
@@ -144,7 +150,9 @@ export function PaginaExpedientes() {
         <div className="max-w-2xl py-6">
           <h2 className="max-w-sm text-3xl font-semibold">Aún no hay expedientes.</h2>
           <p className="relative mt-3 max-w-md text-texto-2">
-            {puedeCrear
+            {esPersonal
+              ? "Crea el primero, sube tus resultados, fórmulas u órdenes y pide que te los expliquen."
+              : puedeCrear
               ? "Abre el primero para empezar a indexar pliegos y adendas, y luego pregúntale lo que necesites."
               : "Todavía no te han dado acceso a ningún expediente. Pide a tu administrador que te asigne uno."}
           </p>
@@ -167,12 +175,12 @@ export function PaginaExpedientes() {
       {visibles.length > 0 && (
         <div className="panel overflow-hidden">
           <div
-            className="hidden grid-cols-[8.5rem_minmax(0,1fr)_9rem_6.5rem_7.5rem] gap-x-4 border-b border-borde px-4 py-3 text-sm font-medium text-texto-3 lg:grid"
+            className={cn("hidden gap-x-4 border-b border-borde px-4 py-3 text-sm font-medium text-texto-3 lg:grid", columnas)}
             aria-hidden
           >
-            <span>Código</span>
+            {!esPersonal && <span>Código</span>}
             <span>Expediente</span>
-            <span>Tipo</span>
+            {!esPersonal && <span>Tipo</span>}
             <span>Estado</span>
             <span className="text-right">Creado</span>
           </div>
@@ -181,19 +189,21 @@ export function PaginaExpedientes() {
               <li key={e.id}>
                 <Link
                   to={`/expedientes/${e.id}`}
-                  className="group grid gap-x-4 gap-y-1 px-4 py-4 transition-colors hover:bg-panel-2 focus-visible:bg-panel-2 lg:grid-cols-[8.5rem_minmax(0,1fr)_9rem_6.5rem_7.5rem] lg:items-center"
+                  className={cn("group grid gap-x-4 gap-y-1 px-4 py-4 transition-colors hover:bg-panel-2 focus-visible:bg-panel-2 lg:items-center", columnas)}
                 >
-                  <span className="font-mono text-sm text-texto">{e.codigo_expediente}</span>
+                  {!esPersonal && <span className="font-mono text-sm text-texto">{e.codigo_expediente}</span>}
                   <span className="min-w-0">
                     <span className="block text-base font-semibold leading-snug [overflow-wrap:anywhere] group-hover:text-primario">
                       {e.titulo}
                     </span>
-                    <span className="mt-0.5 block truncate text-sm text-texto-2">
-                      {e.entidad_contratante ?? "Entidad no registrada"}
-                      {e.mi_permiso ? ` · ${PERMISO[e.mi_permiso]}` : ""}
-                    </span>
+                    {!esPersonal && (
+                      <span className="mt-0.5 block truncate text-sm text-texto-2">
+                        {e.entidad_contratante ?? "Entidad no registrada"}
+                        {e.mi_permiso ? ` · ${PERMISO[e.mi_permiso]}` : ""}
+                      </span>
+                    )}
                   </span>
-                  <span className="text-sm text-texto-2">{TIPOS_EXPEDIENTE[e.tipo_expediente]}</span>
+                  {!esPersonal && <span className="text-sm text-texto-2">{TIPOS_EXPEDIENTE[e.tipo_expediente]}</span>}
                   <span>
                     <Insignia tono={e.estado === "ABIERTO" ? "accion" : "neutro"}>{e.estado}</Insignia>
                   </span>
@@ -209,15 +219,19 @@ export function PaginaExpedientes() {
         abierto={creando}
         alCambiar={setCreando}
         titulo="Abrir expediente"
-        descripcion="Un expediente agrupa los documentos de un proceso y sus consultas."
+        descripcion={
+          esPersonal
+            ? "Un expediente reúne los documentos de una persona y lo que preguntes sobre ellos."
+            : "Un expediente agrupa los documentos de un proceso y sus consultas."
+        }
       >
-        <NuevoExpediente alCrear={() => setCreando(false)} />
+        <NuevoExpediente personal={esPersonal} alCrear={() => setCreando(false)} />
       </Dialogo>
     </div>
   );
 }
 
-function NuevoExpediente({ alCrear }: { alCrear: () => void }) {
+function NuevoExpediente({ personal, alCrear }: { personal: boolean; alCrear: () => void }) {
   const cliente = useQueryClient();
   const navegar = useNavigate();
   const [datos, setDatos] = useState({
@@ -226,11 +240,19 @@ function NuevoExpediente({ alCrear }: { alCrear: () => void }) {
     entidad_contratante: "",
     tipo_expediente: "LICITACION_MEDICAMENTOS" as TipoExpediente,
   });
+  // El servidor pide un código único; a una persona no se le pregunta.
+  const [codigoPropio] = useState(() => `EXP-${Date.now().toString(36).toUpperCase()}`);
   const crear = useMutation({
-    mutationFn: () => post<Expediente>("/expedientes", { ...datos, entidad_contratante: datos.entidad_contratante || null }),
+    mutationFn: () =>
+      post<Expediente>(
+        "/expedientes",
+        personal
+          ? { codigo_expediente: codigoPropio, titulo: datos.titulo, tipo_expediente: "AUDITORIA_CLINICA", entidad_contratante: null }
+          : { ...datos, entidad_contratante: datos.entidad_contratante || null },
+      ),
     onSuccess: (e) => {
       cliente.invalidateQueries({ queryKey: ["expedientes"] });
-      toast.success("Expediente creado", { description: e.codigo_expediente });
+      toast.success("Expediente creado", { description: personal ? datos.titulo : e.codigo_expediente });
       alCrear();
       navegar(`/expedientes/${e.id}`);
     },
@@ -245,6 +267,11 @@ function NuevoExpediente({ alCrear }: { alCrear: () => void }) {
 
   return (
     <form onSubmit={enviar} className="space-y-4">
+      {personal ? (
+        <Campo etiqueta="¿Cómo quieres llamarlo?" required maxLength={250} placeholder="Mis exámenes"
+          value={datos.titulo} onChange={cambiar("titulo")} autoFocus />
+      ) : (
+        <>
       <Campo etiqueta="Código" required maxLength={80} placeholder="LIC-2027-014" className="[&_input]:font-mono"
         value={datos.codigo_expediente} onChange={cambiar("codigo_expediente")} autoFocus />
       <Campo etiqueta="Título" required maxLength={250} placeholder="Suministro de medicamentos oncológicos"
@@ -268,6 +295,8 @@ function NuevoExpediente({ alCrear }: { alCrear: () => void }) {
       </div>
       <Campo etiqueta="Entidad contratante" maxLength={200} placeholder="Hospital Universitario"
         value={datos.entidad_contratante} onChange={cambiar("entidad_contratante")} />
+        </>
+      )}
       {crear.error && (
         <p role="alert" className="rounded-xl border border-peligro/35 bg-peligro/10 px-4 py-3 text-sm text-peligro">
           {(crear.error as Error).message}
