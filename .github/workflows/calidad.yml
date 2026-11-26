@@ -46,8 +46,11 @@ jobs:
       - uses: actions/checkout@v7
       - run: python3 infra/scripts/comprobar_compose.py
       - run: bash infra/scripts/probar_respaldos.sh
+        if: ${{ !cancelled() }} # un fallo no oculta el resultado de las demás
       - run: bash infra/scripts/probar_monitoreo.sh
+        if: ${{ !cancelled() }} # un fallo no oculta el resultado de las demás
       - run: bash infra/scripts/probar_proxy_errores.sh
+        if: ${{ !cancelled() }} # un fallo no oculta el resultado de las demás
 
   build-web:
     name: Presupuesto del build de la web

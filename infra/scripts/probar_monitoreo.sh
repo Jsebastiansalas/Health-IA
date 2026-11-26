@@ -70,6 +70,10 @@ copia="$(mktemp -d)"
 command -v cygpath > /dev/null && copia="$(cygpath -m "$copia")"
 cp "$raiz"/infra/monitoreo/* "$copia"/ 2> /dev/null || true
 sed -i '/^ *for: /d' "$copia/alertas.yml"
+# En Linux, mktemp -d deja la carpeta solo para su dueño y Prometheus y Alertmanager corren sin privilegios
+# («nobody»): no podrían leer su configuración. (Docker para Windows no aplica estos permisos.)
+chmod 755 "$copia"
+chmod 644 "$copia"/*
 
 docker run -d --name "$id-alertmanager" --network "$id" --network-alias alertmanager -v "$copia:/etc/medtender:ro" \
     -e ALERTAS_CORREO=alertas@prueba.local -e SMTP_HOST=buzon -e SMTP_PORT=25 -e CORREO_REMITENTE=medtender@prueba.local \
@@ -111,6 +115,12 @@ sin_clave() { ! docker exec "$id-grafana" wget -qO- http://127.0.0.1:3000/api/da
 comprobar "sin contraseña no se ve nada" sin_clave
 
 rm -rf "$copia"
+if [ "$fallos" -ne 0 ]; then # para ver la causa en el registro de CI
+    for servicio in prometheus alertmanager; do
+        echo "--- registro de $servicio"
+        docker logs "$id-$servicio" 2>&1 | tail -15
+    done
+fi
 echo
 if [ "$fallos" -eq 0 ]; then echo "Monitoreo: todas las comprobaciones pasaron"; else echo "Monitoreo: $fallos comprobación(es) fallaron"; fi
 exit "$fallos"
