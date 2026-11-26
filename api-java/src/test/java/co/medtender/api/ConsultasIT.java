@@ -1,6 +1,6 @@
 package co.medtender.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,7 +50,7 @@ class ConsultasIT extends IntegracionBase {
     @Test
     void unLectorConsultaYLaRespuestaDelAgenteLlegaIntacta() throws Exception {
         JsonNode lector = usuarioConPermiso("lector@q.co", "LECTOR", "LECTOR");
-        String idLector = cuerpo(mvc.perform(getAuth("/api/v1/auth/me", lector)).andReturn()).get("id").asText();
+        String idLector = cuerpo(mvc.perform(getAuth("/api/v1/auth/me", lector)).andReturn()).get("id").asString();
 
         preguntar(lector, expediente, "  ¿Cuál es la garantía?  ")
                 .andExpect(status().isOk())
@@ -63,10 +63,10 @@ class ConsultasIT extends IntegracionBase {
         var llamada = Infra.AGENTE.llamadas().stream().filter(l -> l.ruta().equals("/internal/v1/consultas")).findFirst().orElseThrow();
         assertThat(llamada.token()).isEqualTo(Infra.AGENTE_TOKEN);
         JsonNode enviado = json.readTree(llamada.cuerpo());
-        assertThat(enviado.get("usuario_id").asText()).isEqualTo(idLector);
-        assertThat(enviado.get("expediente_id").asText()).isEqualTo(expediente);
-        assertThat(enviado.get("tenant_id").asText()).isEqualTo(cuerpo(mvc.perform(getAuth("/api/v1/auth/me", lector)).andReturn()).get("tenant_id").asText());
-        assertThat(enviado.get("pregunta").asText()).contains("garantía");
+        assertThat(enviado.get("usuario_id").asString()).isEqualTo(idLector);
+        assertThat(enviado.get("expediente_id").asString()).isEqualTo(expediente);
+        assertThat(enviado.get("tenant_id").asString()).isEqualTo(cuerpo(mvc.perform(getAuth("/api/v1/auth/me", lector)).andReturn()).get("tenant_id").asString());
+        assertThat(enviado.get("pregunta").asString()).contains("garantía");
     }
 
     @Test
@@ -94,9 +94,9 @@ class ConsultasIT extends IntegracionBase {
 
     @Test
     void preguntasInvalidasNoLlegan() throws Exception {
-        preguntar(admin, expediente, "ab").andExpect(status().isUnprocessableEntity());
-        preguntar(admin, expediente, "   ").andExpect(status().isUnprocessableEntity());
-        preguntar(admin, expediente, "x".repeat(2001)).andExpect(status().isUnprocessableEntity());
+        preguntar(admin, expediente, "ab").andExpect(status().isUnprocessableContent());
+        preguntar(admin, expediente, "   ").andExpect(status().isUnprocessableContent());
+        preguntar(admin, expediente, "x".repeat(2001)).andExpect(status().isUnprocessableContent());
         assertThat(Infra.AGENTE.llamadas()).isEmpty();
     }
 
@@ -130,12 +130,12 @@ class ConsultasIT extends IntegracionBase {
     @Test
     void historialSoloPideLasConsultasDelPropioUsuario() throws Exception {
         Infra.AGENTE.responder("GET /internal/v1/consultas", 200, "[{\"pregunta\":\"p\",\"consultaId\":\"c-1\"}]");
-        String id = cuerpo(mvc.perform(getAuth("/api/v1/auth/me", admin)).andReturn()).get("id").asText();
+        String id = cuerpo(mvc.perform(getAuth("/api/v1/auth/me", admin)).andReturn()).get("id").asString();
         mvc.perform(getAuth("/api/v1/expedientes/" + expediente + "/consultas?limit=5", admin))
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].consultaId").value("c-1"));
         var llamada = Infra.AGENTE.llamadas().get(0);
         assertThat(llamada.consulta()).contains("usuario_id=" + id).contains("expediente_id=" + expediente).contains("limit=5");
-        mvc.perform(getAuth("/api/v1/expedientes/" + expediente + "/consultas?limit=1000", admin)).andExpect(status().isUnprocessableEntity());
+        mvc.perform(getAuth("/api/v1/expedientes/" + expediente + "/consultas?limit=1000", admin)).andExpect(status().isUnprocessableContent());
     }
 
     // ---------- reindexacion ----------
@@ -156,7 +156,7 @@ class ConsultasIT extends IntegracionBase {
                 .andExpect(jsonPath("$.estado").value("PENDIENTE"))
                 .andExpect(jsonPath("$.modelo_destino").value("bge-m3"));
         JsonNode enviado = json.readTree(Infra.AGENTE.llamadas().get(0).cuerpo());
-        assertThat(enviado.get("embedding_model").asText()).isEqualTo("bge-m3");
+        assertThat(enviado.get("embedding_model").asString()).isEqualTo("bge-m3");
         assertThat(jdbc.queryForObject("select count(*) from auditoria where accion='REINDEXACION_SOLICITADA'", Integer.class)).isEqualTo(1);
     }
 
@@ -169,9 +169,9 @@ class ConsultasIT extends IntegracionBase {
         Infra.AGENTE.responder("POST /internal/v1/reindexaciones", 422, "{\"detail\":[{\"loc\":[\"body\"],\"msg\":\"x\"}]}");
         mvc.perform(post("/api/v1/expedientes/" + expediente + "/reindexaciones").header("Authorization", bearer(admin))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"embedding_model\":\"inventado\"}"))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableContent());
         mvc.perform(post("/api/v1/expedientes/" + expediente + "/reindexaciones").header("Authorization", bearer(admin))
-                .contentType(MediaType.APPLICATION_JSON).content("{\"embedding_model\":\"\"}")).andExpect(status().isUnprocessableEntity());
+                .contentType(MediaType.APPLICATION_JSON).content("{\"embedding_model\":\"\"}")).andExpect(status().isUnprocessableContent());
     }
 
     @Test

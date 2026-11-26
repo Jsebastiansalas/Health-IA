@@ -1,6 +1,6 @@
 package co.medtender.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ class CruceIT extends IntegracionBase {
                 .andExpect(header().string("Cache-Control", "no-store"));
         var llamada = Infra.AGENTE.llamadas().stream().filter(l -> l.ruta().equals("/internal/v1/cruces")).findFirst().orElseThrow();
         assertThat(llamada.token()).isEqualTo(Infra.AGENTE_TOKEN);
-        assertThat(json.readTree(llamada.cuerpo()).get("expediente_id").asText()).isEqualTo(expediente);
+        assertThat(json.readTree(llamada.cuerpo()).get("expediente_id").asString()).isEqualTo(expediente);
         var fila = jdbc.queryForMap("select detalle::text as detalle, recurso_tipo from auditoria where accion='CRUCE_MEDICAMENTOS'");
         String detalle = (String) fila.get("detalle");
         assertThat(detalle).contains("\"medicamentos\": 1").contains("\"advertencias\": 1");

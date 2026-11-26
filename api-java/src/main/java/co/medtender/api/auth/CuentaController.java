@@ -125,10 +125,10 @@ public class CuentaController {
         limitador.exigir("cambiar_contrasena", actual.id().toString(), 5, 900);
         Usuario u = yo(actual);
         if (PasswordService.excedeLimite(in.actual()) || !passwords.verificar(in.actual(), u.getPasswordHash())) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "La contraseña actual no es correcta", Map.of("codigo", "contrasena_actual"));
+            throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "La contraseña actual no es correcta", Map.of("codigo", "contrasena_actual"));
         }
         if (in.actual().equals(in.nueva())) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "La nueva contraseña debe ser distinta", Map.of("codigo", "contrasena_igual"));
+            throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "La nueva contraseña debe ser distinta", Map.of("codigo", "contrasena_igual"));
         }
         politica.exigir(in.nueva(), u.getEmail(), u.getNombreCompleto());
         u.setPasswordHash(passwords.hash(in.nueva()));
@@ -185,7 +185,7 @@ public class CuentaController {
         limitador.exigir("2fa_desactivar", actual.id().toString(), 5, 900);
         Usuario u = yo(actual);
         if (PasswordService.excedeLimite(in.password()) || !passwords.verificar(in.password(), u.getPasswordHash())) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "La contraseña no es correcta", Map.of("codigo", "contrasena_actual"));
+            throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "La contraseña no es correcta", Map.of("codigo", "contrasena_actual"));
         }
         dosPasos.desactivar(u, in.codigo());
     }

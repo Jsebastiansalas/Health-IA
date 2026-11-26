@@ -1,10 +1,10 @@
 package co.medtender.api.privacidad;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -153,7 +153,7 @@ public class ExportacionService {
                     c.put("pregunta", cifrado.texto(rs.getString("pregunta")));
                     try {
                         c.set("respuesta", cifrado.respuesta(json.readTree(rs.getString("respuesta"))));
-                    } catch (JsonProcessingException e) {
+                    } catch (JacksonException e) {
                         throw new IllegalStateException("Respuesta guardada ilegible", e);
                     }
                     salida.add(c);
@@ -198,7 +198,7 @@ public class ExportacionService {
     }
 
     private static String fecha(JsonNode n) {
-        return n.isNull() || n.isMissingNode() ? "" : FECHA.format(java.time.Instant.parse(n.asText()));
+        return n.isNull() || n.isMissingNode() ? "" : FECHA.format(java.time.Instant.parse(n.asString("")));
     }
 
     private static String html(JsonNode datos) {
@@ -211,29 +211,29 @@ public class ExportacionService {
                 dt{font-weight:600}</style></head><body><h1>Mis datos en MedTender</h1>
                 """);
         JsonNode cuenta = datos.get("cuenta");
-        h.append("<p>").append(e(cuenta.get("nombre").asText())).append(" · ").append(e(cuenta.get("correo").asText()))
+        h.append("<p>").append(e(cuenta.get("nombre").asString(""))).append(" · ").append(e(cuenta.get("correo").asString("")))
                 .append("<br>Cuenta creada el ").append(fecha(cuenta.get("creada_at"))).append("</p>");
 
         h.append("<h2>Consentimientos aceptados</h2><ul>");
-        datos.get("consentimientos").forEach(c -> h.append("<li>").append(e(c.get("version").asText())).append(" · ")
+        datos.get("consentimientos").forEach(c -> h.append("<li>").append(e(c.get("version").asString(""))).append(" · ")
                 .append(fecha(c.get("aceptado_at"))).append("</li>"));
         h.append("</ul>");
 
         for (JsonNode exp : datos.get("expedientes")) {
-            h.append("<h2>").append(e(exp.get("titulo").asText())).append("</h2>");
+            h.append("<h2>").append(e(exp.get("titulo").asString(""))).append("</h2>");
             for (JsonNode d : exp.get("documentos")) {
-                h.append("<h3>").append(e(d.get("nombre").asText())).append("</h3>");
+                h.append("<h3>").append(e(d.get("nombre").asString(""))).append("</h3>");
                 for (JsonNode f : d.get("fragmentos")) {
-                    int desde = f.get("pagina_inicio").asInt();
-                    int hasta = f.get("pagina_fin").asInt();
+                    int desde = f.get("pagina_inicio").asInt(0);
+                    int hasta = f.get("pagina_fin").asInt(0);
                     h.append("<p><small>").append(desde == hasta ? "página " + desde : "páginas " + desde + "–" + hasta)
-                            .append("</small></p><pre>").append(e(f.get("texto").asText())).append("</pre>");
+                            .append("</small></p><pre>").append(e(f.get("texto").asString(""))).append("</pre>");
                 }
             }
             if (!exp.get("consultas").isEmpty()) {
                 h.append("<h3>Preguntas y respuestas guardadas</h3>");
                 for (JsonNode c : exp.get("consultas")) {
-                    h.append("<p><strong>").append(e(c.get("pregunta").asText())).append("</strong> <small>")
+                    h.append("<p><strong>").append(e(c.get("pregunta").asString(""))).append("</strong> <small>")
                             .append(fecha(c.get("fecha"))).append("</small></p>");
                     valor(h, c.get("respuesta"));
                 }
@@ -242,16 +242,16 @@ public class ExportacionService {
 
         if (!datos.get("recordatorios").isEmpty()) {
             h.append("<h2>Recordatorios</h2><ul>");
-            datos.get("recordatorios").forEach(r -> h.append("<li>").append(e(r.get("texto").asText()))
-                    .append(r.get("fecha").isNull() ? "" : " · " + e(r.get("fecha").asText()))
-                    .append(" (").append(e(r.get("estado").asText())).append(")</li>"));
+            datos.get("recordatorios").forEach(r -> h.append("<li>").append(e(r.get("texto").asString("")))
+                    .append(r.get("fecha").isNull() ? "" : " · " + e(r.get("fecha").asString("")))
+                    .append(" (").append(e(r.get("estado").asString(""))).append(")</li>"));
             h.append("</ul>");
         }
 
         h.append("<h2>Registro de accesos</h2><ul>");
         datos.get("accesos").forEach(a -> h.append("<li>").append(fecha(a.get("fecha"))).append(" · ")
-                .append(e(a.get("accion").asText())).append(" · ").append(e(a.get("resultado").asText()))
-                .append(" · ").append(e(a.get("ip").asText(""))).append("</li>"));
+                .append(e(a.get("accion").asString(""))).append(" · ").append(e(a.get("resultado").asString("")))
+                .append(" · ").append(e(a.get("ip").asString(""))).append("</li>"));
         return h.append("</ul></body></html>").toString();
     }
 
@@ -259,7 +259,7 @@ public class ExportacionService {
     private static void valor(StringBuilder h, JsonNode v) {
         if (v.isObject()) {
             var campos = new LinkedHashMap<String, JsonNode>();
-            v.fields().forEachRemaining(c -> campos.put(c.getKey(), c.getValue()));
+            v.properties().forEach(c -> campos.put(c.getKey(), c.getValue()));
             h.append("<dl>");
             campos.forEach((nombre, hijo) -> {
                 if (!vacio(hijo)) {
@@ -278,11 +278,11 @@ public class ExportacionService {
             });
             h.append("</ul>");
         } else {
-            h.append(e(v.asText()));
+            h.append(e(v.asString("")));
         }
     }
 
     private static boolean vacio(JsonNode v) {
-        return v.isNull() || (v.isContainerNode() && v.isEmpty()) || (v.isTextual() && v.asText().isBlank());
+        return v.isNull() || (v.isContainer() && v.isEmpty()) || (v.isString() && v.asString("").isBlank());
     }
 }

@@ -38,7 +38,7 @@ public class ManejadorErrores {
 
     @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
     ResponseEntity<Map<String, String>> demasiadoGrande(org.springframework.web.multipart.MaxUploadSizeExceededException e) {
-        return de(HttpStatus.PAYLOAD_TOO_LARGE, "El archivo supera el tamaño máximo permitido");
+        return de(HttpStatus.CONTENT_TOO_LARGE, "El archivo supera el tamaño máximo permitido");
     }
 
     @ExceptionHandler(LimiteExcedidoException.class)
@@ -53,18 +53,18 @@ public class ManejadorErrores {
         String detalle = e.getBindingResult().getFieldErrors().stream()
                 .map(f -> f.getField() + ": " + f.getDefaultMessage())
                 .collect(Collectors.joining("; "));
-        return de(HttpStatus.UNPROCESSABLE_ENTITY, detalle.isEmpty() ? "Solicitud inválida" : detalle);
+        return de(HttpStatus.UNPROCESSABLE_CONTENT, detalle.isEmpty() ? "Solicitud inválida" : detalle);
     }
 
     @ExceptionHandler(HandlerMethodValidationException.class)
     ResponseEntity<Map<String, String>> parametros(HandlerMethodValidationException e) {
-        return de(HttpStatus.UNPROCESSABLE_ENTITY, "Parámetros inválidos");
+        return de(HttpStatus.UNPROCESSABLE_CONTENT, "Parámetros inválidos");
     }
 
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
             MissingServletRequestParameterException.class})
     ResponseEntity<Map<String, String>> cuerpo(Exception e) {
-        return de(HttpStatus.UNPROCESSABLE_ENTITY, "Solicitud inválida");
+        return de(HttpStatus.UNPROCESSABLE_CONTENT, "Solicitud inválida");
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)

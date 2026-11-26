@@ -1,7 +1,7 @@
 package co.medtender.api;
 
 import co.medtender.api.privacidad.CorreoEnvio;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -109,7 +109,7 @@ class VerificacionCorreoIT extends IntegracionBase {
         verificar(token).andExpect(status().isGone())
                 .andExpect(jsonPath("$.detail").value("El enlace venció: pide uno nuevo desde la aplicación"));
         mvc.perform(post("/api/v1/auth/verificar-correo").contentType(MediaType.APPLICATION_JSON).content("{\"token\":\"\"}"))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableContent());
     }
 
     @Test

@@ -2,8 +2,8 @@ package co.medtender.api.ingesta;
 
 import co.medtender.api.config.IngestaProperties;
 import co.medtender.api.web.ApiException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
@@ -158,7 +158,7 @@ public class AgenteClient {
     private String detalleDe(RestClientResponseException e) {
         try {
             JsonNode d = json.readTree(e.getResponseBodyAsString()).get("detail");
-            return d != null && d.isTextual() ? d.asText() : "Solicitud inválida";
+            return d != null && d.isString() ? d.asString("") : "Solicitud inválida";
         } catch (Exception ex) {
             return "Solicitud inválida";
         }

@@ -49,7 +49,7 @@ public class PoliticaContrasena {
     }
 
     private static ApiException rechazo(String mensaje, String codigo) {
-        return new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, mensaje, Map.of("codigo", codigo));
+        return new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, mensaje, Map.of("codigo", codigo));
     }
 
     /** Lanza 422 con un código estable si la contraseña no sirve. */

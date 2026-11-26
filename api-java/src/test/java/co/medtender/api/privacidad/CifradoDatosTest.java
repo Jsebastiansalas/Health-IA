@@ -1,6 +1,6 @@
 package co.medtender.api.privacidad;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import java.util.Base64;
 import org.junit.jupiter.api.Test;
 
@@ -23,7 +23,7 @@ class CifradoDatosTest {
         var c = new CifradoDatos(CLAVE, json);
         assertThat(c.texto(PREGUNTA)).isEqualTo("¿Cómo está mi hemoglobina? — año 2026");
         var envoltura = json.createObjectNode().put("cifrado", RESPUESTA).put("huella", "h");
-        assertThat(c.respuesta(envoltura).get("respuestaAnalitica").asText())
+        assertThat(c.respuesta(envoltura).get("respuestaAnalitica").asString())
                 .isEqualTo("Está en 13,2 g/dL, según la página 2.");
     }
 
@@ -33,6 +33,9 @@ class CifradoDatosTest {
         assertThat(c.texto("¿Qué dice mi examen?")).isEqualTo("¿Qué dice mi examen?");
         var claro = json.readTree("{\"respuestaAnalitica\":\"x\",\"huella\":\"h\"}");
         assertThat(c.respuesta(claro)).isEqualTo(claro);
+        // Un «cifrado» que no es texto tampoco es un sobre: Jackson 3 lanza si se lee como texto sin valor por defecto.
+        var sinSobre = json.readTree("{\"cifrado\":{\"algo\":1}}");
+        assertThat(c.respuesta(sinSobre)).isEqualTo(sinSobre);
     }
 
     @Test

@@ -1,6 +1,6 @@
 package co.medtender.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,8 +59,8 @@ class ExplicacionIT extends IntegracionBase {
         var llamada = Infra.AGENTE.llamadas().stream().filter(l -> l.ruta().equals("/internal/v1/explicaciones")).findFirst().orElseThrow();
         assertThat(llamada.token()).isEqualTo(Infra.AGENTE_TOKEN);
         JsonNode enviado = json.readTree(llamada.cuerpo());
-        assertThat(enviado.get("documento_id").asText()).isEqualTo(documento);
-        assertThat(enviado.get("expediente_id").asText()).isEqualTo(expediente);
+        assertThat(enviado.get("documento_id").asString()).isEqualTo(documento);
+        assertThat(enviado.get("expediente_id").asString()).isEqualTo(expediente);
     }
 
     @Test

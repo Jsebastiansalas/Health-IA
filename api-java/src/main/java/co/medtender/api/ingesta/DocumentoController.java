@@ -181,7 +181,7 @@ public class DocumentoController {
                         "El archivo no es un PDF ni una imagen compatible (JPG, PNG o HEIC)").orElse(d);
                 Map<String, Object> extra = new LinkedHashMap<>();
                 extra.put("documento", DocumentoOut.de(rechazado, ingesta.ocrVersionActual()));
-                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, rechazado.getMotivoError(), extra);
+                throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, rechazado.getMotivoError(), extra);
             }
 
             try {
@@ -256,7 +256,7 @@ public class DocumentoController {
         }
         long longitud = req.getContentLengthLong();
         if (longitud > ingesta.maxUploadBytes() + HOLGURA_MULTIPART) {
-            throw new ApiException(HttpStatus.PAYLOAD_TOO_LARGE, textoMaximo());
+            throw new ApiException(HttpStatus.CONTENT_TOO_LARGE, textoMaximo());
         }
     }
 
@@ -270,7 +270,7 @@ public class DocumentoController {
             parte = req.getPart(CAMPO_ARCHIVO);
         } catch (IllegalStateException e) {
             // Tomcat lo lanza al superar el tamano maximo del archivo o de la peticion.
-            throw new ApiException(HttpStatus.PAYLOAD_TOO_LARGE, textoMaximo());
+            throw new ApiException(HttpStatus.CONTENT_TOO_LARGE, textoMaximo());
         } catch (IOException | ServletException e) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Multipart mal formado");
         }
@@ -289,7 +289,7 @@ public class DocumentoController {
         try {
             tipo = TipoDocumento.valueOf(tipoTexto == null ? "" : tipoTexto);
         } catch (IllegalArgumentException e) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "tipo_documento: debe ser uno de " + java.util.Arrays.toString(TipoDocumento.values()));
         }
         int adenda;
@@ -297,16 +297,16 @@ public class DocumentoController {
             String texto = req.getParameter("numero_adenda");
             adenda = texto == null || texto.isBlank() ? 0 : Integer.parseInt(texto.trim());
         } catch (NumberFormatException e) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "numero_adenda: debe ser un entero");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "numero_adenda: debe ser un entero");
         }
         if (adenda < 0 || adenda > 999) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "numero_adenda: debe estar entre 0 y 999");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "numero_adenda: debe estar entre 0 y 999");
         }
         if (tipo == TipoDocumento.ADENDA && adenda < 1) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Una ADENDA requiere numero_adenda >= 1");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "Una ADENDA requiere numero_adenda >= 1");
         }
         if (tipo != TipoDocumento.ADENDA && adenda != 0) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "numero_adenda solo aplica a documentos tipo ADENDA");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "numero_adenda solo aplica a documentos tipo ADENDA");
         }
         return new Metadatos(tipo, adenda);
     }
