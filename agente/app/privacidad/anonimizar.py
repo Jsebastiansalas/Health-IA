@@ -6,17 +6,23 @@ etiqueta que los delata («Paciente: …», «CC 1.234.567», «Cel. 300 123 456
 El mismo valor recibe siempre el mismo marcador, y la respuesta del modelo se restaura con el mapa
 de la consulta, de modo que el usuario ve los datos reales y las citas siguen siendo literales.
 
+Además, una segunda capa (`app/privacidad/nombres.py`) oculta nombres SIN etiqueta con reglas y
+listas de nombres y apellidos frecuentes («…lo atendió Juan Pérez»).
+
 Qué NO hace (y el consentimiento lo dice): es un enmascarado por patrones, no una garantía.
-- Un nombre que aparece SIN etiqueta («…lo atendió Juan Pérez») no se detecta.
+- Un nombre poco común, sin etiqueta, sin parentesco ni firma, no se detecta.
 - Se descarta a propósito enmascarar números sueltos: en una licitación, un CUM, un registro INVIMA
   o un NIT no son datos de una persona, y taparlos rompería el análisis.
 
-Solo usa la biblioteca estándar. Es determinista y no llama a ningún servicio.
+No usa ningún modelo: es determinista y no llama a ningún servicio.
 """
 
 import re
 from dataclasses import dataclass, field, replace
 from typing import Any
+
+from app.core.config import get_settings
+from app.privacidad import nombres
 
 # Etiquetas que delatan un dato personal. La parte entre `(?i: ...)` ignora mayúsculas; las siglas
 # (CC, TI, CE) se exigen en mayúsculas para no confundir «ti» (pronombre) con una tarjeta
@@ -105,6 +111,9 @@ class Anonimizador:
     _por_marcador: dict[str, str] = field(default_factory=dict)
     _por_valor: dict[tuple[str, str], str] = field(default_factory=dict)
     _cuenta: dict[str, int] = field(default_factory=dict)
+    # Palabras de nombres ya identificados: sirven para reconocerlos cuando vuelven solos.
+    _conocidos: set[str] = field(default_factory=set)
+    nombres_sueltos: bool = field(default_factory=lambda: get_settings().anonimizar_nombres_sueltos)
 
     def _marcador(self, tipo: str, valor: str) -> str:
         clave = (tipo, _clave(valor))
@@ -115,6 +124,25 @@ class Anonimizador:
             self._por_marcador[marcador] = valor.strip()
         return self._por_valor[clave]
 
+    def aprender(self, textos: list[str]) -> None:
+        """Identifica los nombres de varios textos ANTES de enmascararlos: así un nombre que solo
+        trae etiqueta en el último también se oculta en el primero."""
+        if not self.nombres_sueltos:
+            return
+        for texto in textos:
+            Anonimizador(nombres_sueltos=True, _conocidos=self._conocidos).enmascarar(texto)
+
+    def _ocultar_nombres_sin_etiqueta(self, texto: str) -> str:
+        # Primera pasada: aprender; segunda: ocultar, ya sabiendo todos los nombres del texto.
+        for inicio, fin in nombres.detectar(texto, self._conocidos):
+            self._conocidos |= nombres.palabras_de(texto[inicio:fin])
+        partes: list[str] = []
+        hasta = 0
+        for inicio, fin in nombres.detectar(texto, self._conocidos):
+            partes += [texto[hasta:inicio], self._marcador("PERSONA", texto[inicio:fin])]
+            hasta = fin
+        return "".join([*partes, texto[hasta:]])
+
     def enmascarar(self, texto: str) -> str:
         for tipo, patron, grupo in _REGLAS:
 
@@ -123,12 +151,20 @@ class Anonimizador:
                 if grupo == 0:
                     return self._marcador(tipo, valor)
                 inicio, fin = m.span(grupo)
+                if tipo == "PERSONA":
+                    valor = nombres.sin_el_renglon_siguiente(m.string, inicio, fin)
+                    fin = inicio + len(valor)
                 base = m.start()
                 completo = m.group(0)
                 marcador = self._marcador(tipo, valor)
                 return completo[: inicio - base] + marcador + completo[fin - base :]
 
             texto = patron.sub(sustituir, texto)
+        if self.nombres_sueltos:
+            for marcador, valor in self._por_marcador.items():
+                if marcador.startswith("[PERSONA_"):
+                    self._conocidos |= nombres.palabras_de(valor)
+            texto = self._ocultar_nombres_sin_etiqueta(texto)
         return texto
 
     def restaurar(self, texto: str) -> str:
@@ -158,9 +194,20 @@ def enmascarar_texto(texto: str) -> str:
     return Anonimizador().enmascarar(texto)
 
 
+def enmascarar_textos(textos: list[str]) -> list[str]:
+    """Como `enmascarar_texto`, para las partes de un mismo documento: lo que se aprende en una vale
+    en todas."""
+    comun = Anonimizador()
+    comun.aprender(textos)
+    return [Anonimizador(_conocidos=set(comun._conocidos)).enmascarar(t) for t in textos]
+
+
 def evidencias_para_la_nube(evidencias: list, anon: Anonimizador) -> list:
     """Copia de las evidencias SOLO para el prompt: texto y sección enmascarados y nombre de archivo
     neutro. Las originales no se tocan: de ellas salen las citas verificadas."""
+    anon.aprender(
+        [t for e in evidencias for v in [e, *e.vecinos] for t in (v.contenido_texto, v.seccion)]
+    )
     copias = []
     for i, e in enumerate(evidencias, start=1):
         copias.append(

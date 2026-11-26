@@ -86,6 +86,8 @@ class Settings(BaseSettings):
     # Enmascara nombres, cédulas, teléfonos, correos y direcciones ANTES de enviar texto a un
     # proveedor de IA externo (embeddings y LLM). Lo guardado y lo que se muestra es el original.
     anonimizar_antes_de_nube: bool = True
+    # Segunda capa: nombres sin etiqueta, con reglas y listas (app/privacidad/nombres.py).
+    anonimizar_nombres_sueltos: bool = True
 
     # ---------- Motor RAG (Sprint 5) ----------
     # gemini-2.5-flash: estable y ~2 s por respuesta en las pruebas. gemini-3.8-flash respondió

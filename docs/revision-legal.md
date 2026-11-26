@@ -28,7 +28,7 @@ Una persona (paciente o familiar, con cuenta propia) o una organización sube do
 | Servidor SMTP (proveedor de correo por elegir) | Correo electrónico de la persona y un enlace de un solo uso | Enlace de un solo uso, vence en 24 h, solo se guarda su hash | Elegir proveedor y revisar sus condiciones |
 | Nadie más | Tesseract (OCR) y ClamAV (antivirus) corren dentro del mismo servidor | — | — |
 
-**Límite de la anonimización (declarado también en el consentimiento):** solo se enmascaran datos personales que aparecen *con etiqueta* («Paciente:», «CC», «Teléfono:», «Correo:»…). Un nombre suelto dentro de una frase puede no detectarse y viajar al proveedor de IA. Los números sin etiqueta (CUM, INVIMA, NIT) no se tocan a propósito.
+**Límite de la anonimización (declarado también en el consentimiento):** se enmascaran los datos que aparecen *con etiqueta* («Paciente:», «CC», «Teléfono:», «Correo:»…) y, desde el sprint 44, una segunda capa de reglas y listas oculta nombres sin etiqueta (por parentesco, firma, nombre de pila o apellidos frecuentes). **Sigue sin ser una garantía:** en el conjunto de reserva (18 nombres inventados, escrito antes que el código) oculta 12; sin la segunda capa ocultaba 1. Se escapan sobre todo nombres poco comunes escritos sin parentesco ni firma. Las cifras salen de un corpus pequeño y escrito por el mismo equipo, no de documentos reales. Los vectores de los documentos indexados antes no se recalculan. Los números sin etiqueta (CUM, INVIMA, NIT) no se tocan a propósito. El texto del consentimiento no cambió: sigue prometiendo menos de lo que ahora se hace.
 
 ## 4. Conservación y supresión
 
