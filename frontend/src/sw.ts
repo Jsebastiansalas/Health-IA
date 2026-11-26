@@ -10,6 +10,7 @@
  * expediente; esa página lo borra al subirlo o al cancelar.
  */
 import { set } from "idb-keyval";
+import { AVISO_PUSH } from "./lib/avisoPush";
 import { CLAVE_COMPARTIDO } from "./lib/claveCompartido";
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from "workbox-precaching";
 import { NavigationRoute, registerRoute } from "workbox-routing";
@@ -51,4 +52,38 @@ registerRoute(new NavigationRoute(createHandlerBoundToURL("/index.html"), { deny
 // La página pide activar la versión nueva cuando el usuario pulsa «Actualizar».
 sw.addEventListener("message", (e) => {
   if (e.data?.type === "SKIP_WAITING") void sw.skipWaiting();
+});
+
+// ---------- Notificaciones de recordatorios ----------
+// Llegan sin contenido: el texto es fijo (lib/avisoPush.ts).
+type EventoPush = Event & { waitUntil(p: Promise<unknown>): void };
+type EventoClic = EventoPush & { notification: { close(): void } };
+type Ventana = { url: string; focus(): Promise<unknown>; navigate?(url: string): Promise<unknown> };
+const notificador = self as unknown as {
+  registration: { showNotification(titulo: string, opciones: NotificationOptions): Promise<void> };
+  clients: { matchAll(o: { type: "window" }): Promise<Ventana[]>; openWindow(url: string): Promise<unknown> };
+  addEventListener(tipo: "push", f: (e: EventoPush) => void): void;
+  addEventListener(tipo: "notificationclick", f: (e: EventoClic) => void): void;
+};
+
+notificador.addEventListener("push", (e) => {
+  e.waitUntil(
+    notificador.registration.showNotification(AVISO_PUSH.titulo, {
+      body: AVISO_PUSH.cuerpo,
+      tag: AVISO_PUSH.etiqueta,
+      icon: "/icono-192.png",
+    }),
+  );
+});
+
+notificador.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(
+    (async () => {
+      const [abierta] = await notificador.clients.matchAll({ type: "window" });
+      if (!abierta) return notificador.clients.openWindow(AVISO_PUSH.destino);
+      await abierta.navigate?.(AVISO_PUSH.destino);
+      return abierta.focus();
+    })(),
+  );
 });

@@ -116,6 +116,10 @@ public class ExportacionService {
                 new String[] {"texto", "texto", "fecha_en_el_documento", "fecha_texto", "fecha", "fecha", "estado", "estado",
                         "creado_at", "created_at", "expediente", "titulo"},
                 tenantId, usuarioId));
+        // Sin la dirección de envío: es un identificador del dispositivo, no un dato que le sirva a la persona.
+        datos.set("dispositivos_con_avisos", lista("""
+                select created_at from suscripciones_push where tenant_id = ? and usuario_id = ? order by created_at""",
+                new String[] {"activado_at", "created_at"}, tenantId, usuarioId));
         datos.set("accesos", lista("""
                 select created_at, accion, resultado, ip from auditoria
                 where tenant_id = ? and usuario_id = ? order by created_at""",

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api, descargar } from "../api/cliente";
+import { AvisosEnDispositivo } from "../componentes/AvisosEnDispositivo";
 import type { EstadoRecordatorio, Recordatorio } from "../api/tipos";
 import { Boton } from "../componentes/ui/Boton";
 import { Esqueleto } from "../componentes/ui/Esqueleto";
@@ -54,6 +55,8 @@ export function PaginaRecordatorios() {
           No creamos recordatorios para tomar medicamentos: cómo y cuándo tomarlos lo indica tu médico.
         </p>
       </header>
+
+      <AvisosEnDispositivo />
 
       {isLoading && <Esqueleto className="h-40 rounded-xl" aria-busy />}
       {error && (

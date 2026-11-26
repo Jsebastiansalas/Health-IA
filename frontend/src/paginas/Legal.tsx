@@ -54,6 +54,8 @@ export function PaginaPrivacidad() {
           <li>Tus preguntas y las respuestas.</li>
           <li>Si compartes un expediente con un cuidador: su correo, qué le permites y cuándo entró. Esa persona ve los documentos
             de ese expediente hasta que le quites el acceso.</li>
+          <li>Si activas los avisos en un dispositivo: la dirección que entrega su navegador para enviarle notificaciones. Estas
+            pasan por el servicio de ese navegador (Google, Mozilla, Apple o Microsoft) y van sin contenido.</li>
           <li>Un registro de accesos con tu correo, la fecha y tu dirección IP, nunca el contenido de tus documentos ni de tus preguntas.</li>
         </ul>
       </section>
