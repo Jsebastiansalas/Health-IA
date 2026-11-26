@@ -130,7 +130,7 @@ Hoy todo va a la API gratuita de Gemini (que puede usar lo que recibe) y a un so
 - **Verificación incompleta:** cada bloque pasó sus pruebas al construirlo, pero falta la pasada final: toda la API y el agente con V17 y V18, la web tras el último ajuste del menú, el recorrido en navegador con el paso de cuidadores y la revisión de las pantallas.
 - **Corregido de antes:** cerrar sesión y confirmar el correo **nunca quedaban en la auditoría** (la base rechazaba el evento y solo quedaba una línea en el log).
 - **Sin probar:** una notificación real en un teléfono (ni en iPhone, que exige instalar la app), la lectura en voz alta con voces reales y un lector de pantalla (NVDA, VoiceOver, TalkBack). Falta esa revisión con personas.
-- **Para decidir:** (1) el consentimiento no menciona compartir con cuidadores: la confirmación se pide al invitar y al aceptar (preguntas 10 y 11 de `docs/revision-legal.md`); (2) las preguntas que haga el cuidador quedan en el expediente de la dueña: ella no las ve en su historial, pero sí salen en su «Descargar mis datos», **sin indicar todavía quién las hizo** (falta marcarlas; en la del cuidador no salen), y se borran con el expediente, con el historial o con la cuenta de cualquiera.
+- **Para decidir:** (1) el consentimiento no menciona compartir con cuidadores: la confirmación se pide al invitar y al aceptar (preguntas 10 y 11 de `docs/revision-legal.md`); (2) las preguntas que haga el cuidador quedan en el expediente de la dueña: ella no las ve en su historial, pero sí salen en su «Descargar mis datos», marcadas como de una persona con acceso (en la del cuidador no salen), y se borran con el expediente, con el historial o con la cuenta de cualquiera.
 
 ## Orden y dependencias
 

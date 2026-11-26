@@ -88,7 +88,7 @@ public class ExportacionService {
                     UUID id = rs.getObject("id", UUID.class);
                     ArrayNode documentos = e.putArray("documentos");
                     documentos(tenantId, id, documentos);
-                    ArrayNode consultas = consultas(tenantId, id);
+                    ArrayNode consultas = consultas(tenantId, usuarioId, id);
                     e.set("consultas", consultas);
                     e.set("constancias_de_borrado", lista("""
                             select a.sha256_original, a.motivo, a.purged_at from actas_purga a
@@ -174,13 +174,15 @@ public class ExportacionService {
                 }, tenantId, documentoId);
     }
 
-    private ArrayNode consultas(UUID tenantId, UUID expedienteId) {
+    /** Incluye las de un cuidador: son sobre el expediente de la persona, pero se dice que no las hizo. */
+    private ArrayNode consultas(UUID tenantId, UUID usuarioId, UUID expedienteId) {
         ArrayNode salida = json.createArrayNode();
         jdbc.query("""
-                select created_at, pregunta, respuesta::text as respuesta from consultas
+                select created_at, pregunta, respuesta::text as respuesta, usuario_id from consultas
                 where tenant_id = ? and expediente_id = ? order by created_at""",
                 rs -> {
                     ObjectNode c = objeto(rs, "fecha", "created_at");
+                    c.put("hecha_por", usuarioId.equals(rs.getObject("usuario_id", UUID.class)) ? "tú" : "una persona con acceso");
                     c.put("pregunta", cifrado.texto(rs.getString("pregunta")));
                     try {
                         c.set("respuesta", cifrado.respuesta(json.readTree(rs.getString("respuesta"))));

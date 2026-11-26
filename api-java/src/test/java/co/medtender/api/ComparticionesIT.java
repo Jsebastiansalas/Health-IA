@@ -382,8 +382,25 @@ class ComparticionesIT extends IntegracionBase {
         proponerRecordatorio(luis);
         String deAna = exportar(ana);
         assertThat(deAna).contains("compartido_con", LUIS, "ACEPTADA").doesNotContain("token_hash");
+        preguntaGuardada(ana, "¿Pregunta de la dueña?");
+        preguntaGuardada(luis, "¿Pregunta del cuidador?");
+        JsonNode consultas = json.readTree(exportar(ana)).at("/expedientes/0/consultas");
+        assertThat(consultas.size()).isEqualTo(2);
+        for (JsonNode c : consultas) {
+            assertThat(c.get("hecha_por").asString(""))
+                    .isEqualTo(c.get("pregunta").asString("").contains("cuidador") ? "una persona con acceso" : "tú");
+        }
         String deLuis = exportar(luis);
         assertThat(deLuis).contains("Control en 3 meses", "Expediente que comparten contigo").doesNotContain("MAMA", ANA);
+    }
+
+    /** Una pregunta sobre el expediente de Ana, como la guarda el agente. */
+    private void preguntaGuardada(JsonNode quien, String texto) {
+        String email = quien == ana ? ANA : LUIS;
+        jdbc.update("""
+                insert into consultas (tenant_id, expediente_id, usuario_id, pregunta, respuesta, sin_evidencia,
+                    modelo_embeddings, latencia_ms) values (?, ?, ?, ?, '{}'::jsonb, true, 'gemini-embedding-001', 1)""",
+                tenantDe(ANA), UUID.fromString(expediente), idDe(email), texto);
     }
 
     private String exportar(JsonNode quien) throws Exception {
