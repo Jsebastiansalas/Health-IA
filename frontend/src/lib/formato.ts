@@ -1,14 +1,21 @@
 import type { EstadoIndexacion, TipoDocumento, TipoExpediente } from "../api/tipos";
 
+/** Extensiones que MedTender acepta como documento: PDF y fotos o escaneos. */
+export const EXTENSIONES_DOCUMENTO = /\.(pdf|jpe?g|png|heic|heif)$/i;
+const EXTENSIONES_IMAGEN = /\.(jpe?g|png|heic|heif)$/i;
+
+export const esImagen = (nombre: string) => EXTENSIONES_IMAGEN.test(nombre);
+/** Los navegadores (salvo Safari) no pueden mostrar HEIC. */
+export const esHeic = (nombre: string) => /\.(heic|heif)$/i.test(nombre);
+
 /** Pasos visibles del pipeline (el orden importa para la línea de tiempo). */
-export const PASOS: { estado: EstadoIndexacion; etiqueta: string }[] = [
-  // Etiquetas cortas: caben en seis columnas dentro del panel estrecho de folios.
-  { estado: "VALIDANDO", etiqueta: "Antivirus" },
-  { estado: "EN_COLA", etiqueta: "En cola" },
-  { estado: "EXTRAYENDO_OCR", etiqueta: "Texto y OCR" },
-  { estado: "FRAGMENTANDO", etiqueta: "Fragmentos" },
-  { estado: "VECTORIZANDO", etiqueta: "Vectores" },
-  { estado: "INDEXADO_Y_PURGADO", etiqueta: "PDF borrado" },
+export const PASOS: { estado: EstadoIndexacion; etiqueta: string; descripcion: string }[] = [
+  { estado: "VALIDANDO", etiqueta: "Antivirus", descripcion: "Revisando el PDF (antivirus y estructura)" },
+  { estado: "EN_COLA", etiqueta: "En cola", descripcion: "En cola de procesamiento" },
+  { estado: "EXTRAYENDO_OCR", etiqueta: "Texto y OCR", descripcion: "Extrayendo el texto (OCR en páginas escaneadas)" },
+  { estado: "FRAGMENTANDO", etiqueta: "Fragmentos", descripcion: "Dividiendo el texto en fragmentos" },
+  { estado: "VECTORIZANDO", etiqueta: "Vectores", descripcion: "Generando los vectores de búsqueda" },
+  { estado: "INDEXADO_Y_PURGADO", etiqueta: "Original borrado", descripcion: "Índice verificado y original eliminado del servidor" },
 ];
 
 const ORDEN: Record<EstadoIndexacion, number> = {
@@ -42,6 +49,7 @@ export const TIPOS_DOCUMENTO: Record<TipoDocumento, string> = {
   REGISTRO_SANITARIO: "Registro sanitario",
   HISTORIA_CLINICA: "Historia clínica",
   PRESUPUESTO: "Presupuesto",
+  PROSPECTO: "Prospecto de medicamento",
 };
 
 export const TIPOS_EXPEDIENTE: Record<TipoExpediente, string> = {

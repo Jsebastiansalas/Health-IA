@@ -1,95 +1,237 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { AlertTriangle, FilePlus2, Search } from "../iconos";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { api, post } from "../api/cliente";
 import type { Expediente, TipoExpediente } from "../api/tipos";
-import { fecha, TIPOS_EXPEDIENTE } from "../lib/formato";
+import { CompartidosConmigo } from "../componentes/Cuidadores";
+import { useConsentimiento } from "../lib/consentimiento";
+import { Boton } from "../componentes/ui/Boton";
+import { Campo } from "../componentes/ui/Campo";
+import { Dialogo } from "../componentes/ui/Dialogo";
+import { Esqueleto } from "../componentes/ui/Esqueleto";
+import { Insignia } from "../componentes/ui/Insignia";
+import { cn } from "../lib/cn";
+import { TIPOS_EXPEDIENTE } from "../lib/formato";
 import { useSesion } from "../sesion";
 
-const PERMISO: Record<string, string> = { ADMIN: "Administra", EDITOR: "Edita", LECTOR: "Consulta" };
+/** Día sin hora: en un índice importa cuándo se abrió, no a qué minuto. */
+const dia = (iso: string) =>
+  new Date(iso).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" });
+
+const PERMISO: Record<string, string> = { ADMIN: "Administras", EDITOR: "Editas", LECTOR: "Consultas" };
+const FILTROS = [
+  ["TODOS", "Todos"],
+  ["ABIERTO", "Abiertos"],
+  ["CERRADO", "Cerrados"],
+  ["ARCHIVADO", "Archivados"],
+] as const;
 
 export function PaginaExpedientes() {
   const { usuario } = useSesion();
-  const { data: expedientes, isLoading, error } = useQuery({
+  const { data: expedientes, isLoading, error, refetch } = useQuery({
     queryKey: ["expedientes"],
     queryFn: () => api<Expediente[]>("/expedientes?limit=200"),
   });
   const [filtro, setFiltro] = useState("");
+  const [estado, setEstado] = useState<(typeof FILTROS)[number][0]>("TODOS");
   const [creando, setCreando] = useState(false);
-  const puedeCrear = usuario && usuario.rol_global !== "LECTOR";
+  const buscador = useRef<HTMLInputElement>(null);
+  const puedeCrear = !!usuario && usuario.rol_global !== "LECTOR";
+  // Una persona no maneja códigos, entidades ni tipos de proceso.
+  const { esPersonal } = useConsentimiento();
+  const columnas = esPersonal
+    ? "lg:grid-cols-[minmax(0,1fr)_6.5rem_7.5rem]"
+    : "lg:grid-cols-[8.5rem_minmax(0,1fr)_9rem_6.5rem_7.5rem]";
 
-  const visibles = (expedientes ?? []).filter((e) =>
-    `${e.codigo_expediente} ${e.titulo} ${e.entidad_contratante ?? ""}`.toLowerCase().includes(filtro.toLowerCase()),
+  // Atajo: «/» enfoca el buscador (salvo que ya se esté escribiendo).
+  useEffect(() => {
+    const alTeclear = (e: KeyboardEvent) => {
+      const destino = e.target as HTMLElement;
+      if (e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test(destino.tagName) && !destino.isContentEditable) {
+        e.preventDefault();
+        buscador.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", alTeclear);
+    return () => window.removeEventListener("keydown", alTeclear);
+  }, []);
+
+  const visibles = (expedientes ?? []).filter(
+    (e) =>
+      (estado === "TODOS" || e.estado === estado) &&
+      `${e.codigo_expediente} ${e.titulo} ${e.entidad_contratante ?? ""}`.toLowerCase().includes(filtro.toLowerCase()),
   );
 
   return (
-    <div className="animate-aparecer">
-      <div className="mb-10 flex flex-wrap items-end justify-between gap-6 border-b-2 border-tinta pb-6">
+    <div>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="etiqueta">Archivo</p>
-          <h1 className="font-display text-5xl font-light">Expedientes</h1>
+          <h1 className="text-3xl font-semibold sm:text-4xl">Expedientes</h1>
+          <p className="mt-2 text-texto-2">
+            {usuario ? `Hola, ${usuario.nombre_completo.split(" ")[0]}. ` : ""}
+            Elige un expediente para subir documentos o consultarlo.
+          </p>
         </div>
-        <div className="flex items-end gap-4">
-          <label className="w-72">
-            <span className="etiqueta">Buscar por código, título o entidad</span>
-            <input className="campo" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
-          </label>
-          {puedeCrear && (
-            <button className="boton boton-tinta" onClick={() => setCreando((c) => !c)}>
-              {creando ? "Cancelar" : "Abrir expediente"}
-            </button>
-          )}
+        {puedeCrear && (
+          <Boton variante="primario" onClick={() => setCreando(true)}>
+            <FilePlus2 className="size-4" aria-hidden />
+            Abrir expediente
+          </Boton>
+        )}
+      </div>
+
+      <CompartidosConmigo />
+
+      <div className="mb-8 flex flex-wrap items-center gap-3">
+        <div className="group flex h-10 w-full items-center gap-3 rounded-lg border border-borde bg-panel px-3 transition-[border-color] focus-within:border-primario sm:w-96">
+          <Search className="size-4 text-texto-3 group-focus-within:text-primario" aria-hidden />
+          <input
+            ref={buscador}
+            value={filtro}
+            onChange={(e) => setFiltro(e.target.value)}
+            placeholder={esPersonal ? "Buscar por nombre" : "Buscar por código, título o entidad"}
+            aria-label="Buscar expedientes"
+            className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none"
+          />
+          <kbd className="hidden rounded-lg border border-borde px-2 font-mono text-sm text-texto-3 sm:block" aria-hidden>
+            /
+          </kbd>
+        </div>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por estado">
+          {FILTROS.map(([valor, texto]) => {
+            const n = (expedientes ?? []).filter((e) => valor === "TODOS" || e.estado === valor).length;
+            return (
+              <button
+                key={valor}
+                onClick={() => setEstado(valor)}
+                aria-pressed={estado === valor}
+                className={cn(
+                  "rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                  estado === valor
+                    ? "border-primario/50 bg-primario/12 text-primario-osc"
+                    : "border-borde text-texto-2 hover:border-borde hover:text-texto",
+                )}
+              >
+                {texto}
+                {expedientes && <span className="num ml-2 text-texto-3">{n}</span>}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {creando && <NuevoExpediente alCrear={() => setCreando(false)} />}
-
-      {isLoading && <p className="etiqueta">Cargando archivo…</p>}
-      {error && <p className="text-sello">{(error as Error).message}</p>}
-      {expedientes?.length === 0 && (
-        <div className="folio max-w-xl p-10">
-          <p className="font-display text-2xl">El archivo está vacío.</p>
-          <p className="mt-2 text-tinta-2">
-            {puedeCrear
-              ? "Abra el primer expediente para empezar a indexar pliegos y adendas."
-              : "Aún no le han dado acceso a ningún expediente."}
-          </p>
+      {isLoading && (
+        <div className="panel divide-y divide-borde" aria-busy aria-label="Cargando expedientes">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="px-4 py-4">
+              <Esqueleto className="h-5 w-2/3" />
+              <Esqueleto className="mt-2 h-3.5 w-1/3" />
+            </div>
+          ))}
         </div>
       )}
 
-      <ol className="divide-y divide-papel-3">
-        {visibles.map((e, i) => (
-          <li key={e.id} className="animate-aparecer" style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}>
-            <Link
-              to={`/expedientes/${e.id}`}
-              className="group grid grid-cols-[9rem_1fr_auto] items-baseline gap-6 py-5 transition-colors hover:bg-papel-2/60 md:grid-cols-[11rem_1fr_14rem_8rem]"
-            >
-              <span className="font-mono text-sm text-sello">{e.codigo_expediente}</span>
-              <span>
-                <span className="font-display text-2xl leading-tight group-hover:underline decoration-sello decoration-1 underline-offset-4">
-                  {e.titulo}
-                </span>
-                <span className="mt-1 block text-sm text-tinta-2">
-                  {e.entidad_contratante ?? "Entidad no registrada"} · {TIPOS_EXPEDIENTE[e.tipo_expediente]}
-                </span>
-              </span>
-              <span className="hidden text-sm text-grafito md:block">
-                {fecha(e.created_at)}
-                <span className="block font-mono text-[0.7rem]">{e.embedding_model_activo}</span>
-              </span>
-              <span className="text-right">
-                <span className={`sello ${e.estado === "ABIERTO" ? "text-clinico" : "text-grafito"}`}>{e.estado}</span>
-                <span className="etiqueta mt-2 block">{e.mi_permiso ? PERMISO[e.mi_permiso] : ""}</span>
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ol>
+      {error && (
+        <div role="alert" className="panel flex max-w-xl items-start gap-4 p-6">
+          <AlertTriangle className="mt-0.5 size-6 shrink-0 text-peligro" aria-hidden />
+          <div>
+            <p className="font-semibold">No pudimos cargar tus expedientes</p>
+            <p className="mt-1 text-sm text-texto-2">{(error as Error).message}</p>
+            <Boton className="mt-4" tamano="sm" onClick={() => refetch()}>
+              Reintentar
+            </Boton>
+          </div>
+        </div>
+      )}
+
+      {expedientes?.length === 0 && (
+        <div className="max-w-2xl py-6">
+          <h2 className="max-w-sm text-3xl font-semibold">Aún no hay expedientes.</h2>
+          <p className="relative mt-3 max-w-md text-texto-2">
+            {esPersonal
+              ? "Crea el primero, sube tus resultados, fórmulas u órdenes y pide que te los expliquen."
+              : puedeCrear
+              ? "Abre el primero para empezar a indexar pliegos y adendas, y luego pregúntale lo que necesites."
+              : "Todavía no te han dado acceso a ningún expediente. Pide a tu administrador que te asigne uno."}
+          </p>
+          {puedeCrear && (
+            <Boton variante="primario" className="relative mt-6" onClick={() => setCreando(true)}>
+              <FilePlus2 className="size-4" aria-hidden />
+              Abrir el primer expediente
+            </Boton>
+          )}
+        </div>
+      )}
+
+      {expedientes && expedientes.length > 0 && visibles.length === 0 && (
+        <p className="py-10 text-texto-2">
+          Ningún expediente coincide con «{filtro}»
+          {estado !== "TODOS" ? ` en estado ${estado.toLowerCase()}` : ""}.
+        </p>
+      )}
+
+      {visibles.length > 0 && (
+        <div className="panel overflow-hidden">
+          <div
+            className={cn("hidden gap-x-4 border-b border-borde px-4 py-3 text-sm font-medium text-texto-3 lg:grid", columnas)}
+            aria-hidden
+          >
+            {!esPersonal && <span>Código</span>}
+            <span>Expediente</span>
+            {!esPersonal && <span>Tipo</span>}
+            <span>Estado</span>
+            <span className="text-right">Creado</span>
+          </div>
+          <ul className="divide-y divide-borde">
+            {visibles.map((e) => (
+              <li key={e.id}>
+                <Link
+                  to={`/expedientes/${e.id}`}
+                  className={cn("group grid gap-x-4 gap-y-1 px-4 py-4 transition-colors hover:bg-panel-2 focus-visible:bg-panel-2 lg:items-center", columnas)}
+                >
+                  {!esPersonal && <span className="font-mono text-sm text-texto">{e.codigo_expediente}</span>}
+                  <span className="min-w-0">
+                    <span className="block text-base font-semibold leading-snug [overflow-wrap:anywhere] group-hover:text-primario">
+                      {e.titulo}
+                    </span>
+                    {!esPersonal && (
+                      <span className="mt-0.5 block truncate text-sm text-texto-2">
+                        {e.entidad_contratante ?? "Entidad no registrada"}
+                        {e.mi_permiso ? ` · ${PERMISO[e.mi_permiso]}` : ""}
+                      </span>
+                    )}
+                  </span>
+                  {!esPersonal && <span className="text-sm text-texto-2">{TIPOS_EXPEDIENTE[e.tipo_expediente]}</span>}
+                  <span>
+                    <Insignia tono={e.estado === "ABIERTO" ? "accion" : "neutro"}>{e.estado}</Insignia>
+                  </span>
+                  <span className="num text-sm text-texto-3 lg:text-right">{dia(e.created_at)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <Dialogo
+        abierto={creando}
+        alCambiar={setCreando}
+        titulo="Abrir expediente"
+        descripcion={
+          esPersonal
+            ? "Un expediente reúne los documentos de una persona y lo que preguntes sobre ellos."
+            : "Un expediente agrupa los documentos de un proceso y sus consultas."
+        }
+      >
+        <NuevoExpediente personal={esPersonal} alCrear={() => setCreando(false)} />
+      </Dialogo>
     </div>
   );
 }
 
-function NuevoExpediente({ alCrear }: { alCrear: () => void }) {
+function NuevoExpediente({ personal, alCrear }: { personal: boolean; alCrear: () => void }) {
   const cliente = useQueryClient();
   const navegar = useNavigate();
   const [datos, setDatos] = useState({
@@ -98,10 +240,19 @@ function NuevoExpediente({ alCrear }: { alCrear: () => void }) {
     entidad_contratante: "",
     tipo_expediente: "LICITACION_MEDICAMENTOS" as TipoExpediente,
   });
+  // El servidor pide un código único; a una persona no se le pregunta.
+  const [codigoPropio] = useState(() => `EXP-${Date.now().toString(36).toUpperCase()}`);
   const crear = useMutation({
-    mutationFn: () => post<Expediente>("/expedientes", { ...datos, entidad_contratante: datos.entidad_contratante || null }),
+    mutationFn: () =>
+      post<Expediente>(
+        "/expedientes",
+        personal
+          ? { codigo_expediente: codigoPropio, titulo: datos.titulo, tipo_expediente: "AUDITORIA_CLINICA", entidad_contratante: null }
+          : { ...datos, entidad_contratante: datos.entidad_contratante || null },
+      ),
     onSuccess: (e) => {
       cliente.invalidateQueries({ queryKey: ["expedientes"] });
+      toast.success("Expediente creado", { description: personal ? datos.titulo : e.codigo_expediente });
       alCrear();
       navegar(`/expedientes/${e.id}`);
     },
@@ -115,34 +266,45 @@ function NuevoExpediente({ alCrear }: { alCrear: () => void }) {
   }
 
   return (
-    <form onSubmit={enviar} className="folio mb-10 grid animate-aparecer gap-6 p-8 md:grid-cols-4">
-      <label>
-        <span className="etiqueta">Código</span>
-        <input className="campo font-mono" required maxLength={80} placeholder="LIC-2027-014"
-          value={datos.codigo_expediente} onChange={cambiar("codigo_expediente")} />
-      </label>
-      <label className="md:col-span-2">
-        <span className="etiqueta">Título</span>
-        <input className="campo" required maxLength={250} value={datos.titulo} onChange={cambiar("titulo")} />
-      </label>
-      <label>
-        <span className="etiqueta">Tipo</span>
-        <select className="campo" value={datos.tipo_expediente} onChange={cambiar("tipo_expediente")}>
+    <form onSubmit={enviar} className="space-y-4">
+      {personal ? (
+        <Campo etiqueta="¿Cómo quieres llamarlo?" required maxLength={250} placeholder="Mis exámenes"
+          value={datos.titulo} onChange={cambiar("titulo")} autoFocus />
+      ) : (
+        <>
+      <Campo etiqueta="Código" required maxLength={80} placeholder="LIC-2027-014" className="[&_input]:font-mono"
+        value={datos.codigo_expediente} onChange={cambiar("codigo_expediente")} autoFocus />
+      <Campo etiqueta="Título" required maxLength={250} placeholder="Suministro de medicamentos oncológicos"
+        value={datos.titulo} onChange={cambiar("titulo")} />
+      <div>
+        <label htmlFor="tipo-expediente" className="mb-2 block text-sm font-medium text-texto-2">
+          Tipo de expediente
+        </label>
+        <select
+          id="tipo-expediente"
+          value={datos.tipo_expediente}
+          onChange={cambiar("tipo_expediente")}
+          className="h-10 w-full rounded-lg border border-borde bg-panel px-3 text-sm outline-none transition-[border-color,box-shadow] focus:border-primario focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--primario)_22%,transparent)]"
+        >
           {Object.entries(TIPOS_EXPEDIENTE).map(([v, t]) => (
-            <option key={v} value={v}>{t}</option>
+            <option key={v} value={v} className="bg-panel">
+              {t}
+            </option>
           ))}
         </select>
-      </label>
-      <label className="md:col-span-3">
-        <span className="etiqueta">Entidad contratante</span>
-        <input className="campo" maxLength={200} value={datos.entidad_contratante} onChange={cambiar("entidad_contratante")} />
-      </label>
-      <div className="flex items-end justify-end">
-        <button className="boton boton-tinta" disabled={crear.isPending}>
-          {crear.isPending ? "Abriendo…" : "Crear expediente"}
-        </button>
       </div>
-      {crear.error && <p className="text-sm text-sello md:col-span-4">{(crear.error as Error).message}</p>}
+      <Campo etiqueta="Entidad contratante" maxLength={200} placeholder="Hospital Universitario"
+        value={datos.entidad_contratante} onChange={cambiar("entidad_contratante")} />
+        </>
+      )}
+      {crear.error && (
+        <p role="alert" className="rounded-xl border border-peligro/35 bg-peligro/10 px-4 py-3 text-sm text-peligro">
+          {(crear.error as Error).message}
+        </p>
+      )}
+      <Boton type="submit" variante="primario" tamano="lg" className="w-full" cargando={crear.isPending}>
+        {crear.isPending ? "Abriendo…" : "Crear expediente"}
+      </Boton>
     </form>
   );
 }

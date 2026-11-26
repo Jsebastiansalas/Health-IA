@@ -1,0 +1,86 @@
+# Plan C: MedTender como aplicación y un agente que hace más (sprints 36–39)
+
+Decidido el 25-nov-2026: **app web instalable (PWA)**, y tres funciones nuevas del agente: **línea de tiempo y evolución de resultados**, **preparar mi cita** y **recordatorios de controles**. Rige el mismo flujo: un sprint por rama `feature/*`, resumen al final, «Integrar y seguir».
+
+Reglas que no cambian en ninguna función nueva:
+- Todo dato que se muestre sale de un documento del usuario y lleva su cita (documento, página, texto exacto). Si no hay cita, no se muestra.
+- No se diagnostica, no se receta, no se dosifica y no se dice si un valor es bueno o malo: se muestra el valor y el rango **tal como vienen impresos**.
+- El texto va anonimizado a Gemini, los límites clínicos (`seguridad.detectar_limite_clinico`) y las garantías de salida (`garantias`) se aplican igual que en Explicar y Cruce.
+- Cada endpoint nuevo exige consentimiento y correo verificado, respeta RLS y deja auditoría solo con ids y conteos.
+
+## Sprint 36: MedTender como app (PWA)
+
+Primero, porque todo lo demás se usará sobre todo desde el celular.
+
+- **Instalable:** `manifest.webmanifest` (nombre, colores `#0b2e4a`/`#f4f7fa`, iconos 192/512 y *maskable* derivados de la marca), `display: standalone`, `start_url: /expedientes`.
+- **Service worker** (`vite-plugin-pwa`, Workbox): guarda en caché solo el armazón de la app (HTML, JS, CSS, fuentes, iconos). **Nunca** guarda respuestas de `/api`, documentos ni videos de la portada: los datos de salud no quedan en el teléfono. Pantalla «Sin conexión» propia.
+- **Cámara directa:** en «Cargar documento», botón «Tomar foto» (`capture="environment"`) además de elegir archivo.
+- **Recibir desde «Compartir»:** `share_target` en el manifiesto (POST multipart). El service worker recibe la foto o el PDF, lo guarda un momento en IndexedDB y abre la app en «¿A qué expediente lo subo?»; al subirlo o cancelarlo se borra. Android y escritorio; en iPhone no existe y se dice en la ayuda.
+- **Actualizaciones:** aviso «Hay una versión nueva» con botón para recargar.
+- Caddy: cabeceras correctas para `sw.js` y el manifiesto (sin caché larga).
+- Pruebas: vitest del flujo de compartir (IndexedDB simulada); Lighthouse PWA en el navegador; instalación real en Android por el dueño.
+
+## Sprint 37: Línea de tiempo y evolución de resultados
+
+- **Agente** (`agente/app/rag/cronologia.py`, `POST /internal/v1/cronologias`): recorre los documentos del expediente y extrae, con salida JSON con esquema:
+  - **Eventos:** fecha, tipo (consulta, examen, hospitalización, procedimiento, fórmula, control indicado) y una frase literal con su cita.
+  - **Valores de laboratorio:** analito normalizado (tabla de sinónimos en `glosario_datos`: «Hb», «Hemoglobina»…), valor, unidad, rango impreso, marca impresa (ALTO/BAJO si el documento la trae), fecha y cita.
+  - Validación determinista: el número, la unidad y la fecha deben aparecer en el extracto citado (`localizar_extracto`); si no, se descarta. Fechas ambiguas se muestran como el documento las escribe.
+- **Persistencia:** tabla `evento_clinico` (V13) con FORCE RLS por tenant, para no recalcular: se regenera cuando entra o se borra un documento.
+- **Java:** `GET /api/v1/expedientes/{id}/cronologia` (LECTOR), patrón de `CruceController`.
+- **Frontend:** pestaña «Línea de tiempo» en el expediente: lista por fecha con filtros por tipo, y por cada analito una gráfica simple de su evolución con el rango impreso como banda; cada punto abre su cita. Sin colores de «bueno/malo»: solo la marca que trae el documento.
+- Pruebas: documentos sintéticos con el mismo analito en tres fechas, sinónimos, una fecha ambigua y un valor que el modelo inventa (debe descartarse).
+
+**Hecho (25-nov-2026), con dos cambios respecto a lo previsto:**
+- Sin tabla nueva: la línea se guarda en `consultas` (que ya tiene RLS) con una huella de los documentos indexados; si no cambiaron, se devuelve la guardada sin llamar al modelo (0,1 s). La API es `POST /api/v1/expedientes/{id}/cronologia[?rehacer=true]`.
+- Sin pestaña nueva: aparece como una tarjeta en la consola, como «Explícame» y el Cruce («Ver mi línea de tiempo» en el panel de documentos), y queda en el historial.
+- Además: la marca impresa solo vale si está junto a su valor; cada toma de laboratorio entra a la línea como evento armado con sus valores ya comprobados; un «control en 3 meses» se muestra junto a la fecha del documento que lo indica, sin calcular la del control (eso es el sprint 39).
+- Recorrido real con Gemini: `agente/scripts/recorrido_cronologia_real.py`.
+
+## Sprint 38: Preparar mi cita
+
+- **Agente** (`POST /internal/v1/preparaciones`): a partir de la cronología (sprint 37), el cruce y Explicar, arma un resumen de una página:
+  - documentos recientes y lo que dicen (con cita),
+  - medicamentos que aparecen en los documentos (sin dosis inventadas, solo el texto citado),
+  - valores que cambiaron entre fechas (solo los datos, sin interpretar),
+  - preguntas sugeridas para el médico, y un espacio para las del usuario.
+- **Java:** `POST /api/v1/expedientes/{id}/preparacion` y descarga en **PDF** generado en el servidor (OpenPDF), con el aviso «no es un diagnóstico» y la fecha de generación. El PDF no se guarda: se genera y se entrega.
+- **Frontend:** botón «Preparar mi cita» en el expediente, vista previa editable de las preguntas, «Descargar PDF» y «Compartir» (Web Share en el celular).
+- Pruebas: que ninguna línea del PDF quede sin cita, que una petición de dosis dentro de las preguntas dispare el límite clínico.
+
+**Hecho (25-nov-2026), con cambios respecto a lo previsto:**
+- El PDF se arma **en el navegador** (jsPDF, cargado solo al pulsar «Descargar PDF»), no en el servidor: así el archivo nunca pasa por él. «Compartir» usa Web Share con el archivo cuando el dispositivo lo permite.
+- Una sola llamada al modelo: reutiliza la línea de tiempo guardada y extrae medicamentos, diagnósticos y alergias (la misma validación del cruce) junto con las preguntas.
+- Las preguntas sugeridas se descartan si afirman cifras o juicios que los documentos no dicen, si traen una posología sin respaldo o si afirman un diagnóstico; la persona las edita, quita o agrega antes del PDF.
+- Hallazgo y arreglo de privacidad: con un título como «FORMULA MEDICA» antes de «Paciente: …», el nombre se enviaba sin ocultar (la palabra «MEDICA» tomaba «Paciente» como nombre). Corregido en `privacidad/anonimizar.py`, con prueba.
+- Recorrido real con Gemini: `agente/scripts/recorrido_preparacion_real.py`.
+
+## Sprint 39: Recordatorios de controles
+
+- **Agente:** de la cronología toma los eventos tipo «control indicado» y las citas con fecha («control en 3 meses», «cita el 12/02»), y calcula la fecha propuesta a partir de la fecha del documento. Cada recordatorio lleva su cita.
+- **Persistencia:** tabla `recordatorio` (V14) con RLS: fecha, texto citado, estado (propuesto, confirmado, hecho, descartado). **El usuario confirma** cada recordatorio antes de que se active; nada se programa solo.
+- **Avisos:** correo con Brevo (ya configurado) unos días antes, con un texto neutro que no repite datos de salud en el asunto; descarga de evento de calendario `.ics`. Notificaciones push de la PWA como mejora opcional al final del sprint (requiere claves VAPID).
+- No se crean recordatorios de tomas de medicamentos (sería dosificar).
+- Pruebas: cálculo de fechas relativas, recordatorio sin fecha clara (queda propuesto con el texto, sin fecha), envío de correo con el doble de prueba.
+
+**Hecho (25-nov-2026):**
+- Agente: `POST /internal/v1/recordatorios/propuestas` (rag/recordatorios.py) toma los controles de la línea de tiempo guardada y calcula la fecha con código («en 3 meses» desde la fecha del documento; fin de mes ajustado). Un control sin plazo queda sin fecha para que la persona la ponga; nunca se propone una toma de medicamento.
+- Arreglo en la línea de tiempo: el modelo suele devolver «control en 3 meses» sin fecha escrita y se descartaba; ahora se conserva con su plazo (o «sin fecha escrita») junto al documento que lo indica.
+- Tabla `recordatorios` en **V13** (no V14: el sprint 37 no necesitó tabla), con RLS, cascada al borrar la cuenta o el expediente y la regla «confirmado exige fecha». Cada recordatorio es solo de quien lo creó.
+- API: `POST /expedientes/{id}/recordatorios/propuestas`, `GET /recordatorios`, `PATCH /recordatorios/{id}`, `GET /recordatorios/{id}/calendario.ics`. El `.ics` es neutro («Control médico», sin texto del documento) porque los calendarios se sincronizan con terceros.
+- Aviso diario a las 8:00 (Colombia) por correo, 3 días antes, una sola vez por fecha; el correo solo dice la fecha y lleva el enlace, sin datos de salud. `medtender.recordatorios.avisos-activos` lo apaga.
+- Pantalla «Recordatorios» en el menú (por confirmar, próximos, hechos) y botón «Buscar controles en mis documentos» en el expediente.
+- Pendiente opcional: notificaciones push de la app (claves VAPID).
+- Recorrido real con Gemini: `agente/scripts/recorrido_recordatorios_real.py`.
+
+## Orden y dependencias
+
+36 (PWA) es independiente. 37 → 38 y 39 (las dos usan la cronología). Si se prefiere ver valor del agente antes, 37 puede ir primero.
+
+## Fuera de alcance
+
+Interpretar imágenes médicas, recomendar tratamientos, recordatorios de tomas, publicar en Play Store o App Store (queda para cuando haya cuentas de desarrollador), compartir el expediente con otra persona (candidato para un Plan D).
+
+## Verificación por sprint
+
+`uv run python -m pytest` y `ruff` (agente), `mvn test` (API), `npm test` y `tsc` (frontend), recorrido real en el navegador y, en el 36, instalación en un teléfono Android.

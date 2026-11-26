@@ -1,3 +1,4 @@
+import { esHeic, esImagen, EXTENSIONES_DOCUMENTO } from "./formato";
 import { describe, expect, it } from "vitest";
 import { localizarOriginal } from "./carpetaLocal";
 import { estadoPaso, etiquetaDocumento, paginas, tamano } from "./formato";
@@ -75,5 +76,23 @@ describe("localizarOriginal", () => {
   it("informa si no existe", async () => {
     const r = await localizarOriginal(carpeta("pdfs", []), "Pliego.pdf", "0".repeat(64));
     expect(r.tipo).toBe("no-encontrado");
+  });
+});
+
+describe("documentos: PDF y fotos", () => {
+  it("reconoce las extensiones aceptadas sin distinguir mayúsculas", () => {
+    for (const n of ["a.pdf", "A.PDF", "foto.jpg", "foto.JPEG", "scan.png", "iphone.HEIC", "x.heif"]) {
+      expect(EXTENSIONES_DOCUMENTO.test(n)).toBe(true);
+    }
+    for (const n of ["animacion.gif", "nota.txt", "pdf", "archivo.pdf.exe"]) {
+      expect(EXTENSIONES_DOCUMENTO.test(n)).toBe(false);
+    }
+  });
+
+  it("distingue las fotos de los PDF y las que el navegador no puede mostrar", () => {
+    expect(esImagen("resultado.png")).toBe(true);
+    expect(esImagen("pliego.pdf")).toBe(false);
+    expect(esHeic("IMG_0001.HEIC")).toBe(true);
+    expect(esHeic("foto.jpg")).toBe(false);
   });
 });

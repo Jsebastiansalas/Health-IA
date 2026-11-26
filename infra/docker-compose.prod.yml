@@ -1,17 +1,17 @@
-# Producción en un VPS: solo Caddy publica puertos (80/443). Base de datos, Redis y respaldos
-# viven en una red interna sin salida a internet.
+# Producción en un VPS: solo Caddy publica puertos (80/443). Base de datos, Redis, ClamAV, la API
+# Java y el agente de IA viven en una red interna sin salida a internet (el agente es el único,
+# junto a ClamAV, con salida: llama a Gemini y ClamAV actualiza sus firmas).
 #
 #   cp .env.prod.example .env.prod   # y completar los secretos
 #   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+#   # Flyway (API Java) aplica las migraciones al arrancar. Primera organización, sin abrir el
+#   # registro público:
 #   docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm \
-#       -e MEDTENDER_ADMIN_PASSWORD='...' api python -m app.cli crear-tenant \
+#       -e MEDTENDER_ADMIN_PASSWORD='...' agente python -m app.cli crear-tenant \
 #       --nombre "Hospital X" --nit 900123 --email admin@hospital.co
 name: medtender-prod
 
-x-backend: &backend
-  build:
-    context: ../backend
-  image: medtender-backend:prod
+x-endurecido: &endurecido
   restart: unless-stopped
   # Contenedor endurecido: sin privilegios, sistema de archivos de solo lectura.
   security_opt: ["no-new-privileges:true"]
@@ -19,27 +19,40 @@ x-backend: &backend
   read_only: true
   tmpfs:
     - /tmp:size=512m
-  environment: &entorno
+
+x-agente: &agente
+  <<: *endurecido
+  build:
+    context: ../agente
+  image: medtender-agente:prod
+  environment: &entorno_agente
     ENTORNO: produccion
     LOG_JSON: "true"
-    CONFIAR_PROXY: "true"
-    ALLOW_TENANT_SIGNUP: "false"
-    DATABASE_URL: postgresql+asyncpg://medtender:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}@postgres:5432/medtender
+    DATABASE_URL: postgresql+asyncpg://medtender_app:${APP_DB_PASSWORD:?defina APP_DB_PASSWORD}@postgres:5432/medtender
     REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
-    JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET}
+    INTERNAL_TOKEN: ${INTERNAL_TOKEN:?defina INTERNAL_TOKEN}
     METRICS_TOKEN: ${METRICS_TOKEN:-}
-    GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    ERRORES_DSN: ${ERRORES_DSN_AGENTE:-}
+    DATOS_CLAVE: ${DATOS_CLAVE:?defina DATOS_CLAVE (openssl rand -base64 32)}
+    # En producción solo Vertex AI (el agente no arranca con la API gratuita de AI Studio).
+    IA_PROVEEDOR: vertex
+    VERTEX_PROYECTO: ${VERTEX_PROYECTO:?defina VERTEX_PROYECTO}
+    VERTEX_REGION: ${VERTEX_REGION:-global}
+    VERTEX_REGION_EMBEDDINGS: ${VERTEX_REGION_EMBEDDINGS:-us-central1}
+    VERTEX_CREDENCIALES: /run/secrets/vertex
+    LLM_RESPALDO_PROVEEDOR: ${LLM_RESPALDO_PROVEEDOR:-claude}
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    CLAUDE_MODELO: ${CLAUDE_MODELO:-claude-opus-5-5}
+    IA_TOPE_DIARIO_USD: ${IA_TOPE_DIARIO_USD:-10}
     OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     EMBEDDING_MODEL_DEFAULT: ${EMBEDDING_MODEL_DEFAULT:-gemini-embedding-001}
-    LLM_MODEL: ${LLM_MODEL:-gemini-2.5-flash}
-    ANTIVIRUS_BACKEND: clamav
-    CLAMAV_HOST: clamav
+    LLM_MODEL: ${LLM_MODEL:-gemini-3.8-flash}
     COLA_BACKEND: arq
-    RATE_LIMIT_BACKEND: redis
-    CORS_ORIGINS: '["https://${DOMINIO:?defina DOMINIO}"]'
     EPHEMERAL_DIR: /var/medtender-ephemeral
     BARRIDO_HABILITADO: "false"  # el barrido de purga lo ejecuta el worker
-    MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-300}
+    # Al terminar de indexar, el worker le pide al agente que lea el documento para la línea de tiempo.
+    AGENTE_URL: http://agente:8000
+    CRONOLOGIA_AL_INDEXAR: ${CRONOLOGIA_AL_INDEXAR:-true}
   networks: [interna, externa]
 
 services:
@@ -91,19 +104,74 @@ services:
     # Necesita salida a internet para actualizar firmas.
     networks: [interna, externa]
 
-  # Aplica las migraciones una sola vez, antes de arrancar la API y el worker.
-  migrar:
-    <<: *backend
-    restart: "no"
-    command: ["alembic", "upgrade", "head"]
+  # API pública (Spring Boot). Aplica las migraciones de Flyway al arrancar. Sin salida a internet.
+  api:
+    <<: *endurecido
+    build:
+      context: ../api-java
+    image: medtender-api:prod
+    environment:
+      SPRING_PROFILES_ACTIVE: produccion   # logs JSON
+      ENTORNO: produccion
+      CONFIAR_PROXY: "true"
+      ALLOW_TENANT_SIGNUP: "false"
+      # Cuentas personales: el correo se confirma antes de subir o consultar. Requiere un servidor SMTP.
+      CORREO_VERIFICACION_OBLIGATORIA: "true"
+      # Sprint 40: secretos TOTP cifrados con su propia clave y dos pasos obligatorios para administradores.
+      CIFRADO_CLAVE: ${CIFRADO_CLAVE:?defina CIFRADO_CLAVE (openssl rand -base64 32)}
+      DATOS_CLAVE: ${DATOS_CLAVE:?defina DATOS_CLAVE (openssl rand -base64 32)}
+      DOS_PASOS_ADMINS: "true"
+      CORREO_BASE_URL: https://${DOMINIO:?defina DOMINIO}
+      # Notificaciones push (infra/scripts/generar_vapid.py). Vacías: quedan apagadas.
+      PUSH_CLAVE_PUBLICA: ${PUSH_CLAVE_PUBLICA:-}
+      PUSH_CLAVE_PRIVADA: ${PUSH_CLAVE_PRIVADA:-}
+      PUSH_CONTACTO: ${PUSH_CONTACTO:-}
+      SPRING_MAIL_HOST: ${SMTP_HOST:-}
+      SPRING_MAIL_PORT: ${SMTP_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SMTP_USER:-}
+      SPRING_MAIL_PASSWORD: ${SMTP_PASSWORD:-}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"
+      DATABASE_URL: jdbc:postgresql://postgres:5432/medtender
+      # La API opera con el rol sin privilegios `medtender_app` (RLS en vigor); Flyway migra como propietario.
+      DATABASE_USER: medtender_app
+      DATABASE_PASSWORD: ${APP_DB_PASSWORD:?defina APP_DB_PASSWORD}
+      MIGRACION_USER: medtender
+      MIGRACION_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?defina APP_DB_PASSWORD}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET}
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+      ERRORES_DSN: ${ERRORES_DSN_API:-}
+      AGENTE_URL: http://agente:8000
+      AGENTE_TOKEN: ${INTERNAL_TOKEN:?defina INTERNAL_TOKEN}
+      ANTIVIRUS_BACKEND: clamav
+      CLAMAV_HOST: clamav
+      CORS_ORIGINS: https://${DOMINIO:?defina DOMINIO}
+      EPHEMERAL_DIR: /var/medtender-ephemeral
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-300}
+    volumes:
+      - ephemeral:/var/medtender-ephemeral
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 60s
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+    # «externa» solo da salida a internet (correo SMTP y contraseñas filtradas); no publica puertos.
+    networks: [interna, externa]
 
-  api:
-    <<: *backend
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000",
-              "--proxy-headers", "--forwarded-allow-ips", "*", "--no-access-log"]
+  # Agente de IA (FastAPI). Solo la API Java le habla, con X-Internal-Token. Nunca se publica.
+  agente:
+    <<: *agente
+    secrets: [vertex]
     volumes:
       - ephemeral:/var/medtender-ephemeral
     healthcheck:
@@ -114,16 +182,17 @@ services:
       retries: 5
       start_period: 20s
     depends_on:
-      migrar:
-        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
-      clamav:
-        condition: service_healthy
+      api:
+        condition: service_healthy   # Flyway ya creó el rol medtender_app
 
   worker:
-    <<: *backend
+    <<: *agente
     command: ["arq", "app.worker.WorkerSettings"]
+    secrets: [vertex]
     volumes:
       - ephemeral:/var/medtender-ephemeral
     healthcheck:
@@ -133,14 +202,20 @@ services:
       retries: 3
       start_period: 40s
     depends_on:
-      migrar:
-        condition: service_completed_successfully
+      api:
+        condition: service_healthy   # Flyway ya aplicó las migraciones
       redis:
         condition: service_healthy
 
   backup:
-    image: pgvector/pgvector:pg16
+    build:
+      context: ./backup
+    image: medtender-backup:prod
     restart: unless-stopped
+    # Credenciales del destino remoto (ver backup/rclone.env.example). Sin el archivo, solo copias locales.
+    env_file:
+      - path: ./backup/rclone.env
+        required: false
     entrypoint: ["bash", "/scripts/backup.sh"]
     command: ["loop"]
     environment:
@@ -151,12 +226,18 @@ services:
       BACKUP_PASSPHRASE: ${BACKUP_PASSPHRASE:?defina BACKUP_PASSPHRASE porque los respaldos contienen texto confidencial}
       RETENCION_DIAS: ${BACKUP_RETENCION_DIAS:-14}
       INTERVALO_HORAS: ${BACKUP_INTERVALO_HORAS:-24}
+      BACKUP_REMOTO: ${BACKUP_REMOTO:-}
+      BACKUP_REMOTO_RETENCION_DIAS: ${BACKUP_REMOTO_RETENCION_DIAS:-14}
+      RESTAURACION_INTERVALO_DIAS: ${RESTAURACION_INTERVALO_DIAS:-30}
+      ESTADO_DIR: /estado  # métricas del respaldo para el monitoreo (sin las copias)
     volumes:
       - ./backup:/scripts:ro
       - ${BACKUP_DIR:-backups}:/backups
+      - estado:/estado
     healthcheck:
-      # Sana si hubo una copia correcta en las últimas 36 h.
-      test: ["CMD-SHELL", "test -f /backups/ultimo_ok && [ $$(( $$(date +%s) - $$(cat /backups/ultimo_ok) )) -lt 129600 ]"]
+      # Sana si hubo una copia correcta en las últimas 36 h (y fuera del equipo, si está configurada) y la última
+      # restauración de prueba no falló.
+      test: ["CMD-SHELL", "reciente() { test -f $$1 && [ $$(( $$(date +%s) - $$(cat $$1) )) -lt 129600 ]; }; reciente /backups/ultimo_ok && test ! -f /backups/restauracion_fallo && { test -z \"$$BACKUP_REMOTO\" || reciente /backups/remoto_ok; }"]
       interval: 1h
       timeout: 10s
       retries: 1
@@ -164,11 +245,17 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    networks: [interna]
+    # «externa» solo da salida a internet (la copia fuera del equipo (BACKUP_REMOTO)); no publica puertos.
+    networks: [interna, externa]
 
   caddy:
     build:
       context: ../frontend
+      args:
+        VITE_URL_PUBLICA: https://${DOMINIO:?defina DOMINIO}
+        VITE_RESPONSABLE: ${VITE_RESPONSABLE:-}
+        VITE_CONTACTO_PRIVACIDAD: ${VITE_CONTACTO_PRIVACIDAD:-}
+        VITE_ERRORES_DSN: ${VITE_ERRORES_DSN:-}
     image: medtender-web:prod
     restart: unless-stopped
     ports:
@@ -178,6 +265,7 @@ services:
     environment:
       DOMINIO: ${DOMINIO:?defina DOMINIO}
       ACME_EMAIL: ${ACME_EMAIL:?defina ACME_EMAIL}
+      ERRORES_UPSTREAM: ${ERRORES_UPSTREAM:-}  # glitchtip:8000 si usas docker-compose.errores.yml
     volumes:
       - caddy_data:/data
       - caddy_config:/config
@@ -187,10 +275,15 @@ services:
     networks: [externa, interna]
 
 networks:
-  # Sin salida a internet: aquí viven la base de datos, Redis y los respaldos.
+  # Sin salida a internet: por aquí se habla con la base de datos y Redis.
   interna:
     internal: true
   externa: {}
+
+secrets:
+  # JSON de la cuenta de servicio de Google Cloud (rol «Agent Platform User»). Fuera del repositorio.
+  vertex:
+    file: ${VERTEX_CREDENCIALES_ARCHIVO:?defina VERTEX_CREDENCIALES_ARCHIVO con la ruta del JSON de la cuenta de servicio}
 
 volumes:
   pgdata:
@@ -198,5 +291,6 @@ volumes:
   clamav-db:
   ephemeral:
   backups:
+  estado:
   caddy_data:
   caddy_config:

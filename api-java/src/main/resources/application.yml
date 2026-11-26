@@ -1,0 +1,150 @@
+spring:
+  application:
+    name: medtender-api
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5434/medtender}
+    # En despliegue la API se conecta con el rol `medtender_app` (sin superusuario ni BYPASSRLS): asi las
+    # politicas de aislamiento por tenant (V8) se aplican de verdad. Las migraciones usan el propietario.
+    username: ${DATABASE_USER:medtender}
+    password: ${DATABASE_PASSWORD:medtender}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      connection-timeout: 10000
+  jpa:
+    open-in-view: false          # nada retiene una conexion mientras se calcula un hash o se espera al agente
+    hibernate:
+      ddl-auto: none             # el esquema es de Flyway
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+    url: ${MIGRACION_URL:${DATABASE_URL:jdbc:postgresql://localhost:5434/medtender}}
+    user: ${MIGRACION_USER:${DATABASE_USER:medtender}}
+    password: ${MIGRACION_PASSWORD:${DATABASE_PASSWORD:medtender}}
+    placeholders:
+      app_password: ${APP_DB_PASSWORD:medtender_app}
+    # Bases ya creadas por Alembic (esquema equivalente a V1-V6): se toman como punto de partida.
+    baseline-on-migrate: true
+    baseline-version: 6
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6380/0}
+      timeout: 1s
+      connect-timeout: 1s
+  jackson:
+    property-naming-strategy: SNAKE_CASE   # mismo contrato JSON que la API anterior
+    default-property-inclusion: always
+    deserialization:
+      fail-on-unknown-properties: false
+  web:
+    error:
+      include-message: never
+      include-stacktrace: never
+  threads:
+    virtual:
+      enabled: true
+  servlet:
+    multipart:
+      resolve-lazily: true   # el controlador autoriza y aplica limites ANTES de aceptar los bytes
+
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health,prometheus
+      path-mapping:
+        prometheus: metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    mail:
+      # El correo no decide si la API está viva: caído o sin configurar, lo demás funciona.
+      enabled: false
+  metrics:
+    tags:
+      application: medtender-api
+    distribution:
+      # Cubetas para la latencia del 95 % en las alertas y el panel.
+      slo:
+        http.server.requests: 100ms,500ms,1s,2s,5s,10s,30s
+
+medtender:
+  entorno: ${ENTORNO:desarrollo}          # desarrollo | produccion
+  confiar-proxy: ${CONFIAR_PROXY:false}
+  jwt:
+    secret: ${JWT_SECRET:}
+    access-minutes: ${ACCESS_TOKEN_MINUTES:30}
+    refresh-days: ${REFRESH_TOKEN_DAYS:7}
+  allow-tenant-signup: ${ALLOW_TENANT_SIGNUP:true}
+  # Cuentas personales (pacientes y familias): se pueden abrir aunque el alta de organizaciones este cerrada.
+  registro-personal-abierto: ${REGISTRO_PERSONAL_ABIERTO:true}
+  # Cuentas seguras (sprint 40).
+  errores:
+    dsn: ${ERRORES_DSN:}                  # GlitchTip; vacío: apagado
+  datos:
+    # La misma clave del agente: la API solo la usa para «Descargar mis datos».
+    clave: ${DATOS_CLAVE:}
+  cifrado:
+    clave: ${CIFRADO_CLAVE:}             # 32 bytes en base64 (openssl rand -base64 32); cifra los secretos TOTP
+  contrasenas:
+    consultar-filtraciones: ${CONTRASENAS_CONSULTAR_FILTRACIONES:true}   # Have I Been Pwned por k-anonimato
+  seguridad:
+    dos-pasos-admins: ${DOS_PASOS_ADMINS:false}   # obliga a los administradores de organizaciones
+  push:
+    # Claves VAPID (infra/scripts/generar_vapid.py). Sin ellas, las notificaciones quedan apagadas.
+    clave-publica: ${PUSH_CLAVE_PUBLICA:}
+    clave-privada: ${PUSH_CLAVE_PRIVADA:}
+    contacto: ${PUSH_CONTACTO:}   # mailto: o https: para que el servicio de push pueda avisar de un problema
+  correo:
+    # Si es true, una cuenta personal sin correo verificado no puede subir ni consultar. Actívalo en producción.
+    verificacion-obligatoria: ${CORREO_VERIFICACION_OBLIGATORIA:false}
+    base-url: ${CORREO_BASE_URL:http://localhost:8088}
+    remitente: ${CORREO_REMITENTE:no-responder@medtender.local}
+  cors-origins: ${CORS_ORIGINS:http://localhost:5173}
+  metrics-token: ${METRICS_TOKEN:}
+  ingesta:
+    ephemeral-dir: ${EPHEMERAL_DIR:${java.io.tmpdir}/medtender-ephemeral}
+    max-upload-mb: ${MAX_UPLOAD_MB:300}
+    embedding-model-default: ${EMBEDDING_MODEL_DEFAULT:gemini-embedding-001}
+    ocr-version-actual: ${OCR_VERSION_ACTUAL:tesseract-5.5-v1}
+    antivirus:
+      backend: ${ANTIVIRUS_BACKEND:clamav}   # clamav | noop (solo desarrollo)
+      host: ${CLAMAV_HOST:localhost}
+      port: ${CLAMAV_PORT:3310}
+      timeout-s: ${CLAMAV_TIMEOUT_S:120}
+    agente:
+      url: ${AGENTE_URL:http://localhost:8010}
+      token: ${AGENTE_TOKEN:}
+      timeout-s: 10
+      timeout-consulta-s: 90   # una consulta puede esperar al LLM y a su modelo de respaldo
+      reintentos: 3
+  rate-limit:
+    habilitado: ${RATE_LIMIT_HABILITADO:true}
+    backend: ${RATE_LIMIT_BACKEND:redis}   # redis | memoria
+    general-ip-min: 600
+    login-ip-min: 20
+    login-fallos-par: 5
+    login-fallos-ventana-s: 900
+    registro-ip-hora: 5
+    refresh-ip-min: 60
+    consulta-usuario-min: 20
+    consulta-usuario-dia: 500
+    subida-usuario-hora: 60
+    reindex-usuario-hora: 6
+
+---
+spring:
+  config:
+    activate:
+      on-profile: produccion
+logging:
+  structured:
+    format:
+      console: logstash     # una linea JSON por evento, con request_id, usuario_id y tenant_id (MDC)

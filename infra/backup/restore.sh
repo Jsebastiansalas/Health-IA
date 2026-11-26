@@ -6,6 +6,7 @@
 # Uso: restore.sh <archivo.dump[.enc]> [base_destino]
 # Variables: PGHOST PGUSER PGPASSWORD, BACKUP_PASSPHRASE (si el archivo es .enc),
 #            BASE_ORIGEN (opcional): compara los conteos con esa base y falla si difieren.
+#            CONTEOS (opcional): archivo .conteos escrito al copiar; exige esos conteos exactos.
 set -euo pipefail
 
 archivo="${1:?Uso: restore.sh <archivo.dump[.enc]> [base_destino]}"
@@ -48,7 +49,7 @@ pg_restore --no-owner --exit-on-error --dbname="$destino" "$trabajo"
 conteo() { psql -d "$1" -tAc "SELECT count(*) FROM $2"; }
 # Todas las tablas del esquema público (salvo el control de migraciones), no una lista fija: así
 # la verificación cubre también las tablas que añadan migraciones futuras.
-tablas="$(psql -d "$destino" -tAc "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename <> 'alembic_version' ORDER BY tablename")"
+tablas="$(psql -d "$destino" -tAc "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename NOT IN ('alembic_version', 'flyway_schema_history') ORDER BY tablename")"
 estado=0
 log "Contenido restaurado:"
 for t in $tablas; do
@@ -60,9 +61,19 @@ for t in $tablas; do
     fi
     echo "$linea"
 done
+if [ -n "${CONTEOS:-}" ]; then
+    while read -r t esperado; do
+        n="$(conteo "$destino" "$t" 2> /dev/null || echo 'no existe')"
+        if [ "$n" != "$esperado" ]; then
+            log "ERROR: ${t} tiene ${n} filas y al copiar había ${esperado}"
+            estado=1
+        fi
+    done < "$CONTEOS"
+fi
 vectores="$(psql -d "$destino" -tAc "SELECT count(*) FROM fragmentos WHERE embedding IS NOT NULL")"
 hnsw="$(psql -d "$destino" -tAc "SELECT count(*) FROM pg_indexes WHERE indexname='idx_fragmentos_embedding_hnsw'")"
-version="$(psql -d "$destino" -tAc "SELECT version_num FROM alembic_version")"
+# Flyway (API Java) es quien migra; el historial de Alembic solo existe en bases anteriores.
+version="$(psql -d "$destino" -tAc "SELECT version FROM flyway_schema_history WHERE success AND version IS NOT NULL ORDER BY installed_rank DESC LIMIT 1")"
 echo "  fragmentos con vector: $vectores | índice HNSW: $hnsw | migración: $version"
 [ "$hnsw" = "1" ] || { log "ERROR: falta el índice HNSW"; estado=1; }
 

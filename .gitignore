@@ -32,3 +32,21 @@ medtender-ephemeral/
 !.env.example
 !.env.prod.example
 infra/backups/
+
+# Java
+target/
+*.class
+.mvn/wrapper/maven-wrapper.jar
+
+# Registro de sesiones de Impeccable (local)
+.impeccable/questions/
+
+# Material crudo del recorrido scroll-world (imágenes y videos originales de Flow)
+docs/scroll-world/crudo/
+
+# Herramientas locales: capturas de revisión de Impeccable y carpeta de AiderDesk
+.impeccable/review/
+.aider-desk/
+
+# Credenciales del destino de los respaldos
+infra/backup/rclone.env

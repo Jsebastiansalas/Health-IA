@@ -1,0 +1,63 @@
+[project]
+name = "medtender-backend"
+version = "0.1.0"
+description = "MedTender RAG: gestor inteligente de licitaciones médicas y auditoría en salud"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "email-validator>=2.2",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30",
+    "pgvector>=0.3.6",
+    "bcrypt>=4.2",
+    "pypdfium2>=4.30",
+    "pdfplumber>=0.11",
+    "pytesseract>=0.3.13",
+    "pillow>=11",
+    "tiktoken>=0.8",
+    "arq>=0.26",
+    "httpx>=0.28",
+    "prometheus-client>=0.21",
+    "pillow-heif>=1.8.1",
+    "anthropic>=1",
+    "pyjwt[crypto]>=2.10",
+    "sentry-sdk>=2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.28",
+    "testcontainers[postgres]>=4.8",
+    "psycopg[binary]>=3.2",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "reportlab>=4.2",
+    "pypdf>=5.1",  # genera PDFs de prueba
+    "respx>=0.21",
+    "pytest-timeout>=2.3",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+# Una prueba colgada (p. ej. un bloqueo de base de datos) falla con su traza en vez de congelar la suite.
+timeout = 240
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "ASYNC"]
+ignore = ["B008"]  # Depends() en argumentos por defecto es el patrón de FastAPI
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501", "ASYNC240"]
+"scripts/*" = ["E501", "ASYNC240", "T201"]  # utilidades de línea de comandos
+"app/medicamentos/*" = ["E501"]  # prompts y textos largos en español

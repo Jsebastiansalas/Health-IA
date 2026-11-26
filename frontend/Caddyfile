@@ -5,6 +5,13 @@
 # DOMINIO=http://localhost         -> solo HTTP, sin TLS (pruebas locales detrás de otro proxy).
 {
 	email {$ACME_EMAIL}
+	# Detrás de un túnel o proxy privado (p. ej. Cloudflare Tunnel con cloudflared en el mismo equipo) la IP real
+	# del visitante viene en Cf-Connecting-Ip. Solo se confía en esa cabecera si la conexión llega desde un rango
+	# privado; una conexión directa desde internet (VPS con Caddy de cara al público) la ignora.
+	servers {
+		trusted_proxies static private_ranges
+		client_ip_headers Cf-Connecting-Ip X-Forwarded-For
+	}
 }
 
 {$DOMINIO} {
@@ -23,20 +30,67 @@
 		-Server
 	}
 
-	# Nada operativo se publica: ni métricas ni documentación de la API.
+	# Nada operativo se publica: ni métricas ni salud ni documentación.
 	@internos path /metrics /health /docs /docs/* /redoc /openapi.json
 	handle @internos {
 		respond 404
 	}
 
+	# Buscadores: solo la portada y las páginas legales. Se arman aquí porque dependen del dominio.
+	handle /robots.txt {
+		header Content-Type "text/plain; charset=utf-8"
+		respond <<TXT
+			User-agent: *
+			Disallow: /api/
+			Disallow: /expedientes
+			Disallow: /cuenta
+			Disallow: /recordatorios
+			Disallow: /compartir
+			Disallow: /verificar-correo
+			Disallow: /restablecer
+			Sitemap: https://{http.request.host}/sitemap.xml
+			TXT 200
+	}
+	handle /sitemap.xml {
+		header Content-Type "application/xml; charset=utf-8"
+		respond <<XML
+			<?xml version="1.0" encoding="UTF-8"?>
+			<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+			  <url><loc>https://{http.request.host}/</loc></url>
+			  <url><loc>https://{http.request.host}/organizaciones</loc></url>
+			  <url><loc>https://{http.request.host}/privacidad</loc></url>
+			  <url><loc>https://{http.request.host}/terminos</loc></url>
+			</urlset>
+			XML 200
+	}
+
+	# Rastreo de errores de la web: solo la ruta de recepción va a GlitchTip, y sin nada que identifique a la
+	# persona (cookies, sesión, página, navegador, idioma ni IP). El panel de GlitchTip no se publica.
+	@errores path_regexp ^/api/[0-9]+/envelope/$
+	handle @errores {
+		@apagado expression `"{$ERRORES_UPSTREAM}" == ""`
+		respond @apagado 404
+		reverse_proxy {$ERRORES_UPSTREAM:127.0.0.1:1} {
+			header_up -Cookie
+			header_up -Authorization
+			header_up -Referer
+			header_up -User-Agent
+			header_up -Accept-Language
+			header_up -Cf-Connecting-Ip
+			header_up -X-Forwarded-For
+		}
+	}
+
 	handle /api/* {
-		# Un pliego puede pesar cientos de MB (MAX_UPLOAD_MB en la API es el límite real).
+		# Un pliego puede pesar cientos de MB (MAX_UPLOAD_MB en la API Java es el límite real).
 		request_body {
 			max_size 320MB
 		}
-		reverse_proxy api:8000 {
+		reverse_proxy api:8080 {
 			# Caddy pone en X-Forwarded-For la IP real del cliente (descarta la que envíe el cliente).
 			header_up X-Request-ID {http.request.uuid}
+			# Una sola IP (la del visitante), sin acumular saltos: la API toma la última de X-Forwarded-For.
+			header_up X-Forwarded-For {client_ip}
 			flush_interval -1
 			transport http {
 				read_timeout 5m
@@ -45,10 +99,23 @@
 		}
 	}
 
+	# App instalable: si llega un «Compartir» antes de que el service worker esté activo (lo atiende él), se
+	# redirige a la página que pide iniciar sesión; el archivo de ese envío no se guarda en el servidor.
+	@compartir {
+		method POST
+		path /compartir
+	}
+	handle @compartir {
+		redir /compartir 303
+	}
+
 	handle {
 		root * /srv
 		@indice path /index.html /
 		header @indice Cache-Control "no-cache"
+		# El service worker y el manifiesto deben revisarse siempre: así las versiones nuevas llegan enseguida.
+		@pwa path /sw.js /manifest.webmanifest /registerSW.js
+		header @pwa Cache-Control "no-cache"
 		@estaticos path /assets/*
 		header @estaticos Cache-Control "public, max-age=31536000, immutable"
 		try_files {path} /index.html

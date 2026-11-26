@@ -1,0 +1,237 @@
+"""Operaciones administrativas desde la línea de comandos.
+
+    python -m app.cli verificar-config
+    python -m app.cli crear-tenant --nombre "Hospital X" --nit 900123 --email admin@hospital.co
+    python -m app.cli cargar-medicamentos [--fuente VIGENTE --fuente PRECIO ...]
+    python -m app.cli cargar-fichas ibuprofeno paracetamol ...
+
+Sirve para dar de alta la primera organización en producción sin dejar abierto el registro
+público (ALLOW_TENANT_SIGNUP=false). La contraseña se lee de MEDTENDER_ADMIN_PASSWORD o se pide
+por teclado; nunca se pasa como argumento (quedaría en el historial del shell).
+"""
+
+import argparse
+import asyncio
+import getpass
+import os
+import sys
+
+from pydantic import EmailStr, TypeAdapter, ValidationError
+from sqlalchemy import Text, or_, select, type_coerce
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.attributes import flag_modified
+
+from app.core.config import get_settings
+from app.core.db import fijar_sistema, get_engine, get_sessionmaker
+from app.core.enums import PoliticaBorrado, RolGlobal
+from app.core.security import hash_password
+from app.models import Consulta, ExtraccionLinea, Tenant, Usuario
+from app.privacidad.cifrado_columnas import PREFIJO
+
+
+def verificar_config() -> int:
+    s = get_settings()
+    fatales, avisos = s.problemas_produccion()
+    print(f"Entorno: {s.entorno}")
+    for f in fatales:
+        print(f"  [ERROR] {f}")
+    for a in avisos:
+        print(f"  [AVISO] {a}")
+    if not fatales and not avisos:
+        print("  Configuración correcta.")
+    return 1 if fatales and s.entorno == "produccion" else 0
+
+
+async def _crear_tenant(
+    nombre: str, nit: str, email: str, nombre_admin: str, password: str, politica: str
+) -> int:
+    try:
+        async with get_sessionmaker()() as session:
+            tenant = Tenant(nombre=nombre, nit=nit, politica_borrado=politica)
+            session.add(tenant)
+            await session.flush()
+            session.add(
+                Usuario(
+                    tenant_id=tenant.id,
+                    email=email.lower(),
+                    password_hash=hash_password(password),
+                    nombre_completo=nombre_admin,
+                    rol_global=RolGlobal.ADMIN_TENANT,
+                    activo=True,
+                )
+            )
+            await session.commit()
+    except IntegrityError:
+        print("Error: ese NIT o ese correo ya están registrados.", file=sys.stderr)
+        return 1
+    finally:
+        await get_engine().dispose()
+    print(f"Organización «{nombre}» creada con administrador {email.lower()}.")
+    return 0
+
+
+async def _cargar_medicamentos(fuentes: list[str]) -> int:
+    import httpx
+
+    from app.medicamentos.carga import CONJUNTOS, cargar_fuente
+
+    codigo = 0
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(180.0, connect=20.0)) as cliente:
+            for fuente in fuentes:
+                print(f"Cargando {CONJUNTOS[fuente].nombre} ({CONJUNTOS[fuente].dataset_id})…")
+                try:
+                    async with get_sessionmaker()() as session:
+                        filas = await cargar_fuente(
+                            session, cliente, fuente, avance=lambda m: print(f"  {m}", flush=True)
+                        )
+                    print(f"  Listo: {filas} filas.")
+                except Exception as exc:  # una fuente que falla no tumba las demás
+                    print(f"  Error en {fuente}: {exc}", file=sys.stderr)
+                    codigo = 1
+    finally:
+        await get_engine().dispose()
+    return codigo
+
+
+async def _cargar_fichas(principios: list[str], por_principio: int) -> int:
+    import httpx
+
+    from app.medicamentos.fichas import ATRIBUCION, cargar_fichas
+
+    if not get_settings().fichas_cima_activas:
+        print(
+            "Las fichas de CIMA están desactivadas (FICHAS_CIMA_ACTIVAS=false): sus condiciones de "
+            "reutilización no están confirmadas. Actívalas solo tras verificarlas.",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        async with (
+            httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=20.0)) as cliente,
+            get_sessionmaker()() as session,
+        ):
+            n = await cargar_fichas(
+                session,
+                cliente,
+                principios,
+                por_principio=por_principio,
+                avance=lambda m: print(f"  {m}", flush=True),
+            )
+        print(f"Listo: {n} secciones. {ATRIBUCION}")
+        return 0
+    except Exception as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        await get_engine().dispose()
+
+
+async def _cifrar_historial(lote: int = 200) -> int:
+    """Cifra lo guardado antes de tener DATOS_CLAVE: preguntas, respuestas y lo extraído para la
+    línea de tiempo. Se puede repetir. Devuelve cuántos registros cifró."""
+    if not get_settings().datos_clave:
+        raise SystemExit("Define DATOS_CLAVE antes de cifrar el historial")
+
+    def sin_cifrar(columna):
+        return ~type_coerce(columna, JSONB).has_key("cifrado")
+
+    tablas = [
+        (
+            Consulta,
+            or_(
+                ~type_coerce(Consulta.pregunta, Text).startswith(PREFIJO, autoescape=True),
+                sin_cifrar(Consulta.respuesta),
+            ),
+            ("pregunta", "respuesta"),
+        ),
+        (ExtraccionLinea, sin_cifrar(ExtraccionLinea.datos), ("datos",)),
+    ]
+    total = 0
+    for modelo, pendientes, columnas in tablas:
+        while True:
+            async with get_sessionmaker()() as session:
+                fijar_sistema(session)
+                filas = (await session.scalars(select(modelo).where(pendientes).limit(lote))).all()
+                if not filas:
+                    break
+                for fila in filas:  # al reescribirlas, el tipo de columna las cifra
+                    for columna in columnas:
+                        flag_modified(fila, columna)
+                await session.commit()
+                total += len(filas)
+    return total
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(prog="python -m app.cli")
+    sub = p.add_subparsers(dest="comando", required=True)
+    sub.add_parser("verificar-config", help="Revisa la configuración de producción")
+    sub.add_parser("cifrar-historial", help="Cifra el historial guardado antes de DATOS_CLAVE")
+    m = sub.add_parser(
+        "cargar-medicamentos",
+        help="Descarga los datos abiertos de INVIMA (datos.gov.co) a la base de medicamentos",
+    )
+    m.add_argument(
+        "--fuente",
+        action="append",
+        choices=["VIGENTE", "RENOVACION", "OTROS", "VENCIDO", "PRECIO"],
+        help="Repetible. Sin esta opción se cargan todas.",
+    )
+    fi = sub.add_parser(
+        "cargar-fichas",
+        help="Descarga fichas técnicas oficiales (CIMA, AEMPS) por principio activo. "
+        "Verifica antes las condiciones de reutilización de la fuente.",
+    )
+    fi.add_argument(
+        "principios", nargs="+", help="Principios activos, p. ej. ibuprofeno paracetamol"
+    )
+    fi.add_argument("--por-principio", type=int, default=2)
+    c = sub.add_parser("crear-tenant", help="Crea una organización y su administrador")
+    c.add_argument("--nombre", required=True)
+    c.add_argument("--nit", required=True)
+    c.add_argument("--email", required=True)
+    c.add_argument("--nombre-admin", default="Administrador")
+    c.add_argument(
+        "--politica-borrado",
+        choices=[e.value for e in PoliticaBorrado],
+        default=PoliticaBorrado.INMEDIATO.value,
+    )
+    args = p.parse_args(argv)
+
+    if args.comando == "verificar-config":
+        return verificar_config()
+    if args.comando == "cifrar-historial":
+        print(f"Registros guardados cifrados: {asyncio.run(_cifrar_historial())}")
+        return 0
+    if args.comando == "cargar-medicamentos":
+        todas = ["VIGENTE", "RENOVACION", "OTROS", "VENCIDO", "PRECIO"]
+        return asyncio.run(_cargar_medicamentos(args.fuente or todas))
+
+    if args.comando == "cargar-fichas":
+        return asyncio.run(_cargar_fichas(args.principios, args.por_principio))
+
+    # Mismo validador que usa el login: un correo que la API rechazaría dejaría un
+    # administrador que nunca podría ingresar.
+    try:
+        args.email = TypeAdapter(EmailStr).validate_python(args.email)
+    except ValidationError as exc:
+        motivo = str(exc.errors()[0]["msg"]).removeprefix("value is not a valid email address: ")
+        print(f"Error: correo inválido ({motivo})", file=sys.stderr)
+        return 1
+
+    password = os.environ.get("MEDTENDER_ADMIN_PASSWORD") or getpass.getpass("Contraseña: ")
+    if len(password) < 10 or len(password.encode()) > 72:
+        print("Error: la contraseña debe tener entre 10 caracteres y 72 bytes.", file=sys.stderr)
+        return 1
+    return asyncio.run(
+        _crear_tenant(
+            args.nombre, args.nit, args.email, args.nombre_admin, password, args.politica_borrado
+        )
+    )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

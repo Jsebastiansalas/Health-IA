@@ -1,0 +1,76 @@
+# Calidad de la IA con el proveedor REAL, cada noche: falla si una métrica baja de su mínimo
+# (agente/evaluacion/base.json). Solo se envían documentos inventados.
+#
+# Para activarlo, en GitHub → Settings → Secrets and variables → Actions:
+#   - Gemini API: el secreto GEMINI_API_KEY. Usa una clave distinta de la de la beta: gasta su cuota.
+#   - Vertex AI: la variable IA_PROVEEDOR=vertex, la variable VERTEX_PROYECTO y el secreto
+#     VERTEX_CREDENCIALES_JSON (la clave de la cuenta de servicio).
+# Sin credenciales el flujo termina en verde y lo avisa. GitHub solo ejecuta las tareas programadas de la
+# rama por defecto (main); mientras tanto se puede lanzar a mano con «Run workflow» cuando esté en ella.
+#
+# Solo `schedule` y `workflow_dispatch`: un pull request de un tercero no puede ejecutar esto ni leer las claves.
+name: Evaluación de la IA
+
+on:
+  schedule:
+    - cron: "17 8 * * *" # 3:17 a. m. en Colombia
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evaluacion-ia
+  cancel-in-progress: false
+
+jobs:
+  evaluacion:
+    name: Calidad con el proveedor real
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      IA_PROVEEDOR: ${{ vars.IA_PROVEEDOR || 'gemini_api' }}
+      VERTEX_PROYECTO: ${{ vars.VERTEX_PROYECTO }}
+      IA_TOPE_DIARIO_USD: "2"
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: ¿Hay credenciales?
+        id: credenciales
+        env:
+          GEMINI: ${{ secrets.GEMINI_API_KEY }}
+          VERTEX: ${{ secrets.VERTEX_CREDENCIALES_JSON }}
+        run: |
+          if { [ "$IA_PROVEEDOR" = "vertex" ] && [ -n "$VERTEX" ] && [ -n "$VERTEX_PROYECTO" ]; } ||
+             { [ "$IA_PROVEEDOR" != "vertex" ] && [ -n "$GEMINI" ]; }; then
+            echo "hay=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Evaluación omitida: faltan las credenciales del proveedor de IA."
+          fi
+
+      - name: Clave de la cuenta de servicio de Vertex
+        if: steps.credenciales.outputs.hay == 'si' && env.IA_PROVEEDOR == 'vertex'
+        env:
+          VERTEX: ${{ secrets.VERTEX_CREDENCIALES_JSON }}
+        run: |
+          (umask 077 && printf '%s' "$VERTEX" > "$RUNNER_TEMP/vertex.json")
+          echo "VERTEX_CREDENCIALES=$RUNNER_TEMP/vertex.json" >> "$GITHUB_ENV"
+
+      - name: Evaluar
+        if: steps.credenciales.outputs.hay == 'si'
+        working-directory: agente
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        # Salida 1: una métrica bajó. Salida 2: no se pudo evaluar (el proveedor no respondió).
+        run: |
+          pipx install uv
+          uv run --frozen python -m evaluacion.correr --salida informe.json --pausa 7
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() && steps.credenciales.outputs.hay == 'si' }}
+        with:
+          name: informe-de-evaluacion
+          path: agente/informe.json # documentos y respuestas inventados
+          if-no-files-found: ignore
+          retention-days: 30

@@ -1,3 +1,7 @@
+# Desarrollo local. Requiere infra/.env (ver .env.example) y agente/.env con las keys de IA.
+#
+#   docker compose up -d --build
+#   # web: http://localhost:8088
 name: medtender
 
 services:
@@ -41,26 +45,58 @@ services:
       timeout: 10s
       retries: 20
 
+  # API pública (Spring Boot): identidad, expedientes, ingesta, límites y auditoría. Aplica las
+  # migraciones de Flyway al arrancar. Es lo único que el frontend ve.
   api:
     build:
-      context: ../backend
-    image: medtender-backend:dev
-    env_file:
-      - ../backend/.env
-    environment: &entorno_backend
-      DATABASE_URL: postgresql+asyncpg://medtender:${POSTGRES_PASSWORD:-medtender}@postgres:5432/medtender
+      context: ../api-java
+    image: medtender-api:dev
+    environment:
+      # La misma que el agente (se define una sola vez, en infra/.env): cifra el historial.
+      DATOS_CLAVE: ${DATOS_CLAVE:-}
+      DATABASE_URL: jdbc:postgresql://postgres:5432/medtender
+      # La API opera con el rol sin privilegios `medtender_app` (RLS en vigor); Flyway migra como propietario.
+      DATABASE_USER: medtender_app
+      DATABASE_PASSWORD: ${APP_DB_PASSWORD:-medtender_app}
+      MIGRACION_USER: medtender
+      MIGRACION_PASSWORD: ${POSTGRES_PASSWORD:-medtender}
+      # Correo de verificación (opcional en desarrollo): sin SMTP_HOST el correo no sale y el log lo avisa.
+      # true cuando hay un túnel o proxy delante (beta cerrada): toma la IP real de X-Forwarded-For.
+      CONFIAR_PROXY: ${CONFIAR_PROXY:-false}
+      # Dirección pública con la que se abre la web (para los enlaces de los correos). Con un túnel: su URL https.
+      CORREO_BASE_URL: ${CORREO_BASE_URL:-http://localhost:8088}
+      # Notificaciones push (infra/scripts/generar_vapid.py). Vacías: quedan apagadas.
+      PUSH_CLAVE_PUBLICA: ${PUSH_CLAVE_PUBLICA:-}
+      PUSH_CLAVE_PRIVADA: ${PUSH_CLAVE_PRIVADA:-}
+      PUSH_CONTACTO: ${PUSH_CONTACTO:-}
+      CORREO_VERIFICACION_OBLIGATORIA: ${CORREO_VERIFICACION_OBLIGATORIA:-false}
+      CORREO_REMITENTE: ${CORREO_REMITENTE:-no-responder@medtender.local}
+      SPRING_MAIL_HOST: ${SMTP_HOST:-}
+      SPRING_MAIL_PORT: ${SMTP_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SMTP_USER:-}
+      SPRING_MAIL_PASSWORD: ${SMTP_PASSWORD:-}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-medtender_app}
       REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET en infra/.env}
+      AGENTE_URL: http://agente:8000
+      AGENTE_TOKEN: ${INTERNAL_TOKEN:?defina INTERNAL_TOKEN en infra/.env}
       CLAMAV_HOST: clamav
       EPHEMERAL_DIR: /var/medtender-ephemeral
-      COLA_BACKEND: arq
-      OLLAMA_URL: http://ollama:11434
-      # El barrido de purga lo ejecuta el worker (cron), no la API.
-      BARRIDO_HABILITADO: "false"
+      # 5173: Vite en desarrollo. 4173: `vite preview` del build de producción.
+      CORS_ORIGINS: http://localhost:5173,http://localhost:4173
     ports:
-      - "${MT_API_PORT:-8010}:8000"
-    # Volumen dedicado compartido con el worker. Los PDFs nunca salen de aquí.
+      - "${MT_API_PORT:-8010}:8080"
+    # Volumen dedicado compartido con el agente y el worker. Los PDFs nunca salen de aquí.
     volumes:
       - ephemeral:/var/medtender-ephemeral
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,19 +105,71 @@ services:
       clamav:
         condition: service_healthy
 
-  # Extracción, OCR selectivo y fragmentación (Sprint 3) + barrido de purga.
-  worker:
-    image: medtender-backend:dev
-    command: ["arq", "app.worker.WorkerSettings"]
+  # Agente de IA (FastAPI): solo la API Java le habla (X-Internal-Token). No autentica usuarios.
+  agente:
+    build:
+      context: ../agente
+    image: medtender-agente:dev
     env_file:
-      - ../backend/.env
-    environment:
-      <<: *entorno_backend
+      - ../agente/.env
+    environment: &entorno_agente
+      DATOS_CLAVE: ${DATOS_CLAVE:-}
+      DATABASE_URL: postgresql+asyncpg://medtender_app:${APP_DB_PASSWORD:-medtender_app}@postgres:5432/medtender
+      REDIS_URL: redis://redis:6379/0
+      EPHEMERAL_DIR: /var/medtender-ephemeral
+      COLA_BACKEND: arq
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:?defina INTERNAL_TOKEN en infra/.env}
+      OLLAMA_URL: http://ollama:11434
+      # El barrido de purga lo ejecuta el worker (cron), no este proceso.
+      BARRIDO_HABILITADO: "false"
+      # Al terminar de indexar, el worker le pide al agente que lea el documento para la línea de tiempo.
+      AGENTE_URL: http://agente:8000
+    ports:
+      - "127.0.0.1:${MT_AGENTE_PORT:-8012}:8000"   # solo para depurar desde esta máquina
     volumes:
       - ephemeral:/var/medtender-ephemeral
     depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
       api:
-        condition: service_started  # la API aplica las migraciones al arrancar
+        condition: service_healthy  # Flyway ya creó el rol medtender_app
+
+  # Extracción, OCR selectivo, fragmentación, vectorización y purga + barrido de huérfanos.
+  worker:
+    image: medtender-agente:dev
+    command: ["arq", "app.worker.WorkerSettings"]
+    env_file:
+      - ../agente/.env
+    environment:
+      <<: *entorno_agente
+    volumes:
+      - ephemeral:/var/medtender-ephemeral
+    depends_on:
+      agente:
+        condition: service_started
+      api:
+        condition: service_healthy  # Flyway ya aplicó las migraciones
+
+  # Web (build de producción servida por Caddy, solo HTTP): http://localhost:8088
+  # Alternativa con recarga en caliente: cd ../frontend && npm run dev  (http://localhost:5173)
+  web:
+    build:
+      context: ../frontend
+      args:
+        VITE_RESPONSABLE: ${VITE_RESPONSABLE:-}
+        VITE_CONTACTO_PRIVACIDAD: ${VITE_CONTACTO_PRIVACIDAD:-}
+        VITE_ERRORES_DSN: ${VITE_ERRORES_DSN:-}
+    image: medtender-web:dev
+    environment:
+      DOMINIO: http://localhost
+      ACME_EMAIL: dev@localhost
+    ports:
+      - "${MT_WEB_PORT:-8088}:80"
+    depends_on:
+      api:
+        condition: service_healthy
 
   # Proveedor de embeddings local (Fase 2). Se activa con: docker compose --profile local up
   ollama:

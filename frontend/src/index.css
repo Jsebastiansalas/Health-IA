@@ -1,115 +1,277 @@
 @import "tailwindcss";
-@import "@fontsource-variable/fraunces";
-@import "@fontsource/instrument-sans/400.css";
-@import "@fontsource/instrument-sans/500.css";
-@import "@fontsource/instrument-sans/600.css";
-@import "@fontsource-variable/jetbrains-mono";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
 
-/* Dirección: expediente notarial. Papel, tinta, sello rojo para lo probatorio,
-   verde clínico para lo que el sistema ya verificó. */
+/* El tema se elige con data-tema (no con la preferencia del sistema): `dark:` sigue a ese atributo. */
+@custom-variant dark (&:where([data-tema="oscuro"], [data-tema="oscuro"] *));
+
+/* Mundo: el registro clínico. El expediente se lee como una historia clínica en pantalla: el caso arriba,
+   el registro en pestañas, todo en listas precisas, con la cita al lado de cada afirmación.
+   Superficies planas separadas por una costura de 1 px; una sola acción de color (verde azulado clínico);
+   la cita se marca con un resaltado suave. Tema claro por defecto; el oscuro es una opción, nunca el valor inicial.
+   Una sola familia (Geist) y Geist Mono solo para códigos, huellas y cifras. */
+
+/* ---------- Valores por tema ---------- */
+:root,
+:root[data-tema="claro"] {
+  --fondo: #f4f7fa; /* fondo de la aplicación */
+  --panel: #ffffff; /* superficie: tablas, paneles, campos */
+  --panel-2: #eef2f6; /* controles secundarios, hover, pozos */
+  --borde: #d3dce5; /* costura de 1 px */
+  --texto: #14212e;
+  --texto-2: #44566a;
+  --texto-3: #5a6c80;
+  --marino: #0b2e4a; /* banner del caso y titulares de énfasis */
+  --primario: #0e7c86; /* la acción */
+  --primario-osc: #0a6169;
+  --primario-tx: #ffffff;
+  --cita: #fff0b3; /* lo citado */
+  --cita-borde: #e6c84a;
+  --cita-tx: #14212e;
+  --ok: #17734a;
+  --aviso: #8f5400;
+  --peligro: #b42318;
+  color-scheme: light;
+}
+
+:root[data-tema="oscuro"] {
+  --fondo: #000000;
+  --panel: #181818;
+  --panel-2: #1f1f1f;
+  --borde: #313131;
+  --texto: #ececec;
+  --texto-2: #b4b4b4;
+  --texto-3: #9a9a9a;
+  --marino: #272727;
+  --primario: #46c2cd;
+  --primario-osc: #6ad2db;
+  --primario-tx: #06242a;
+  --cita: #4d4513;
+  --cita-borde: #8a7a22;
+  --cita-tx: #f6efc4;
+  --ok: #6fd6a2;
+  --aviso: #e8b866;
+  --peligro: #ff8f86;
+  color-scheme: dark;
+}
+
+/* ---------- Alto contraste (lo elige la persona en Accesibilidad) ---------- */
+:root[data-contraste="alto"] {
+  --fondo: #ffffff;
+  --panel: #ffffff;
+  --panel-2: #eef1f4;
+  --borde: #3d4b59;
+  --texto: #000000;
+  --texto-2: #12202e;
+  --texto-3: #253445;
+  --primario: #00545c;
+  --primario-osc: #003f45;
+  --ok: #0b4f33;
+  --aviso: #5c3700;
+  --peligro: #8a1309;
+}
+
+:root[data-tema="oscuro"][data-contraste="alto"] {
+  --fondo: #000000;
+  --panel: #000000;
+  --panel-2: #161616;
+  --borde: #b8b8b8;
+  --texto: #ffffff;
+  --texto-2: #f2f2f2;
+  --texto-3: #e0e0e0;
+  --primario: #7fe3ec;
+  --primario-osc: #a9eef4;
+  --ok: #9af0c4;
+  --aviso: #ffd48a;
+  --peligro: #ffb3ad;
+}
+
+:root[data-contraste="alto"] :focus-visible { outline: 3px solid var(--primario); outline-offset: 2px; }
+
+/* ---------- Tokens de Tailwind (apuntan a los valores del tema activo) ---------- */
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-borde: var(--borde);
+  --color-texto: var(--texto);
+  --color-texto-2: var(--texto-2);
+  --color-texto-3: var(--texto-3);
+  --color-marino: var(--marino);
+  --color-primario: var(--primario);
+  --color-primario-osc: var(--primario-osc);
+  --color-primario-tx: var(--primario-tx);
+  --color-cita: var(--cita);
+  --color-cita-borde: var(--cita-borde);
+  --color-cita-tx: var(--cita-tx);
+  --color-ok: var(--ok);
+  --color-aviso: var(--aviso);
+  --color-peligro: var(--peligro);
+}
+
 @theme {
-  --color-papel: #f3efe6;
-  --color-papel-2: #e9e3d4;
-  --color-papel-3: #ddd5c2;
-  --color-tinta: #1d1b17;
-  --color-tinta-2: #48443b;
-  --color-grafito: #7b7568;
-  --color-sello: #a4262c;
-  --color-sello-claro: #f4dfdc;
-  --color-clinico: #1f5f5b;
-  --color-clinico-claro: #d8e7e2;
-  --color-ambar: #8f6410;
-  --color-ambar-claro: #f3e6c6;
+  --font-sans: "Geist Variable", "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono Variable", Consolas, monospace;
 
-  --font-display: "Fraunces Variable", Georgia, serif;
-  --font-sans: "Instrument Sans", "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono Variable", Consolas, monospace;
+  /* Curva única: pesada, desacelera hasta asentarse. 500 ms para posición, 300 ms para color y opacidad. */
+  --ease-salida: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --animate-estampar: estampar 420ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
-  --animate-aparecer: aparecer 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-aparecer: aparecer 500ms var(--ease-salida) both;
+  --animate-brillo: brillo 1.8s var(--ease-salida) infinite;
 
-  @keyframes estampar {
-    0% { opacity: 0; transform: scale(1.8) rotate(-14deg); }
-    100% { opacity: 1; transform: scale(1) rotate(-6deg); }
-  }
   @keyframes aparecer {
-    0% { opacity: 0; transform: translateY(10px); }
+    0% { opacity: 0; transform: translateY(8px); }
     100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes brillo {
+    0% { background-position: 150% 0; }
+    100% { background-position: -50% 0; }
   }
 }
 
 @layer base {
   html {
-    background-color: var(--color-papel);
-    color: var(--color-tinta);
+    background-color: var(--fondo);
+    color: var(--texto);
     font-family: var(--font-sans);
+    font-size: 100%;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
   }
-  body {
-    min-height: 100vh;
-    /* Grano de papel: ruido SVG muy tenue, sin imágenes externas. */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.11 0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-  ::selection { background: var(--color-sello-claro); color: var(--color-tinta); }
-  :focus-visible { outline: 2px solid var(--color-clinico); outline-offset: 2px; }
+  html[data-letra="grande"] { font-size: 115%; }
+  html[data-letra="muy-grande"] { font-size: 130%; }
+  body { min-height: 100vh; }
+  ::selection { background: var(--cita); color: var(--cita-tx); }
+  :focus-visible { outline: 2px solid var(--primario); outline-offset: 2px; border-radius: 4px; }
+  * { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--texto) 28%, transparent) transparent; }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--texto) 28%, transparent); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+  input, textarea, select { caret-color: var(--primario); }
+  ::placeholder { color: var(--texto-3); opacity: 1; }
+  .num { font-variant-numeric: tabular-nums; }
+  h1, h2, h3, h4 { text-wrap: balance; font-weight: 600; letter-spacing: -0.01em; }
+  p, li, dd, blockquote { text-wrap: pretty; }
+  /* Un código, una URL o un nombre de archivo sin espacios no debe ensanchar la página. */
+  h1, h2, h3, p, blockquote, dd { overflow-wrap: anywhere; }
+  em, i { font-style: normal; } /* sin cursivas en toda la interfaz */
 }
 
 @layer components {
-  .folio {
-    background: color-mix(in oklab, var(--color-papel) 70%, white);
-    border: 1px solid var(--color-papel-3);
-    box-shadow: 0 1px 0 rgb(0 0 0 / 0.03), 0 12px 30px -18px rgb(29 27 23 / 0.35);
+  /* Estilos de texto con nombre. Cada uno sale de un paso de la escala de Tailwind: ningún tamaño suelto. */
+  .heading-1 { @apply text-6xl font-semibold; }
+  .heading-2 { @apply text-5xl font-semibold; }
+  .heading-3 { @apply text-4xl font-semibold; }
+  .heading-4 { @apply text-3xl font-semibold; }
+  .heading-5 { @apply text-2xl font-semibold; }
+  .heading-6 { @apply text-xl font-semibold; }
+  .title-1 { @apply text-xl font-medium; }
+  .title-2 { @apply text-lg font-medium; }
+  .title-3 { @apply text-base font-medium; }
+  .title-4 { @apply text-sm font-medium; }
+  .title-5 { @apply text-xs font-medium; }
+  .body-1 { @apply text-base font-semibold; }
+  .body-2 { @apply text-base font-medium; }
+  .body-3 { @apply text-base font-normal; }
+  .body-4 { @apply text-sm font-semibold; }
+  .body-5 { @apply text-sm font-medium; }
+  .body-6 { @apply text-sm font-normal; }
+  .caption-1 { @apply text-sm font-medium; }
+  .caption-2 { @apply text-sm font-normal; }
+  .caption-3 { @apply text-xs font-semibold; }
+  .caption-4 { @apply text-xs font-medium; }
+  .caption-5 { @apply text-xs font-normal; }
+
+  /* Panel: superficie plana con costura de 1 px. Sin sombra: la sombra es solo para lo que flota. */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
   }
+  .linea { border-color: var(--borde); }
+  /* Datos exactos: códigos, huellas, cifras. */
   .etiqueta {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--color-grafito);
+    @apply text-xs;
+    color: var(--texto-3);
   }
-  .sello {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    border: 2px solid currentColor;
-    border-radius: 3px;
-    padding: 0.15rem 0.55rem;
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    transform: rotate(-6deg);
-    mix-blend-mode: multiply;
+  /* Texto citado: resaltado suave sobre la línea. */
+  .resaltado {
+    background: var(--cita);
+    color: var(--cita-tx);
+    padding: 0 0.2em;
+    border-radius: 4px;
+    box-decoration-break: clone;
   }
-  .boton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    border-radius: 2px;
-    padding: 0.55rem 1rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    transition: transform 120ms, background-color 160ms, color 160ms;
+  /* El resaltado recorre la línea de izquierda a derecha, una vez. Con movimiento reducido llega directo. */
+  .resaltado-barrido {
+    background: linear-gradient(var(--cita), var(--cita)) no-repeat left center / 0% 100%;
+    padding: 0 0.2em;
+    border-radius: 4px;
+    box-decoration-break: clone;
+    animation: barrer 800ms var(--ease-salida) 600ms forwards;
   }
-  .boton:active { transform: translateY(1px); }
-  .boton-tinta { background: var(--color-tinta); color: var(--color-papel); }
-  .boton-tinta:hover { background: var(--color-sello); }
-  .boton-linea { border: 1px solid var(--color-tinta-2); color: var(--color-tinta); }
-  .boton-linea:hover { background: var(--color-papel-2); }
-  .boton:disabled { opacity: 0.45; pointer-events: none; }
-  .campo {
-    width: 100%;
-    background: transparent;
-    border: 0;
-    border-bottom: 1.5px solid var(--color-tinta-2);
-    padding: 0.5rem 0.1rem;
-    font-size: 0.95rem;
+  @keyframes barrer {
+    to { background-size: 100% 100%; color: var(--cita-tx); }
   }
-  .campo:focus { outline: none; border-bottom-color: var(--color-sello); }
+  .esqueleto {
+    background: linear-gradient(100deg, color-mix(in oklab, var(--texto) 5%, transparent) 30%, color-mix(in oklab, var(--texto) 11%, transparent) 50%, color-mix(in oklab, var(--texto) 5%, transparent) 70%);
+    background-size: 200% 100%;
+    animation: var(--animate-brillo);
+    border-radius: 8px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0s !important;
+  }
+}
+
+/* Portada scroll-world (motor en src/lib/scrollWorld.js). Fuera de capas: gana a los valores por defecto del motor. */
+.mundo-medtender.sw-root {
+  --sw-bg: #f0f3f7;
+  --sw-ink: #14212e;
+  --sw-ink-soft: #4a5a6a;
+  --sw-accent: #0e7c86;
+  --sw-font-display: "Geist Variable", system-ui, sans-serif;
+  --sw-font-body: "Geist Variable", system-ui, sans-serif;
+}
+.mundo-medtender .sw-brand__mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #0b2e4a;
+  box-shadow: none;
+}
+.mundo-medtender .sw-brand__mark::after {
+  content: "M";
+  font: 700 15px/1 "Geist Variable", system-ui, sans-serif;
+  color: #fff;
+  border-bottom: 2px solid #fff0b3;
+}
+.mundo-medtender .sw-brand__name { font-weight: 600; letter-spacing: -0.01em; }
+.mundo-medtender .sw-topcta,
+.mundo-medtender .sw-btn--primary { background: #0b2e4a; border-radius: 8px; }
+.mundo-medtender .sw-btn--primary { background: #0e7c86; }
+.mundo-medtender .sw-btn--ghost { border-radius: 8px; }
+.mundo-medtender .sw-copy__title { font-weight: 600; letter-spacing: -0.02em; font-size: clamp(1.9rem, 3.3vw, 3rem); line-height: 1.05; }
+.mundo-medtender .sw-copy__eyebrow { font-family: "Geist Mono Variable", ui-monospace, monospace; font-weight: 500; letter-spacing: 0.08em; }
+/* En pantallas angostas la escena horizontal se ve completa arriba y el texto queda debajo, sobre el fondo. */
+@media (max-width: 860px) {
+  .mundo-medtender .sw-scene__still,
+  .mundo-medtender .sw-scene__video { object-fit: contain; object-position: center 16%; }
+  .mundo-medtender .sw-copylayer::before { height: 58%; }
+  .mundo-medtender .sw-route { display: none; }
+}
+/* El motor escribe su propio transform en cada texto y anula el translateY(-50%): se centra con flex. */
+@media (min-width: 861px) {
+  .mundo-medtender .sw-copy { top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; }
 }

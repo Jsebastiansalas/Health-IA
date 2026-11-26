@@ -6,6 +6,7 @@
  *   vuelve a pedir confirmación con un clic).
  * - Primero se busca por nombre; si el archivo fue renombrado, se busca por SHA-256.
  */
+import { EXTENSIONES_DOCUMENTO } from "./formato";
 import { mismoHash, sha256Hex } from "./sha256";
 
 export const soportaCarpetas = () => typeof window !== "undefined" && "showDirectoryPicker" in window;
@@ -24,7 +25,7 @@ export async function* recorrerPdfs(
 ): AsyncGenerator<{ handle: FileSystemFileHandle; ruta: string }> {
   for await (const entrada of dir.values()) {
     const ruta = prefijo ? `${prefijo}/${entrada.name}` : entrada.name;
-    if (entrada.kind === "file" && entrada.name.toLowerCase().endsWith(".pdf")) {
+    if (entrada.kind === "file" && EXTENSIONES_DOCUMENTO.test(entrada.name)) {
       yield { handle: entrada, ruta };
     } else if (entrada.kind === "directory" && profundidad < PROFUNDIDAD_MAXIMA) {
       yield* recorrerPdfs(entrada, ruta, profundidad + 1);

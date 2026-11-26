@@ -1,0 +1,31 @@
+# Gemini en Google Cloud (Vertex AI / Agent Platform) en el Docker local. Se usa ENCIMA del compose normal:
+#
+#   docker compose -f infra/docker-compose.yml -f infra/docker-compose.vertex.yml up -d --build
+#
+# En infra/.env:
+#   VERTEX_PROYECTO=id-del-proyecto
+#   VERTEX_CREDENCIALES_ARCHIVO=C:/Users/tu-usuario/medtender-secretos/vertex.json   (fuera del repositorio)
+#
+# El respaldo con Claude y el tope de gasto (LLM_RESPALDO_PROVEEDOR, ANTHROPIC_API_KEY, IA_TOPE_DIARIO_USD) van en
+# agente/.env. Con este archivo los modelos y regiones salen de aquí, no del LLM_MODEL de agente/.env.
+# Para volver a la API gratuita, levanta sin el segundo -f. El consentimiento cambia solo según el proveedor.
+
+services:
+  agente:
+    environment: &vertex
+      IA_PROVEEDOR: vertex
+      VERTEX_PROYECTO: ${VERTEX_PROYECTO:?defina VERTEX_PROYECTO en infra/.env}
+      VERTEX_CREDENCIALES: /run/secrets/vertex
+      VERTEX_REGION: ${VERTEX_REGION:-global}
+      VERTEX_REGION_EMBEDDINGS: ${VERTEX_REGION_EMBEDDINGS:-us-central1}
+      LLM_MODEL: ${VERTEX_LLM_MODEL:-gemini-3.8-flash}
+      LLM_MODELOS_RESPALDO: '["gemini-3.5-flash"]'
+    secrets: [vertex]
+
+  worker:
+    environment: *vertex
+    secrets: [vertex]
+
+secrets:
+  vertex:
+    file: ${VERTEX_CREDENCIALES_ARCHIVO:?defina VERTEX_CREDENCIALES_ARCHIVO en infra/.env con la ruta de vertex.json}

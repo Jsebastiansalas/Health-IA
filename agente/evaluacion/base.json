@@ -1,0 +1,19 @@
+{
+  "nota": "Mínimos de cada métrica (0 a 1). `limites` y las de anonimización no dependen del modelo y están medidas. Las demás son PROVISIONALES: todavía no hay una corrida con el proveedor real. Tras la primera, fijarlas con `python -m evaluacion.correr --fijar-base` y revisar el cambio.",
+  "medido": null,
+  "minimos": {
+    "recuperacion": 0.85,
+    "respuesta": 0.75,
+    "cita": 0.75,
+    "cifras_respaldadas": 0.95,
+    "abstencion": 0.8,
+    "limites": 1.0,
+    "linea_encontrados": 0.8,
+    "linea_sin_inventos": 0.9,
+    "linea_eventos": 0.5,
+    "explicacion": 0.6,
+    "preparacion": 0.7,
+    "anonimizacion_nombres": 0.66,
+    "anonimizacion_sin_tapar_de_mas": 0.995
+  }
+}

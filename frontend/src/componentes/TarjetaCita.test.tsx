@@ -18,7 +18,8 @@ const base: Cita = {
   metodoExtraccion: "OCR",
   confianzaOcr: 0.62,
   requiereVerificacionVisualOriginal: true,
-  motivoVerificacionVisual: "Verifique en el PDF original de su PC: el fragmento contiene sellos o firmas.",
+  motivoVerificacionVisual: "Verifique en el original de su equipo: el fragmento contiene sellos o firmas.",
+  tiposEvidencia: ["FIRMA_O_SELLO", "OCR_BAJA_CONFIANZA"],
 };
 
 describe("TarjetaCita", () => {
@@ -29,6 +30,20 @@ describe("TarjetaCita", () => {
     expect(screen.getByText("«Registro sanitario INVIMA 2024M-0001234»")).toBeInTheDocument();
     expect(screen.getByText("Verificar original")).toBeInTheDocument();
     expect(screen.getByText(/OCR · confianza 62 %/)).toBeInTheDocument();
+  });
+
+  it("etiqueta cada tipo de evidencia que exige mirar el original", () => {
+    render(<TarjetaCita cita={base} numero={1} alAbrir={() => {}} />);
+    expect(screen.getByText("Firma o sello")).toBeInTheDocument();
+    expect(screen.getByText("OCR de baja confianza")).toBeInTheDocument();
+    expect(screen.queryByText("Tabla")).not.toBeInTheDocument();
+  });
+
+  it("sigue mostrando consultas guardadas sin tipos de evidencia", () => {
+    const { tiposEvidencia: _omitido, ...antigua } = base;
+    render(<TarjetaCita cita={antigua} numero={1} alAbrir={() => {}} />);
+    expect(screen.getByText("Verificar original")).toBeInTheDocument();
+    expect(screen.queryByText("Firma o sello")).not.toBeInTheDocument();
   });
 
   it("abre el original en la página citada", () => {

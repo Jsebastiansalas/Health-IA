@@ -13,6 +13,13 @@ let tokens: Tokens | null = (() => {
 })();
 
 export const EVENTO_SESION_EXPIRADA = "medtender:sesion-expirada";
+/** La API exige activar la verificación en dos pasos (administradores de organizaciones). */
+export const EVENTO_DOS_PASOS_REQUERIDO = "medtender:dos-pasos-requerido";
+
+/** El token de renovación vigente (para cerrar la sesión en el servidor). */
+export function refreshActual(): string | null {
+  return tokens?.refresh_token ?? null;
+}
 
 export function haySesion(): boolean {
   return tokens !== null;
@@ -28,6 +35,7 @@ export class ErrorApi extends Error {
   constructor(
     public status: number,
     public detalle: unknown,
+    public codigo?: string,
   ) {
     super(mensajeDe(detalle) ?? `Error ${status}`);
   }
@@ -77,15 +85,40 @@ export async function api<T>(ruta: string, opciones: RequestInit = {}, reintento
   }
   if (r.status === 204) return undefined as T;
   const cuerpo = r.headers.get("content-type")?.includes("json") ? await r.json() : await r.text();
-  if (!r.ok) throw new ErrorApi(r.status, (cuerpo as { detail?: unknown })?.detail ?? cuerpo);
+  if (!r.ok) {
+    const c = cuerpo as { detail?: unknown; codigo?: string };
+    if (c?.codigo === "dos_pasos_requerido") window.dispatchEvent(new Event(EVENTO_DOS_PASOS_REQUERIDO));
+    throw new ErrorApi(r.status, c?.detail ?? cuerpo, c?.codigo);
+  }
   return cuerpo as T;
 }
 
 export const post = <T>(ruta: string, cuerpo: unknown) =>
   api<T>(ruta, { method: "POST", body: JSON.stringify(cuerpo) });
 
-/** Subida multipart con progreso real de bytes (fetch no lo expone). */
-export function subirPdf(
+/** Descarga un archivo de la API con la sesión (p. ej. el .ics de un recordatorio). Con `cuerpo` va por POST. */
+export async function descargar(ruta: string, cuerpo?: unknown, reintento = true): Promise<Blob> {
+  const headers = new Headers();
+  if (tokens) headers.set("Authorization", `Bearer ${tokens.access_token}`);
+  let opciones: RequestInit = { headers };
+  if (cuerpo !== undefined) {
+    headers.set("Content-Type", "application/json");
+    opciones = { headers, method: "POST", body: JSON.stringify(cuerpo) };
+  }
+  const r = await fetch(`${BASE}${ruta}`, opciones);
+  if (r.status === 401 && tokens && reintento) {
+    if (await refrescar()) return descargar(ruta, cuerpo, false);
+    expirar();
+  }
+  if (!r.ok) {
+    const c = r.headers.get("content-type")?.includes("json") ? await r.json() : null;
+    throw new ErrorApi(r.status, c?.detail ?? `Error ${r.status}`, c?.codigo);
+  }
+  return r.blob();
+}
+
+/** Subida multipart (PDF o foto) con progreso real de bytes (fetch no lo expone). */
+export function subirDocumento(
   expedienteId: string,
   formulario: FormData,
   alProgresar: (fraccion: number) => void,
@@ -105,7 +138,7 @@ export function subirPdf(
       }
       if (xhr.status === 202) return resolver(cuerpo as Documento);
       const c = cuerpo as { detail?: unknown; documento?: Documento };
-      // 422 por "no es PDF" trae el documento ya purgado: se muestra igual en la lista.
+      // 422 por «formato no soportado» trae el documento ya purgado: se muestra igual en la lista.
       if (xhr.status === 422 && c.documento) return resolver(c.documento);
       rechazar(new ErrorApi(xhr.status, c.detail ?? cuerpo));
     };
