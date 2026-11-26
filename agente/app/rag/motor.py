@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings
 from app.ia.embeddings import EmbeddingRouter
 from app.ia.llm import ProveedorLLM
-from app.models import Expediente
+from app.models import Expediente, Tenant
 from app.privacidad.anonimizar import Anonimizador, evidencias_para_la_nube
 from app.rag import busqueda, generacion
 
@@ -35,6 +35,9 @@ async def responder(
     s: Settings,
 ) -> RespuestaRag:
     t0 = time.perf_counter()
+    # El tipo de cuenta decide las instrucciones del modelo (se lee antes de soltar la conexión).
+    tenant = await session.get(Tenant, expediente.tenant_id)
+    sistema = generacion.sistema_para(tenant.tipo if tenant else None)
     modelo = expediente.embedding_model_activo
     filtros = {
         "tenant_id": expediente.tenant_id,
@@ -84,7 +87,7 @@ async def responder(
     await session.close()
     evidencias_nube = evidencias_para_la_nube(evidencias, anon) if anon else evidencias
     salida = await llm.generar_json(
-        generacion.SISTEMA,
+        sistema,
         generacion.construir_prompt(pregunta_nube, evidencias_nube),
         generacion.ESQUEMA,
     )
