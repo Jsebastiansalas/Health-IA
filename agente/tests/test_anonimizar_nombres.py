@@ -1,5 +1,7 @@
 """Segunda capa de anonimización: nombres de persona sin etiqueta, medida contra el corpus."""
 
+import pytest
+
 from app.core.config import get_settings
 from app.privacidad.anonimizar import Anonimizador, enmascarar_texto, evidencias_para_la_nube
 from evaluacion import corpus_nombres as corpus
@@ -63,3 +65,19 @@ def test_en_la_reserva_no_se_retrocede():
     m = medir(corpus.RESERVA_NOMBRES + corpus.RESERVA_SIN_NOMBRES, enmascarar_texto)
     assert m.cobertura >= 0.66, (informe("reserva", m), m.escapados)
     assert m.tapado_de_mas <= 0.005, (informe("reserva", m), m.de_mas)
+
+
+@pytest.mark.parametrize(
+    ("texto", "esperado"),
+    [
+        (
+            "EPICRISIS Paciente: Lucia Ramirez Ortiz Fecha de ingreso: 02/06/2025",
+            "EPICRISIS Paciente: [PERSONA_1] Fecha de ingreso: 02/06/2025",
+        ),
+        ("Paciente: Ana Torres Edad: 40 años", "Paciente: [PERSONA_1] Edad: 40 años"),
+        ("Paciente: Juan de la Cruz Sexo: M", "Paciente: [PERSONA_1] Sexo: M"),
+        ("Paciente: Rosa Salud Medina Diagnóstico: sano", "Paciente: [PERSONA_1] Diagnóstico: sano"),
+    ],
+)
+def test_en_un_solo_renglon_el_nombre_no_se_lleva_el_campo_siguiente(texto, esperado):
+    assert enmascarar_texto(texto) == esperado

@@ -152,7 +152,7 @@ class Anonimizador:
                     return self._marcador(tipo, valor)
                 inicio, fin = m.span(grupo)
                 if tipo == "PERSONA":
-                    valor = nombres.sin_el_renglon_siguiente(m.string, inicio, fin)
+                    valor = nombres.sin_lo_que_sigue(m.string, inicio, fin)
                     fin = inicio + len(valor)
                 base = m.start()
                 completo = m.group(0)

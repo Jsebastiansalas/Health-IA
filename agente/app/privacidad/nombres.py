@@ -125,6 +125,14 @@ _ANUNCIA_PERSONA = re.compile(
     r"\btranscribe)"
     r"[ \t]*[,:.]?[ \t]+$"
 )
+# Palabras que encabezan un campo de un documento. A propósito sin las que también son apellidos (Cruz).
+_ENCABEZAN_CAMPO = _lista("""
+alergias antecedentes cama cedula cita ciudad control diagnostico direccion documento edad egreso eps estado
+examen fecha firma genero hallazgos historia hora identificacion informe ingreso medicamentos medico motivo
+muestra nacimiento nombre observaciones paciente procedimiento recomendaciones remitido resultado resultados
+servicio sexo telefono tipo toma tratamiento
+""")
+
 _PRIMERA_SANTA = {"san", "santa", "santo"}
 _SALTO = re.compile(r"\s*\n\s*")
 # Tras la primera palabra de un renglón: dos puntos (un campo) o una palabra en minúscula (una frase).
@@ -189,13 +197,19 @@ def detectar(texto: str, conocidos: set[str]) -> list[tuple[int, int]]:
     return tramos
 
 
-def sin_el_renglon_siguiente(texto: str, inicio: int, fin: int) -> str:
-    """El nombre que sigue a una etiqueta, sin lo que ya es otra frase o campo del renglón siguiente.
+def sin_lo_que_sigue(texto: str, inicio: int, fin: int) -> str:
+    """El nombre que sigue a una etiqueta, sin lo que ya es otro campo o frase.
 
+    En un mismo renglón se corta antes de una palabra que encabeza un campo («… Ortiz Fecha de ingreso»).
     Un apellido partido en dos renglones se conserva; se corta si lo de abajo es una palabra que nunca es
     nombre, o una que no está en las listas y abre un campo («Observaciones:») o una frase («Presenta
     dolor»)."""
     valor = texto[inicio:fin]
+    palabras = list(re.finditer(r"\w+", valor))
+    for m in palabras[1:]:
+        if _norm(m[0]) in _ENCABEZAN_CAMPO:
+            valor = valor[: m.start()].rstrip()
+            break
     for salto in _SALTO.finditer(valor):
         sigue = re.match(r"\w+", valor[salto.end() :])
         if sigue is None:
