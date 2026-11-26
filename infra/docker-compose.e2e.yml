@@ -18,6 +18,11 @@ services:
       CONTRASENAS_CONSULTAR_FILTRACIONES: "false"  # sin salir a internet
       CORREO_VERIFICACION_OBLIGATORIA: "false"
       CORREO_BASE_URL: http://localhost:18088
+      # Buzón falso (e2e/ia_falsa.py): las invitaciones se prueban de verdad, sin salir a internet.
+      SPRING_MAIL_HOST: ia-falsa
+      SPRING_MAIL_PORT: "1025"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "false"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
     depends_on: !override
       postgres:
         condition: service_healthy

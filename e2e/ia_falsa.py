@@ -5,13 +5,18 @@ así que la respuesta pasa por las mismas comprobaciones de citas y cifras que l
 Guarda en /peticiones lo último que recibió, para revisar que le llega anonimizado.
 """
 
+import email
 import hashlib
 import html
 import json
 import re
+import socketserver
+import threading
+from email.policy import default as politica
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 RECIBIDO: list[str] = []
+CORREOS: list[dict] = []
 
 
 def vector(texto: str) -> list[float]:
@@ -88,6 +93,8 @@ class Gemini(BaseHTTPRequestHandler):
         self.wfile.write(cuerpo)
 
     def do_GET(self):
+        if self.path == "/correos":
+            return self._json({"correos": CORREOS})
         self._json({"textos": RECIBIDO} if self.path == "/peticiones" else {"ok": True})
 
     def do_POST(self):
@@ -110,5 +117,33 @@ class Gemini(BaseHTTPRequestHandler):
         pass
 
 
+class Buzon(socketserver.StreamRequestHandler):
+    """SMTP de mentira, sin autenticación ni cifrado: guarda lo que la API envía (GET /correos)."""
+
+    def _decir(self, linea: str) -> None:
+        self.wfile.write((linea + "\r\n").encode())
+
+    def handle(self):
+        self._decir("220 buzon de prueba")
+        while linea := self.rfile.readline():
+            orden = linea.decode(errors="replace").strip().upper()
+            if orden.startswith("DATA"):
+                self._decir("354 adelante")
+                cuerpo = []
+                while (parte := self.rfile.readline()) and parte != b".\r\n":
+                    cuerpo.append(parte[1:] if parte.startswith(b"..") else parte)
+                m = email.message_from_bytes(b"".join(cuerpo), policy=politica)
+                CORREOS.append({"para": str(m["To"]), "asunto": str(m["Subject"]), "texto": m.get_content()})
+                self._decir("250 recibido")
+            elif orden.startswith("QUIT"):
+                self._decir("221 adios")
+                return
+            else:
+                self._decir("250 ok")
+
+
 if __name__ == "__main__":
+    socketserver.ThreadingTCPServer.daemon_threads = True
+    buzon = socketserver.ThreadingTCPServer(("0.0.0.0", 1025), Buzon)
+    threading.Thread(target=buzon.serve_forever, daemon=True).start()
     ThreadingHTTPServer(("0.0.0.0", 9000), Gemini).serve_forever()
