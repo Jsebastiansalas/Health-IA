@@ -34,7 +34,10 @@ jobs:
       - uses: actions/checkout@v7
       - run: docker build -t medtender-${{ matrix.nombre }}:ci ${{ matrix.contexto }}
       - name: Vulnerabilidades altas y críticas con arreglo disponible
+        # Las excepciones (revisadas, con vencimiento) están en .trivyignore.yaml; --show-suppressed las deja a la vista.
         run: >
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY" image
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock
+          -v "$PWD/.trivyignore.yaml:/ignora.yaml:ro" "$TRIVY" image
           --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --scanners vuln
+          --ignorefile /ignora.yaml --show-suppressed
           medtender-${{ matrix.nombre }}:ci
