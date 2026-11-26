@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { api, post } from "../api/cliente";
 import type { Expediente, TipoExpediente } from "../api/tipos";
+import { CompartidosConmigo } from "../componentes/Cuidadores";
 import { Boton } from "../componentes/ui/Boton";
 import { Campo } from "../componentes/ui/Campo";
 import { Dialogo } from "../componentes/ui/Dialogo";
@@ -74,6 +75,8 @@ export function PaginaExpedientes() {
           </Boton>
         )}
       </div>
+
+      <CompartidosConmigo />
 
       <div className="mb-8 flex flex-wrap items-center gap-3">
         <div className="group flex h-10 w-full items-center gap-3 rounded-lg border border-borde bg-panel px-3 transition-[border-color] focus-within:border-primario sm:w-96">

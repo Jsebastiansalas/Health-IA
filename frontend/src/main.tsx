@@ -29,6 +29,7 @@ const PaginaSeguridad = lazy(() => import("./paginas/Seguridad").then((m) => ({ 
 const PaginaMisDatos = lazy(() => import("./paginas/MisDatos").then((m) => ({ default: m.PaginaMisDatos })));
 const PaginaCompartir = lazy(() => import("./paginas/Compartir").then((m) => ({ default: m.PaginaCompartir })));
 const PaginaExpediente = lazy(() => import("./paginas/Expediente").then((m) => ({ default: m.PaginaExpediente })));
+const PaginaInvitacion = lazy(() => import("./paginas/Invitacion").then((m) => ({ default: m.PaginaInvitacion })));
 
 const consultas = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,7 @@ function Rutas() {
         <Route path="/verificar-correo" element={<PaginaVerificarCorreo />} />
         <Route path="/olvide-contrasena" element={<PaginaOlvideContrasena />} />
         <Route path="/restablecer" element={<PaginaRestablecer />} />
+        <Route path="/invitacion" element={<PaginaInvitacion conSesion={false} />} />
         <Route path="/privacidad" element={<PaginaPrivacidad />} />
         <Route path="/terminos" element={<PaginaTerminos />} />
         {/* Llegó un archivo desde «Compartir» sin sesión: queda guardado en el teléfono y se ofrece al ingresar. */}
@@ -69,6 +71,7 @@ function Rutas() {
         <Route path="/medicamentos" element={<PaginaMedicamentos />} />
         <Route path="/expedientes/:id" element={<PaginaExpediente />} />
         <Route path="/compartir" element={<PaginaCompartir />} />
+        <Route path="/invitacion" element={<PaginaInvitacion conSesion />} />
         <Route path="/recordatorios" element={<PaginaRecordatorios />} />
         <Route path="/cuenta/seguridad" element={<PaginaSeguridad />} />
         <Route path="/cuenta/datos" element={<PaginaMisDatos />} />

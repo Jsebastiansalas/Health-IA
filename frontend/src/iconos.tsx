@@ -23,6 +23,7 @@ export {
   DownloadSimple,
   PlusCircle,
   ShareNetwork,
+  UsersThree,
   Stethoscope,
   WifiSlash,
   ArrowUpRight,
