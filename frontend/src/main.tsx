@@ -5,6 +5,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { activarRastreo } from "./lib/errores";
 import { ErrorApi } from "./api/cliente";
 import "./index.css";
+import { aplicarPreferencias } from "./lib/accesibilidad";
 import { AvisosApp } from "./componentes/AvisosApp";
 import { Marco } from "./componentes/Marco";
 import { aplicarVersionNueva, registrarApp } from "./pwa";
@@ -25,10 +26,12 @@ const PaginaMedicamentos = lazy(() => import("./paginas/Medicamentos").then((m) 
 const PaginaRecordatorios = lazy(() => import("./paginas/Recordatorios").then((m) => ({ default: m.PaginaRecordatorios })));
 const PaginaOlvideContrasena = lazy(() => import("./paginas/Contrasena").then((m) => ({ default: m.PaginaOlvideContrasena })));
 const PaginaRestablecer = lazy(() => import("./paginas/Contrasena").then((m) => ({ default: m.PaginaRestablecer })));
+const PaginaAccesibilidad = lazy(() => import("./paginas/Accesibilidad").then((m) => ({ default: m.PaginaAccesibilidad })));
 const PaginaSeguridad = lazy(() => import("./paginas/Seguridad").then((m) => ({ default: m.PaginaSeguridad })));
 const PaginaMisDatos = lazy(() => import("./paginas/MisDatos").then((m) => ({ default: m.PaginaMisDatos })));
 const PaginaCompartir = lazy(() => import("./paginas/Compartir").then((m) => ({ default: m.PaginaCompartir })));
 const PaginaExpediente = lazy(() => import("./paginas/Expediente").then((m) => ({ default: m.PaginaExpediente })));
+const PaginaInvitacion = lazy(() => import("./paginas/Invitacion").then((m) => ({ default: m.PaginaInvitacion })));
 
 const consultas = new QueryClient({
   defaultOptions: {
@@ -44,13 +47,16 @@ function Rutas() {
   if (!autenticado) {
     return (
       <Routes>
-        <Route path="/" element={<PaginaBienvenida />} />
+        {/* El producto principal es el de las personas; las organizaciones tienen su portada aparte. */}
+        <Route path="/" element={<PaginaPersonas />} />
+        <Route path="/organizaciones" element={<PaginaBienvenida />} />
         <Route path="/ingreso" element={<PaginaIngreso />} />
         <Route path="/registro" element={<PaginaRegistro />} />
-        <Route path="/personas" element={<PaginaPersonas />} />
+        <Route path="/personas" element={<Navigate to="/" replace />} />
         <Route path="/verificar-correo" element={<PaginaVerificarCorreo />} />
         <Route path="/olvide-contrasena" element={<PaginaOlvideContrasena />} />
         <Route path="/restablecer" element={<PaginaRestablecer />} />
+        <Route path="/invitacion" element={<PaginaInvitacion conSesion={false} />} />
         <Route path="/privacidad" element={<PaginaPrivacidad />} />
         <Route path="/terminos" element={<PaginaTerminos />} />
         {/* Llegó un archivo desde «Compartir» sin sesión: queda guardado en el teléfono y se ofrece al ingresar. */}
@@ -69,9 +75,11 @@ function Rutas() {
         <Route path="/medicamentos" element={<PaginaMedicamentos />} />
         <Route path="/expedientes/:id" element={<PaginaExpediente />} />
         <Route path="/compartir" element={<PaginaCompartir />} />
+        <Route path="/invitacion" element={<PaginaInvitacion conSesion />} />
         <Route path="/recordatorios" element={<PaginaRecordatorios />} />
         <Route path="/cuenta/seguridad" element={<PaginaSeguridad />} />
         <Route path="/cuenta/datos" element={<PaginaMisDatos />} />
+        <Route path="/cuenta/accesibilidad" element={<PaginaAccesibilidad />} />
         <Route path="/restablecer" element={<PaginaRestablecer />} />
         <Route path="/privacidad" element={<PaginaPrivacidad />} />
         <Route path="/terminos" element={<PaginaTerminos />} />
@@ -80,6 +88,8 @@ function Rutas() {
     </Marco>
   );
 }
+
+aplicarPreferencias(); // antes de pintar, para que no salte el tamaño
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

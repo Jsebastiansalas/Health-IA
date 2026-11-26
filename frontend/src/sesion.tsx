@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { api, EVENTO_SESION_EXPIRADA, guardarTokens, haySesion, post, refreshActual } from "./api/cliente";
 import type { RespuestaIngreso, Tokens, Usuario } from "./api/tipos";
+import { olvidarDispositivo } from "./lib/notificaciones";
 
 interface Sesion {
   usuario: Usuario | undefined;
@@ -31,6 +32,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     // Cierra la sesión también en el servidor: su token de renovación deja de servir.
     const refresh = refreshActual();
     if (refresh) void post("/auth/logout", { refresh_token: refresh }).catch(() => {});
+    void olvidarDispositivo(); // que no sigan llegando avisos de una sesión cerrada
     guardarTokens(null);
     cliente.clear();
     setAutenticado(false);

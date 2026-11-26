@@ -11,6 +11,7 @@ import co.medtender.api.ingesta.AgenteClient;
 import co.medtender.api.limites.Limitador;
 import co.medtender.api.privacidad.ConsentimientoService;
 import co.medtender.api.recordatorios.RecordatorioService.RecordatorioOut;
+import co.medtender.api.security.ContextoTenant;
 import co.medtender.api.security.UsuarioActual;
 import co.medtender.api.web.ApiException;
 import tools.jackson.databind.JsonNode;
@@ -72,10 +73,10 @@ public class RecordatorioController {
     /** Busca los controles que indican los documentos del expediente y guarda las propuestas nuevas. */
     @PostMapping("/expedientes/{expedienteId}/recordatorios/propuestas")
     public List<RecordatorioOut> proponer(@PathVariable UUID expedienteId, @AuthenticationPrincipal UsuarioActual user) {
-        autorizacion.obtener(user, expedienteId, Permiso.LECTOR);
+        UUID tenant = autorizacion.obtenerCompartible(user, expedienteId, Permiso.LECTOR).expediente().getTenantId();
         consentimiento.exigir(user);
         Map<String, Object> cuerpo = new LinkedHashMap<>();
-        cuerpo.put("tenant_id", user.tenantId());
+        cuerpo.put("tenant_id", tenant);
         cuerpo.put("expediente_id", expedienteId);
         cuerpo.put("usuario_id", user.id());
         JsonNode r = agente.post("/internal/v1/recordatorios/propuestas", cuerpo, true);
@@ -85,16 +86,17 @@ public class RecordatorioController {
             limitador.exigir("consulta_min", user.id().toString(), rl.consultaUsuarioMin(), 60);
             limitador.exigir("consulta_dia", user.id().toString(), rl.consultaUsuarioDia(), 86400);
         }
-        int nuevas = servicio.guardarPropuestas(user, expedienteId, r.path("propuestas"));
+        int nuevas = ContextoTenant.enLoPropio(user.tenantId(),
+                () -> servicio.guardarPropuestas(user, expedienteId, r.path("propuestas")));
         auditoria.auditar(Accion.RECORDATORIOS_PROPUESTOS, user, "expediente", expedienteId,
                 Map.of("propuestas", r.path("propuestas").size(), "nuevas", nuevas));
-        return servicio.listar(user, expedienteId);
+        return ContextoTenant.enLoPropio(user.tenantId(), () -> servicio.listar(user, expedienteId));
     }
 
     @GetMapping("/recordatorios")
     public List<RecordatorioOut> listar(@RequestParam(required = false) UUID expediente, @AuthenticationPrincipal UsuarioActual user) {
-        if (expediente != null) autorizacion.obtener(user, expediente, Permiso.LECTOR);
-        return servicio.listar(user, expediente);
+        if (expediente != null) autorizacion.obtenerCompartible(user, expediente, Permiso.LECTOR);
+        return ContextoTenant.enLoPropio(user.tenantId(), () -> servicio.listar(user, expediente));
     }
 
     @PatchMapping("/recordatorios/{id}")

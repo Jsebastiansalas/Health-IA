@@ -98,6 +98,8 @@ class VerificacionCorreoIT extends IntegracionBase {
         assertThat(guardado).hasSize(64).isNotEqualTo(token);
         verificar(token).andExpect(status().isOk());
         verificar(token).andExpect(status().isOk()); // abrirlo dos veces no falla
+        assertThat(jdbc.queryForObject("select count(*) from auditoria where accion = 'CORREO_VERIFICADO' and tenant_id is not null",
+                Integer.class)).isPositive();
     }
 
     @Test

@@ -41,11 +41,17 @@ public class AvisosRecordatorios {
     private final boolean activos;
     private final String baseUrl;
 
+    private final co.medtender.api.push.PushService push;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
+
     public AvisosRecordatorios(RecordatorioRepository recordatorios, UsuarioRepository usuarios, CorreoEnvio correo,
                                AuditoriaService auditoria, PlatformTransactionManager tm,
+                               co.medtender.api.push.PushService push, org.springframework.jdbc.core.JdbcTemplate jdbc,
                                @Value("${medtender.recordatorios.dias-antes:3}") int diasAntes,
                                @Value("${medtender.recordatorios.avisos-activos:true}") boolean activos,
                                @Value("${medtender.correo.base-url:http://localhost:8088}") String baseUrl) {
+        this.push = push;
+        this.jdbc = jdbc;
         this.recordatorios = recordatorios;
         this.usuarios = usuarios;
         this.correo = correo;
@@ -80,16 +86,36 @@ public class AvisosRecordatorios {
     private boolean avisar(Recordatorio r) {
         var usuario = usuarios.findById(r.getUsuarioId()).orElse(null);
         if (usuario == null || !usuario.isActivo()) return false;
+        // La notificacion va sin contenido. El correo sale si la persona lo quiere o si ningun dispositivo la recibio.
+        boolean llegoAlDispositivo = push.avisar(usuario.getId());
+        if (llegoAlDispositivo && !porCorreo(usuario.getId())) {
+            return marcarAvisado(r, "dispositivo");
+        }
         String cuerpo = "Hola.\n\n"
                 + "Tienes un control médico que confirmaste para el " + FECHA.format(r.getFecha()) + ".\n\n"
                 + "Puedes ver el detalle en MedTender: " + baseUrl + "/recordatorios\n\n"
                 + "Por tu privacidad, este correo no incluye información de tus documentos.\n";
-        correo.enviar(usuario.getEmail(), "Tienes un recordatorio en MedTender", cuerpo);
+        try {
+            correo.enviar(usuario.getEmail(), "Tienes un recordatorio en MedTender", cuerpo);
+        } catch (RuntimeException e) {
+            if (!llegoAlDispositivo) throw e; // se reintenta mañana
+            log.warn("El aviso {} llego al dispositivo pero no por correo", r.getId());
+            return marcarAvisado(r, "dispositivo");
+        }
+        return marcarAvisado(r, llegoAlDispositivo ? "dispositivo y correo" : "correo");
+    }
+
+    private boolean porCorreo(java.util.UUID usuarioId) {
+        return jdbc.queryForObject("select recordatorios_por_correo from usuarios where id = ?", Boolean.class, usuarioId);
+    }
+
+    private boolean marcarAvisado(Recordatorio r, String por) {
         tx.executeWithoutResult(s -> recordatorios.findById(r.getId()).ifPresent(x -> {
             x.marcarAvisado();
             recordatorios.save(x);
         }));
-        auditoria.auditar(Accion.AVISO_RECORDATORIO, r.getTenantId(), r.getUsuarioId(), null, "OK", "recordatorio", r.getId(), Map.of());
+        auditoria.auditar(Accion.AVISO_RECORDATORIO, r.getTenantId(), r.getUsuarioId(), null, "OK", "recordatorio", r.getId(),
+                Map.of("por", por));
         return true;
     }
 }

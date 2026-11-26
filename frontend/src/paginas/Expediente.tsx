@@ -7,6 +7,7 @@ import { Link, useParams } from "react-router-dom";
 import { api } from "../api/cliente";
 import type { Cita, Documento, Expediente } from "../api/tipos";
 import { AvisoCorreo } from "../componentes/AvisoCorreo";
+import { AvisoCompartido, CompartirExpediente } from "../componentes/Cuidadores";
 import { ConsolaRag } from "../componentes/ConsolaRag";
 import { Consentimiento } from "../componentes/Consentimiento";
 import { PanelDocumentos } from "../componentes/PanelDocumentos";
@@ -90,16 +91,20 @@ export function PaginaExpediente() {
           Expedientes
         </Link>
         <ChevronRight className="size-4" aria-hidden />
-        <span className="font-mono text-texto-2">{expediente.codigo_expediente}</span>
+        <span className={cn("text-texto-2", !consentimiento.esPersonal && "font-mono")}>
+          {consentimiento.esPersonal ? expediente.titulo : expediente.codigo_expediente}
+        </span>
       </nav>
 
       <header className="panel mb-6 p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 max-w-4xl">
             <h1 className="text-3xl font-semibold leading-9">{expediente.titulo}</h1>
-            <p className="mt-2 text-base text-texto-2">
-              {expediente.entidad_contratante ?? "Entidad no registrada"} · {TIPOS_EXPEDIENTE[expediente.tipo_expediente]}
-            </p>
+            {!consentimiento.esPersonal && (
+              <p className="mt-2 text-base text-texto-2">
+                {expediente.entidad_contratante ?? "Entidad no registrada"} · {TIPOS_EXPEDIENTE[expediente.tipo_expediente]}
+              </p>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Insignia tono={expediente.estado === "ABIERTO" ? "accion" : "neutro"}>{expediente.estado}</Insignia>
@@ -107,6 +112,10 @@ export function PaginaExpediente() {
               <UserRound className="size-4" aria-hidden />
               {expediente.mi_permiso ? PERMISO[expediente.mi_permiso] : "Sin permiso"}
             </Insignia>
+            {/* Compartir es de la persona dueña, en su cuenta personal. */}
+            {consentimiento.esPersonal && !consentimiento.bloqueado && expediente.mi_permiso === "ADMIN" && !expediente.compartido_por && (
+              <CompartirExpediente expedienteId={id} />
+            )}
             {puedeSubir && expediente.estado === "ABIERTO" && (
               <Boton
                 variante="primario"
@@ -129,6 +138,10 @@ export function PaginaExpediente() {
           <span className="num">{documentos ? fragmentos.toLocaleString("es-CO") : "—"}</span> fragmentos consultables
         </p>
       </header>
+
+      {expediente.compartido_por && (
+        <AvisoCompartido expedienteId={id} por={expediente.compartido_por} puedeSubir={puedeSubir} />
+      )}
 
       {consentimiento.correoPendiente && (
         <AvisoCorreo

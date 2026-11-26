@@ -47,7 +47,7 @@ public class PreparacionCitaController {
 
     @PostMapping
     public JsonNode preparar(@PathVariable UUID expedienteId, @AuthenticationPrincipal UsuarioActual user) {
-        autorizacion.obtener(user, expedienteId, Permiso.LECTOR);
+        UUID tenant = autorizacion.obtenerCompartible(user, expedienteId, Permiso.LECTOR).expediente().getTenantId();
         consentimiento.exigir(user);
         // Siempre llama al modelo (las preguntas se proponen de nuevo): cuenta como una consulta.
         var rl = props.rateLimit();
@@ -55,7 +55,7 @@ public class PreparacionCitaController {
         limitador.exigir("consulta_dia", user.id().toString(), rl.consultaUsuarioDia(), 86400);
 
         Map<String, Object> cuerpo = new LinkedHashMap<>();
-        cuerpo.put("tenant_id", user.tenantId());
+        cuerpo.put("tenant_id", tenant);
         cuerpo.put("expediente_id", expedienteId);
         cuerpo.put("usuario_id", user.id());
         JsonNode respuesta = agente.post("/internal/v1/preparaciones", cuerpo, true);

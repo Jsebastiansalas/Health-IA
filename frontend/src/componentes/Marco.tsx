@@ -1,8 +1,8 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Toaster } from "sonner";
-import { Bell, ChevronsUpDown, DownloadSimple, FolderOpen, LogOut, Moon, Pill, ShieldCheck, Sun, Trash2 } from "../iconos";
+import { Bell, ChevronsUpDown, DownloadSimple, FolderOpen, LogOut, Moon, Pill, ShieldCheck, Sun, TextAa, Trash2 } from "../iconos";
 import { EVENTO_DOS_PASOS_REQUERIDO } from "../api/cliente";
 import { toast as avisar } from "sonner";
 import { cn } from "../lib/cn";
@@ -66,9 +66,9 @@ function MenuUsuario() {
           aria-label="Menú de usuario"
         >
           <Avatar nombre={usuario?.nombre_completo} />
-          <span className="hidden min-w-0 leading-tight sm:block">
+          <span className="hidden min-w-0 leading-tight xl:block">
             <span className="block max-w-40 truncate text-sm font-medium">{usuario?.nombre_completo ?? "…"}</span>
-            <span className="block max-w-40 truncate text-xs text-texto-3">{usuario ? ROLES[usuario.rol_global] : ""}</span>
+            <span className="block max-w-40 truncate text-xs text-texto-3">{usuario ? (esPersonal ? "Cuenta personal" : ROLES[usuario.rol_global]) : ""}</span>
           </span>
           <ChevronsUpDown className="size-4 text-texto-3 transition-colors group-hover:text-texto" aria-hidden />
         </Menu.Trigger>
@@ -86,6 +86,10 @@ function MenuUsuario() {
             <Menu.Item onSelect={alternar} className={itemMenu}>
               {tema === "claro" ? <Moon className="size-4" aria-hidden /> : <Sun className="size-4" aria-hidden />}
               {tema === "claro" ? "Tema oscuro" : "Tema claro"}
+            </Menu.Item>
+            <Menu.Item onSelect={() => navegar("/cuenta/accesibilidad")} className={itemMenu}>
+              <TextAa className="size-4" aria-hidden />
+              Accesibilidad
             </Menu.Item>
             <Menu.Item onSelect={() => navegar("/cuenta/seguridad")} className={itemMenu}>
               <ShieldCheck className="size-4" aria-hidden />
@@ -142,6 +146,14 @@ function AvisoCompartido() {
 
 export function Marco({ children }: { children: ReactNode }) {
   const { tema } = useTema();
+  const contenido = useRef<HTMLElement>(null);
+  const { pathname } = useLocation();
+  const anterior = useRef(pathname);
+  useEffect(() => {
+    if (anterior.current === pathname) return;
+    anterior.current = pathname;
+    contenido.current?.focus({ preventScroll: true });
+  }, [pathname]);
   return (
     <div className="min-h-screen">
       <a
@@ -153,31 +165,31 @@ export function Marco({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-borde bg-panel/90 backdrop-blur">
         <div className="mx-auto flex h-12 max-w-[1400px] items-center gap-6 px-4 sm:px-8">
           <NavLink to="/" aria-label="MedTender, inicio" className="shrink-0">
-            <Marca compacta className="sm:hidden" />
-            <Marca className="hidden sm:inline-flex" />
+            <Marca compacta className="md:hidden" />
+            <Marca className="hidden md:inline-flex" />
           </NavLink>
-          <nav className="flex flex-1 items-center gap-3 sm:gap-6" aria-label="Principal">
+          <nav className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto lg:gap-6" aria-label="Principal">
             <NavLink to="/" end className={enlaceNav}>
               <FolderOpen className="size-4" aria-hidden />
-              <span className="hidden sm:inline">Expedientes</span>
-              <span className="sr-only sm:hidden">Expedientes</span>
+              <span className="hidden md:inline">Expedientes</span>
+              <span className="sr-only md:hidden">Expedientes</span>
             </NavLink>
             <NavLink to="/medicamentos" className={enlaceNav}>
               <Pill className="size-4" aria-hidden />
-              <span className="hidden sm:inline">Medicamentos</span>
-              <span className="sr-only sm:hidden">Medicamentos</span>
+              <span className="hidden md:inline">Medicamentos</span>
+              <span className="sr-only md:hidden">Medicamentos</span>
             </NavLink>
             <NavLink to="/recordatorios" className={enlaceNav}>
               <Bell className="size-4" aria-hidden />
-              <span className="hidden sm:inline">Recordatorios</span>
-              <span className="sr-only sm:hidden">Recordatorios</span>
+              <span className="hidden md:inline">Recordatorios</span>
+              <span className="sr-only md:hidden">Recordatorios</span>
             </NavLink>
           </nav>
           <MenuUsuario />
         </div>
       </header>
 
-      <main id="contenido" className="mx-auto max-w-[1400px] px-4 py-8 sm:px-8 lg:py-10">
+      <main id="contenido" ref={contenido} tabIndex={-1} className="outline-none mx-auto max-w-[1400px] px-4 py-8 sm:px-8 lg:py-10">
         <AvisoCompartido />
         {children}
       </main>

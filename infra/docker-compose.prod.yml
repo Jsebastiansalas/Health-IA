@@ -122,6 +122,10 @@ services:
       DATOS_CLAVE: ${DATOS_CLAVE:?defina DATOS_CLAVE (openssl rand -base64 32)}
       DOS_PASOS_ADMINS: "true"
       CORREO_BASE_URL: https://${DOMINIO:?defina DOMINIO}
+      # Notificaciones push (infra/scripts/generar_vapid.py). Vacías: quedan apagadas.
+      PUSH_CLAVE_PUBLICA: ${PUSH_CLAVE_PUBLICA:-}
+      PUSH_CLAVE_PRIVADA: ${PUSH_CLAVE_PRIVADA:-}
+      PUSH_CONTACTO: ${PUSH_CONTACTO:-}
       SPRING_MAIL_HOST: ${SMTP_HOST:-}
       SPRING_MAIL_PORT: ${SMTP_PORT:-587}
       SPRING_MAIL_USERNAME: ${SMTP_USER:-}

@@ -161,8 +161,8 @@ export function PanelDocumentos({
         ))}
         {documentos?.length === 0 && (
           <li className="rounded-xl border border-dashed border-borde p-6 text-sm leading-relaxed text-texto-2">
-            Aún no hay documentos. Sube el pliego y sus adendas desde tu equipo: el original no queda guardado en el
-            servidor.
+            Aún no hay documentos. Sube {clinico ? "tus resultados, fórmulas u órdenes" : "el pliego y sus adendas"} desde tu
+            equipo: el original no queda guardado en el servidor.
           </li>
         )}
       </ul>

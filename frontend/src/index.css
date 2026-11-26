@@ -55,6 +55,39 @@
   color-scheme: dark;
 }
 
+/* ---------- Alto contraste (lo elige la persona en Accesibilidad) ---------- */
+:root[data-contraste="alto"] {
+  --fondo: #ffffff;
+  --panel: #ffffff;
+  --panel-2: #eef1f4;
+  --borde: #3d4b59;
+  --texto: #000000;
+  --texto-2: #12202e;
+  --texto-3: #253445;
+  --primario: #00545c;
+  --primario-osc: #003f45;
+  --ok: #0b4f33;
+  --aviso: #5c3700;
+  --peligro: #8a1309;
+}
+
+:root[data-tema="oscuro"][data-contraste="alto"] {
+  --fondo: #000000;
+  --panel: #000000;
+  --panel-2: #161616;
+  --borde: #b8b8b8;
+  --texto: #ffffff;
+  --texto-2: #f2f2f2;
+  --texto-3: #e0e0e0;
+  --primario: #7fe3ec;
+  --primario-osc: #a9eef4;
+  --ok: #9af0c4;
+  --aviso: #ffd48a;
+  --peligro: #ffb3ad;
+}
+
+:root[data-contraste="alto"] :focus-visible { outline: 3px solid var(--primario); outline-offset: 2px; }
+
 /* ---------- Tokens de Tailwind (apuntan a los valores del tema activo) ---------- */
 @theme inline {
   --color-fondo: var(--fondo);
@@ -101,11 +134,13 @@
     background-color: var(--fondo);
     color: var(--texto);
     font-family: var(--font-sans);
-    font-size: 16px;
+    font-size: 100%;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     scroll-behavior: smooth;
   }
+  html[data-letra="grande"] { font-size: 115%; }
+  html[data-letra="muy-grande"] { font-size: 130%; }
   body { min-height: 100vh; }
   ::selection { background: var(--cita); color: var(--cita-tx); }
   :focus-visible { outline: 2px solid var(--primario); outline-offset: 2px; border-radius: 4px; }

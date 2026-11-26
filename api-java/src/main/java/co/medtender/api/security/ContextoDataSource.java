@@ -28,7 +28,8 @@ class ContextoDataSourcePostProcessor implements BeanPostProcessor {
 class ContextoDataSource extends DelegatingDataSource {
 
     private static final String SQL =
-            "SELECT set_config('app.tenant_id', ?, false), set_config('app.sistema', ?, false)";
+            "SELECT set_config('app.tenant_id', ?, false), set_config('app.sistema', ?, false), "
+                    + "set_config('app.expediente_invitado', ?, false)";
 
     ContextoDataSource(DataSource destino) {
         super(destino);
@@ -49,6 +50,7 @@ class ContextoDataSource extends DelegatingDataSource {
         try (PreparedStatement ps = c.prepareStatement(SQL)) {
             ps.setString(1, ctx.tenantId() == null ? "" : ctx.tenantId().toString());
             ps.setString(2, ctx.sistema() ? "on" : "off");
+            ps.setString(3, ctx.expedienteInvitado() == null ? "" : ctx.expedienteInvitado().toString());
             ps.execute();
         } catch (SQLException e) {
             c.close();

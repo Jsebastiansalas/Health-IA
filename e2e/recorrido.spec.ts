@@ -31,7 +31,7 @@ test("una persona se registra, sube una foto, la entiende, se lleva sus datos y 
   await test.step("la portada carga con sus escenas y sin errores", async () => {
     const errores: string[] = [];
     page.on("pageerror", (e) => errores.push(e.message));
-    await page.goto("/personas");
+    await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Entiende los documentos");
     await expect(page.locator("video").first()).toBeAttached({ timeout: 30_000 });
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", /og-portada\.jpg$/);
@@ -50,9 +50,9 @@ test("una persona se registra, sube una foto, la entiende, se lleva sus datos y 
   await test.step("abre un expediente", async () => {
     await page.getByRole("button", { name: "Abrir expediente" }).first().click();
     const dialogo = page.getByRole("dialog");
-    await dialogo.getByLabel("Código").fill("MIS-EXAMENES");
-    await dialogo.getByLabel("Título").fill("Mis exámenes");
-    await dialogo.getByRole("button", { name: /Abrir expediente|Crear/ }).click();
+    // A una persona solo se le pide el nombre.
+    await dialogo.getByLabel("¿Cómo quieres llamarlo?").fill("Mis exámenes");
+    await dialogo.getByRole("button", { name: "Crear expediente" }).click();
     await expect(page).toHaveURL(/\/expedientes\//);
   });
 
@@ -111,6 +111,56 @@ test("una persona se registra, sube una foto, la entiende, se lleva sus datos y 
     await expect(page.getByRole("heading", { name: "Próximos" })).toBeVisible();
   });
 
+  await test.step("comparte el expediente con un cuidador, que lo ve y luego pierde el acceso", async () => {
+    const cuidador = `cuidador.${Date.now()}@ejemplo.co`;
+    await page.goto("/");
+    await page.getByRole("link", { name: /Mis exámenes/ }).first().click();
+    const suyo = page.url();
+    await page.getByRole("button", { name: "Compartir con un cuidador" }).click();
+    await page.getByLabel("Correo de esa persona").fill(cuidador);
+    await page.getByRole("checkbox", { name: /tengo derecho a compartir/i }).check();
+    await page.getByRole("button", { name: "Enviar invitación" }).click();
+    await expect(page.getByText("Invitación enviada.", { exact: false })).toBeVisible();
+
+    let enlace = "";
+    await expect
+      .poll(async () => {
+        const { correos } = (await (await request.get("http://127.0.0.1:18900/correos")).json()) as {
+          correos: { para: string; texto: string }[];
+        };
+        const correoInvitacion = correos.filter((c) => c.para.includes(cuidador)).pop();
+        enlace = correoInvitacion?.texto.match(/\/invitacion\?token=[0-9a-f]{64}/)?.[0] ?? "";
+        expect(correoInvitacion?.texto ?? "").not.toContain("Mis exámenes");
+        return enlace;
+      })
+      .not.toBe("");
+
+    // La otra persona, en su propio navegador.
+    const otro = await page.context().browser()!.newContext({ baseURL: "http://localhost:18088", serviceWorkers: "block" });
+    const suya = await otro.newPage();
+    await suya.goto("/registro");
+    await suya.getByLabel("Tu nombre").fill("Cuidador Inventado");
+    await suya.getByLabel("Correo electrónico").fill(cuidador);
+    await suya.getByLabel("Contraseña (mínimo 10 caracteres)").fill(CLAVE);
+    await suya.getByRole("button", { name: "Crear cuenta" }).click();
+    await expect(suya.getByRole("button", { name: "Abrir expediente" }).first()).toBeVisible();
+    await suya.goto(enlace);
+    await suya.getByRole("button", { name: "Aceptar invitación" }).click();
+    await expect(suya.getByRole("note").first()).toContainText("Persona Inventada te compartió este expediente");
+    await expect(suya.getByRole("button", { name: "Explícame este documento" })).toBeVisible();
+    await expect(suya.getByRole("button", { name: "Compartir con un cuidador" })).toHaveCount(0);
+
+    await page.keyboard.press("Escape");
+    await page.reload();
+    await page.getByRole("button", { name: "Compartir con un cuidador" }).click();
+    await page.getByRole("button", { name: `Quitar acceso a ${cuidador}` }).click();
+    await expect(page.getByText(cuidador)).toHaveCount(0);
+    await suya.goto(suyo);
+    await expect(suya.getByRole("heading", { name: "Expediente no disponible" })).toBeVisible();
+    await otro.close();
+    await page.keyboard.press("Escape");
+  });
+
   await test.step("el historial quedó cifrado en la base", async () => {
     expect(Number(enLaBase("select count(*) from consultas"))).toBeGreaterThan(0);
     expect(enLaBase("select count(*) from consultas where pregunta not like 'mtd1:%' or not respuesta ? 'cifrado'")).toBe("0");
@@ -134,6 +184,6 @@ test("una persona se registra, sube una foto, la entiende, se lleva sus datos y 
     await page.getByLabel("Escribe tu contraseña para confirmar").fill(CLAVE);
     await page.getByRole("button", { name: "Eliminar para siempre" }).click();
     await expect.poll(() => enLaBase(`select count(*) from usuarios where email = '${correo}'`)).toBe("0");
-    expect(enLaBase("select (select count(*) from fragmentos) + (select count(*) from consultas) + (select count(*) from recordatorios)")).toBe("0");
+    expect(enLaBase("select (select count(*) from fragmentos) + (select count(*) from consultas) + (select count(*) from recordatorios) + (select count(*) from comparticiones)")).toBe("0");
   });
 });

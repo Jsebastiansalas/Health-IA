@@ -66,7 +66,7 @@ describe("portadas", () => {
     enRuta(<PaginaPersonas />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Entiende los documentos que te entregan en el hospital");
     expect(screen.getAllByRole("link", { name: /Crear mi cuenta/ })[0]).toHaveAttribute("href", "/registro");
-    expect(screen.getAllByRole("link", { name: "Para organizaciones" })[0]).toHaveAttribute("href", "/");
+    expect(screen.getAllByRole("link", { name: "Para organizaciones" })[0]).toHaveAttribute("href", "/organizaciones");
   });
 
   it("marca el ejemplo como ilustrativo y no inventa cifras ni testimonios", () => {

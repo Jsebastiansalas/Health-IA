@@ -47,7 +47,7 @@ export function PaginaIngreso() {
           <h1 className="text-4xl font-semibold">Tus expedientes de salud, con la fuente a un clic.</h1>
           <ul className="mt-8 space-y-4 text-base">
             {[
-              "Licitaciones médicas, historias clínicas y auditorías en un solo lugar.",
+              "Tus documentos de salud, explicados y con la cita al lado.",
               "Cada respuesta cita el documento, la página y el texto exacto.",
               "Si los documentos no la respaldan, te lo dice.",
             ].map((t) => (

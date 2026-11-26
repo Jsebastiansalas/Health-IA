@@ -97,6 +97,11 @@ medtender:
     consultar-filtraciones: ${CONTRASENAS_CONSULTAR_FILTRACIONES:true}   # Have I Been Pwned por k-anonimato
   seguridad:
     dos-pasos-admins: ${DOS_PASOS_ADMINS:false}   # obliga a los administradores de organizaciones
+  push:
+    # Claves VAPID (infra/scripts/generar_vapid.py). Sin ellas, las notificaciones quedan apagadas.
+    clave-publica: ${PUSH_CLAVE_PUBLICA:}
+    clave-privada: ${PUSH_CLAVE_PRIVADA:}
+    contacto: ${PUSH_CONTACTO:}   # mailto: o https: para que el servicio de push pueda avisar de un problema
   correo:
     # Si es true, una cuenta personal sin correo verificado no puede subir ni consultar. Actívalo en producción.
     verificacion-obligatoria: ${CORREO_VERIFICACION_OBLIGATORIA:false}

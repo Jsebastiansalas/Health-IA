@@ -98,7 +98,7 @@ public class DocumentoController {
     @PostMapping
     public ResponseEntity<DocumentoOut> subir(@PathVariable UUID expedienteId, HttpServletRequest req,
                                               @AuthenticationPrincipal UsuarioActual user) {
-        var a = autorizacion.obtener(user, expedienteId, Permiso.EDITOR);
+        var a = autorizacion.obtenerCompartible(user, expedienteId, Permiso.EDITOR);
         consentimiento.exigir(user);
         if (a.expediente().getEstado() != EstadoExpediente.ABIERTO) {
             throw new ApiException(HttpStatus.CONFLICT, "El expediente no está abierto");
@@ -150,7 +150,8 @@ public class DocumentoController {
             log.info("Recepcion documento={} {} MB en {} s", documentoId,
                     String.format("%.1f", recibido.tamano() / 1e6), String.format("%.1f", (System.nanoTime() - t0) / 1e9));
 
-            var duplicados = documentos.duplicados(user.tenantId(), expedienteId, recibido.sha256());
+            UUID tenantDelExpediente = a.expediente().getTenantId();
+            var duplicados = documentos.duplicados(tenantDelExpediente, expedienteId, recibido.sha256());
             if (!duplicados.isEmpty()) {
                 Map<String, Object> detalle = new LinkedHashMap<>();
                 detalle.put("msg", "Este documento ya fue cargado en el expediente");
@@ -158,7 +159,7 @@ public class DocumentoController {
                 throw new ApiException(HttpStatus.CONFLICT, detalle);
             }
 
-            Documento d = new Documento(documentoId, user.tenantId(), expedienteId, recibido.nombre(), meta.tipo(),
+            Documento d = new Documento(documentoId, tenantDelExpediente, expedienteId, recibido.nombre(), meta.tipo(),
                     meta.numeroAdenda(), recibido.sha256(), recibido.tamano(), a.expediente().getEmbeddingModelActivo());
             d = documentos.saveAndFlush(d);
             insertado = true;
@@ -215,8 +216,8 @@ public class DocumentoController {
 
     @GetMapping
     public List<DocumentoOut> listar(@PathVariable UUID expedienteId, @AuthenticationPrincipal UsuarioActual user) {
-        autorizacion.obtener(user, expedienteId, Permiso.LECTOR);
-        return documentos.findByTenantIdAndExpedienteIdOrderByUploadedAtDesc(user.tenantId(), expedienteId).stream()
+        UUID tenant = autorizacion.obtenerCompartible(user, expedienteId, Permiso.LECTOR).expediente().getTenantId();
+        return documentos.findByTenantIdAndExpedienteIdOrderByUploadedAtDesc(tenant, expedienteId).stream()
                 .map(d -> DocumentoOut.de(d, ingesta.ocrVersionActual())).toList();
     }
 
@@ -224,8 +225,9 @@ public class DocumentoController {
     @GetMapping("/{documentoId}")
     public DocumentoDetalleOut obtener(@PathVariable UUID expedienteId, @PathVariable UUID documentoId,
                                        @AuthenticationPrincipal UsuarioActual user) {
-        Documento d = documentoAutorizado(user, expedienteId, documentoId, Permiso.LECTOR);
-        var detalle = actas.findByDocumentoIdAndTenantIdOrderByPurgedAt(d.getId(), user.tenantId()).stream()
+        var a = autorizacion.obtenerCompartible(user, expedienteId, Permiso.LECTOR);
+        Documento d = documentoDe(a, expedienteId, documentoId);
+        var detalle = actas.findByDocumentoIdAndTenantIdOrderByPurgedAt(d.getId(), d.getTenantId()).stream()
                 .map(ActaPurgaOut::de).toList();
         return new DocumentoDetalleOut(DocumentoOut.de(d, ingesta.ocrVersionActual()), detalle);
     }
@@ -234,16 +236,16 @@ public class DocumentoController {
     @DeleteMapping("/{documentoId}")
     public ResponseEntity<Void> eliminar(@PathVariable UUID expedienteId, @PathVariable UUID documentoId,
                                          @AuthenticationPrincipal UsuarioActual user) {
-        Documento d = documentoAutorizado(user, expedienteId, documentoId, Permiso.EDITOR);
+        // Borrar es solo de la dueña (o de la organización): un cuidador no puede.
+        Documento d = documentoDe(autorizacion.obtener(user, expedienteId, Permiso.EDITOR), expedienteId, documentoId);
         purga.eliminar(d, user.email());
         auditoria.auditar(Accion.DOCUMENTO_ELIMINADO, user, "documento", documentoId,
                 Map.of("expediente", expedienteId.toString(), "sha256", d.getSha256Original()));
         return ResponseEntity.noContent().build();
     }
 
-    private Documento documentoAutorizado(UsuarioActual user, UUID expedienteId, UUID documentoId, Permiso minimo) {
-        autorizacion.obtener(user, expedienteId, minimo);
-        return documentos.findByIdAndExpedienteIdAndTenantId(documentoId, expedienteId, user.tenantId())
+    private Documento documentoDe(AutorizacionExpediente.Autorizado a, UUID expedienteId, UUID documentoId) {
+        return documentos.findByIdAndExpedienteIdAndTenantId(documentoId, expedienteId, a.expediente().getTenantId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Documento no encontrado"));
     }
 

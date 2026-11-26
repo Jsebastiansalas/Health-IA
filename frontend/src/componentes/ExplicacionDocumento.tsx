@@ -1,3 +1,4 @@
+import { BotonLeer } from "./BotonLeer";
 import { BookOpen, MessageCircleQuestion, SearchX, TriangleAlert } from "../iconos";
 import type { RespuestaConsulta } from "../api/tipos";
 import { AvisoUrgencia } from "./AvisoSalud";
@@ -33,8 +34,20 @@ export function ExplicacionDocumento({
     );
   }
 
+  // Lo mismo que se ve, en el mismo orden.
+  const paraEscuchar = [
+    r.deQueTrata,
+    senales.length ? `El documento marca como importante: ${senales.join("; ")}.` : "",
+    ...hallazgos.map((h) => h.texto),
+    preguntas.length ? `Preguntas para tu médico. ${preguntas.join(" ")}` : "",
+    r.avisoGeneral,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   return (
     <div className="space-y-6 text-sm leading-relaxed">
+      <BotonLeer texto={paraEscuchar} />
       {r.deQueTrata && (
         <section aria-labelledby={`trata-${r.consultaId}`}>
           <h3 id={`trata-${r.consultaId}`} className="mb-2 text-sm font-semibold text-primario">

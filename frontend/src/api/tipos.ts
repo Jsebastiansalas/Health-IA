@@ -55,6 +55,23 @@ export interface Expediente {
   embedding_dimension: number;
   created_at: string;
   mi_permiso: Permiso | null;
+  /** Solo al abrir un expediente ajeno: quién lo compartió. */
+  compartido_por?: string | null;
+}
+
+export interface Comparticion {
+  id: string;
+  correo: string;
+  permiso: "LECTOR" | "EDITOR";
+  estado: "PENDIENTE" | "ACEPTADA";
+  ultimo_acceso: string | null;
+}
+
+export interface CompartidoConmigo {
+  expediente_id: string;
+  titulo: string;
+  compartido_por: string;
+  permiso: "LECTOR" | "EDITOR";
 }
 
 export interface ActaPurga {

@@ -88,7 +88,7 @@ public class ExportacionService {
                     UUID id = rs.getObject("id", UUID.class);
                     ArrayNode documentos = e.putArray("documentos");
                     documentos(tenantId, id, documentos);
-                    ArrayNode consultas = consultas(tenantId, id);
+                    ArrayNode consultas = consultas(tenantId, usuarioId, id);
                     e.set("consultas", consultas);
                     e.set("constancias_de_borrado", lista("""
                             select a.sha256_original, a.motivo, a.purged_at from actas_purga a
@@ -96,18 +96,30 @@ public class ExportacionService {
                             where a.tenant_id = ? and d.expediente_id = ? order by a.purged_at""",
                             new String[] {"sha256_original", "sha256_original", "motivo", "motivo", "fecha", "purged_at"},
                             tenantId, id));
+                    e.set("compartido_con", lista("""
+                            select correo_invitado, permiso, estado, created_at, aceptada_at, ultimo_acceso_at, revocada_at
+                            from comparticiones where tenant_id = ? and expediente_id = ? order by created_at""",
+                            new String[] {"correo", "correo_invitado", "permiso", "permiso", "estado", "estado",
+                                    "invitado_at", "created_at", "aceptada_at", "aceptada_at",
+                                    "ultimo_acceso_at", "ultimo_acceso_at", "revocada_at", "revocada_at"},
+                            tenantId, id));
                     conteos[0]++;
                     conteos[1] += documentos.size();
                     conteos[2] += consultas.size();
                 }, tenantId);
 
         datos.set("recordatorios", lista("""
-                select r.texto, r.fecha_texto, r.fecha, r.estado, r.created_at, e.titulo from recordatorios r
-                join expedientes e on e.id = r.expediente_id
+                select r.texto, r.fecha_texto, r.fecha, r.estado, r.created_at,
+                       coalesce(e.titulo, 'Expediente que comparten contigo') as titulo from recordatorios r
+                left join expedientes e on e.id = r.expediente_id
                 where r.tenant_id = ? and r.usuario_id = ? order by r.created_at""",
                 new String[] {"texto", "texto", "fecha_en_el_documento", "fecha_texto", "fecha", "fecha", "estado", "estado",
                         "creado_at", "created_at", "expediente", "titulo"},
                 tenantId, usuarioId));
+        // Sin la dirección de envío: es un identificador del dispositivo, no un dato que le sirva a la persona.
+        datos.set("dispositivos_con_avisos", lista("""
+                select created_at from suscripciones_push where tenant_id = ? and usuario_id = ? order by created_at""",
+                new String[] {"activado_at", "created_at"}, tenantId, usuarioId));
         datos.set("accesos", lista("""
                 select created_at, accion, resultado, ip from auditoria
                 where tenant_id = ? and usuario_id = ? order by created_at""",
@@ -162,13 +174,15 @@ public class ExportacionService {
                 }, tenantId, documentoId);
     }
 
-    private ArrayNode consultas(UUID tenantId, UUID expedienteId) {
+    /** Incluye las de un cuidador: son sobre el expediente de la persona, pero se dice que no las hizo. */
+    private ArrayNode consultas(UUID tenantId, UUID usuarioId, UUID expedienteId) {
         ArrayNode salida = json.createArrayNode();
         jdbc.query("""
-                select created_at, pregunta, respuesta::text as respuesta from consultas
+                select created_at, pregunta, respuesta::text as respuesta, usuario_id from consultas
                 where tenant_id = ? and expediente_id = ? order by created_at""",
                 rs -> {
                     ObjectNode c = objeto(rs, "fecha", "created_at");
+                    c.put("hecha_por", usuarioId.equals(rs.getObject("usuario_id", UUID.class)) ? "tú" : "una persona con acceso");
                     c.put("pregunta", cifrado.texto(rs.getString("pregunta")));
                     try {
                         c.set("respuesta", cifrado.respuesta(json.readTree(rs.getString("respuesta"))));

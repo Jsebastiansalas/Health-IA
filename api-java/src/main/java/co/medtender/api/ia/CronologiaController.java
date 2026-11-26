@@ -49,7 +49,7 @@ public class CronologiaController {
     @PostMapping
     public JsonNode armar(@PathVariable UUID expedienteId, @RequestParam(defaultValue = "false") boolean rehacer,
                           @AuthenticationPrincipal UsuarioActual user) {
-        autorizacion.obtener(user, expedienteId, Permiso.LECTOR);
+        UUID tenant = autorizacion.obtenerCompartible(user, expedienteId, Permiso.LECTOR).expediente().getTenantId();
         consentimiento.exigir(user);
         var rl = props.rateLimit();
         String quien = user.id().toString();
@@ -60,7 +60,7 @@ public class CronologiaController {
         }
 
         Map<String, Object> cuerpo = new LinkedHashMap<>();
-        cuerpo.put("tenant_id", user.tenantId());
+        cuerpo.put("tenant_id", tenant);
         cuerpo.put("expediente_id", expedienteId);
         cuerpo.put("usuario_id", user.id());
         cuerpo.put("rehacer", rehacer);

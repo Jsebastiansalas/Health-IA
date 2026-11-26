@@ -85,6 +85,7 @@ class CuentasSegurasIT extends IntegracionBase {
         postJson("/api/v1/auth/logout", Map.of("refresh_token", admin.get("refresh_token").asString())).andExpect(status().isNoContent());
         refresh(admin).andExpect(status().isUnauthorized());
         refresh(otra).andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("select count(*) from auditoria where accion = 'LOGOUT'", Integer.class)).isEqualTo(1);
         // Idempotente y sin revelar nada con un token inválido.
         postJson("/api/v1/auth/logout", Map.of("refresh_token", "basura")).andExpect(status().isNoContent());
     }
