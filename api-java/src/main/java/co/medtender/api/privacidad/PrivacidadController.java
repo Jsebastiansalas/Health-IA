@@ -126,7 +126,7 @@ public class PrivacidadController {
     public RetencionCambiada elegirRetencion(@RequestBody RetencionIn in, @AuthenticationPrincipal UsuarioActual user) {
         exigirCuentaPersonal(user);
         if (in.meses() != null && !RetencionService.PLAZOS.contains(in.meses())) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "El plazo debe ser de 3, 6, 12 o 24 meses");
+            throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "El plazo debe ser de 3, 6, 12 o 24 meses");
         }
         int borradas = retencion.elegir(user.tenantId(), in.meses());
         var detalle = new LinkedHashMap<String, Object>();

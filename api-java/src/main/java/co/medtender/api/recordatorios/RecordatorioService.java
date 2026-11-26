@@ -5,8 +5,8 @@ import co.medtender.api.domain.Recordatorio.Estado;
 import co.medtender.api.domain.RecordatorioRepository;
 import co.medtender.api.security.UsuarioActual;
 import co.medtender.api.web.ApiException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -54,7 +54,7 @@ public class RecordatorioService {
     }
 
     private static LocalDate fecha(JsonNode n) {
-        return n == null || n.isNull() || n.asText().isBlank() ? null : LocalDate.parse(n.asText());
+        return n == null || n.isNull() || n.asString("").isBlank() ? null : LocalDate.parse(n.asString(""));
     }
 
     private static String recortar(String s, int max) {
@@ -67,10 +67,10 @@ public class RecordatorioService {
     public int guardarPropuestas(UsuarioActual u, UUID expedienteId, JsonNode propuestas) {
         int nuevas = 0;
         for (JsonNode p : propuestas) {
-            String texto = p.path("texto").asText("").strip();
+            String texto = p.path("texto").asString("").strip();
             if (texto.isEmpty() || !p.hasNonNull("cita")) continue;
-            String fechaTexto = p.path("fechaTexto").asText("");
-            String clave = clave(texto, p.path("cita").path("documentoId").asText(null), fechaTexto);
+            String fechaTexto = p.path("fechaTexto").asString("");
+            String clave = clave(texto, p.path("cita").path("documentoId").asString(null), fechaTexto);
             if (repo.existsByUsuarioIdAndExpedienteIdAndClave(u.id(), expedienteId, clave)) continue;
             Map<String, Object> cita = json.convertValue(p.get("cita"), Map.class);
             repo.save(new Recordatorio(u.tenantId(), u.id(), expedienteId, recortar(texto, 300), recortar(fechaTexto, 120),
@@ -100,7 +100,7 @@ public class RecordatorioService {
         Recordatorio r = obtener(u, id);
         LocalDate efectiva = fecha != null ? fecha : r.getFecha() != null ? r.getFecha() : r.getFechaPropuesta();
         if (estado == Estado.CONFIRMADO && efectiva == null) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Pon una fecha para confirmar el recordatorio",
+            throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "Pon una fecha para confirmar el recordatorio",
                     Map.of("codigo", "fecha_requerida"));
         }
         r.actualizar(estado, estado == Estado.CONFIRMADO ? efectiva : fecha);

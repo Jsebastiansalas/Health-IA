@@ -2,7 +2,7 @@ package co.medtender.api;
 
 import co.medtender.api.auth.Totp;
 import co.medtender.api.privacidad.CorreoEnvio;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +61,7 @@ class CuentasSegurasIT extends IntegracionBase {
     }
 
     private ResultActions refresh(JsonNode tokens) throws Exception {
-        return postJson("/api/v1/auth/refresh", Map.of("refresh_token", tokens.get("refresh_token").asText()));
+        return postJson("/api/v1/auth/refresh", Map.of("refresh_token", tokens.get("refresh_token").asString()));
     }
 
     private ResultActions me(JsonNode tokens) throws Exception {
@@ -82,7 +82,7 @@ class CuentasSegurasIT extends IntegracionBase {
     @Test
     void cerrarSesionRevocaSuRenovacionYNoAfectaOtras() throws Exception {
         JsonNode otra = login("admin@c.co", PASS);
-        postJson("/api/v1/auth/logout", Map.of("refresh_token", admin.get("refresh_token").asText())).andExpect(status().isNoContent());
+        postJson("/api/v1/auth/logout", Map.of("refresh_token", admin.get("refresh_token").asString())).andExpect(status().isNoContent());
         refresh(admin).andExpect(status().isUnauthorized());
         refresh(otra).andExpect(status().isOk());
         // Idempotente y sin revelar nada con un token inválido.
@@ -106,9 +106,9 @@ class CuentasSegurasIT extends IntegracionBase {
     void cambiarLaContrasenaExigeLaActualYUnaBuenaYCierraLasDemasSesiones() throws Exception {
         JsonNode otro = login("admin@c.co", PASS);
         postAuth("/api/v1/auth/cambiar-contrasena", admin, Map.of("actual", "no-es-esta-1", "nueva", NUEVA))
-                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.codigo").value("contrasena_actual"));
+                .andExpect(status().isUnprocessableContent()).andExpect(jsonPath("$.codigo").value("contrasena_actual"));
         postAuth("/api/v1/auth/cambiar-contrasena", admin, Map.of("actual", PASS, "nueva", "contrasena123"))
-                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.codigo").value("contrasena_comun"));
+                .andExpect(status().isUnprocessableContent()).andExpect(jsonPath("$.codigo").value("contrasena_comun"));
         JsonNode nuevos = cuerpo(postAuth("/api/v1/auth/cambiar-contrasena", admin, Map.of("actual", PASS, "nueva", NUEVA))
                 .andExpect(status().isOk()).andReturn());
         me(otro).andExpect(status().isUnauthorized());
@@ -131,7 +131,7 @@ class CuentasSegurasIT extends IntegracionBase {
         assertThat(jdbc.queryForObject("select count(*) from restablecimientos_clave where token_hash = ?", Integer.class, token)).isZero();
 
         postJson("/api/v1/auth/restablecer-contrasena", Map.of("token", token, "password", "1234567890"))
-                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.codigo").value("contrasena_comun"));
+                .andExpect(status().isUnprocessableContent()).andExpect(jsonPath("$.codigo").value("contrasena_comun"));
         postJson("/api/v1/auth/restablecer-contrasena", Map.of("token", token, "password", NUEVA)).andExpect(status().isNoContent());
         postJson("/api/v1/auth/restablecer-contrasena", Map.of("token", token, "password", NUEVA))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.codigo").value("enlace_invalido"));
@@ -152,19 +152,19 @@ class CuentasSegurasIT extends IntegracionBase {
     @Test
     void laPoliticaRechazaContrasenasComunesOConElCorreoAlRegistrarse() throws Exception {
         postJson("/api/v1/auth/registro-personal", Map.of("nombre", "Ana Pérez", "email", "ana.comun@correo.co", "password", "contrasena123"))
-                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.codigo").value("contrasena_comun"));
+                .andExpect(status().isUnprocessableContent()).andExpect(jsonPath("$.codigo").value("contrasena_comun"));
         postJson("/api/v1/auth/registro-personal", Map.of("nombre", "Ana Pérez", "email", "anaperez@correo.co", "password", "anaperez-2026!"))
-                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.codigo").value("contrasena_personal"));
+                .andExpect(status().isUnprocessableContent()).andExpect(jsonPath("$.codigo").value("contrasena_personal"));
     }
 
     // ---------- Verificación en dos pasos ----------
 
     private List<String> activarDosPasos(JsonNode tokens) throws Exception {
         JsonNode inicio = cuerpo(postAuth("/api/v1/auth/2fa/iniciar", tokens, Map.of()).andExpect(status().isOk()).andReturn());
-        String secreto = inicio.get("secreto").asText();
-        assertThat(inicio.get("uri").asText()).startsWith("otpauth://totp/MedTender").contains("secret=" + secreto);
+        String secreto = inicio.get("secreto").asString();
+        assertThat(inicio.get("uri").asString()).startsWith("otpauth://totp/MedTender").contains("secret=" + secreto);
         postAuth("/api/v1/auth/2fa/activar", tokens, Map.of("codigo", "000000"))
-                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.codigo").value("codigo_invalido"));
+                .andExpect(status().isUnprocessableContent()).andExpect(jsonPath("$.codigo").value("codigo_invalido"));
         JsonNode r = cuerpo(postAuth("/api/v1/auth/2fa/activar", tokens, Map.of("codigo", Totp.codigoActual(secreto, Instant.now())))
                 .andExpect(status().isOk()).andReturn());
         List<String> codigos = json.convertValue(r.get("codigos_respaldo"), json.getTypeFactory().constructCollectionType(List.class, String.class));
@@ -185,7 +185,7 @@ class CuentasSegurasIT extends IntegracionBase {
         JsonNode paso1 = cuerpo(postJson("/api/v1/auth/login", Map.of("email", "admin@c.co", "password", PASS)).andExpect(status().isOk()).andReturn());
         assertThat(paso1.get("requiere2fa").asBoolean()).isTrue();
         assertThat(paso1.get("access_token").isNull()).isTrue();
-        String desafio = paso1.get("desafio").asText();
+        String desafio = paso1.get("desafio").asString();
         // El desafío no sirve como token de acceso.
         mvc.perform(get("/api/v1/auth/me").header("Authorization", "Bearer " + desafio)).andExpect(status().isUnauthorized());
 
@@ -203,11 +203,11 @@ class CuentasSegurasIT extends IntegracionBase {
 
         // Desactivar exige contraseña y código.
         postAuth("/api/v1/auth/2fa/desactivar", tokens, Map.of("password", "mala-clave-99", "codigo", Totp.codigoActual(secreto, Instant.now())))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableContent());
         postAuth("/api/v1/auth/2fa/desactivar", tokens, Map.of("password", PASS, "codigo", Totp.codigoActual(secreto, Instant.now())))
                 .andExpect(status().isNoContent());
         JsonNode sinDosPasos = login("admin@c.co", PASS);
-        assertThat(sinDosPasos.get("access_token").asText()).isNotBlank();
+        assertThat(sinDosPasos.get("access_token").asString()).isNotBlank();
         assertThat(ENVIADOS).extracting(c -> c[1]).contains(
                 "Activaste la verificación en dos pasos en MedTender", "Desactivaste la verificación en dos pasos en MedTender");
     }
@@ -215,7 +215,7 @@ class CuentasSegurasIT extends IntegracionBase {
     @Test
     void elCodigoDeDosPasosTieneLimiteDeIntentos() throws Exception {
         activarDosPasos(admin);
-        String desafio = cuerpo(postJson("/api/v1/auth/login", Map.of("email", "admin@c.co", "password", PASS)).andReturn()).get("desafio").asText();
+        String desafio = cuerpo(postJson("/api/v1/auth/login", Map.of("email", "admin@c.co", "password", PASS)).andReturn()).get("desafio").asString();
         for (int i = 0; i < 5; i++) {
             postJson("/api/v1/auth/2fa/verificar", Map.of("desafio", desafio, "codigo", "000000")).andExpect(status().isUnauthorized());
         }

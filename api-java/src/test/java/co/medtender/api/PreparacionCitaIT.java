@@ -1,6 +1,6 @@
 package co.medtender.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,7 @@ class PreparacionCitaIT extends IntegracionBase {
                 .andExpect(header().string("Cache-Control", "no-store"));
         var llamada = Infra.AGENTE.llamadas().stream().filter(l -> l.ruta().equals("/internal/v1/preparaciones")).findFirst().orElseThrow();
         assertThat(llamada.token()).isEqualTo(Infra.AGENTE_TOKEN);
-        assertThat(json.readTree(llamada.cuerpo()).get("expediente_id").asText()).isEqualTo(expediente);
+        assertThat(json.readTree(llamada.cuerpo()).get("expediente_id").asString()).isEqualTo(expediente);
         String detalle = (String) jdbc.queryForMap("select detalle::text as detalle from auditoria where accion='PREPARACION_CITA'").get("detalle");
         assertThat(detalle).contains("\"preguntas\": 1").contains("\"medicamentos\": 1").contains("\"cambios\": 1");
         assertThat(detalle).doesNotContain("Atorvastatina").doesNotContain("lipídico").doesNotContain("13,2");

@@ -1,6 +1,6 @@
 package co.medtender.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,7 @@ class CronologiaIT extends IntegracionBase {
         var llamada = Infra.AGENTE.llamadas().stream().filter(l -> l.ruta().equals("/internal/v1/cronologias")).findFirst().orElseThrow();
         assertThat(llamada.token()).isEqualTo(Infra.AGENTE_TOKEN);
         JsonNode enviado = json.readTree(llamada.cuerpo());
-        assertThat(enviado.get("expediente_id").asText()).isEqualTo(expediente);
+        assertThat(enviado.get("expediente_id").asString()).isEqualTo(expediente);
         assertThat(enviado.get("rehacer").asBoolean()).isFalse();
         var fila = jdbc.queryForMap("select detalle::text as detalle from auditoria where accion='LINEA_DE_TIEMPO'");
         String detalle = (String) fila.get("detalle");

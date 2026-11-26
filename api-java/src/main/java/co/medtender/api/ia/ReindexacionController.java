@@ -8,7 +8,7 @@ import co.medtender.api.expediente.AutorizacionExpediente;
 import co.medtender.api.ingesta.AgenteClient;
 import co.medtender.api.limites.Limitador;
 import co.medtender.api.security.UsuarioActual;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -69,9 +69,9 @@ public class ReindexacionController {
         JsonNode r = agente.post("/internal/v1/reindexaciones", cuerpo, false);
 
         Map<String, Object> detalle = new LinkedHashMap<>();
-        detalle.put("reindexacion", r.path("id").asText(null));
-        detalle.put("origen", r.path("modelo_origen").asText(null));
-        detalle.put("destino", r.path("modelo_destino").asText(null));
+        detalle.put("reindexacion", r.path("id").asString(null));
+        detalle.put("origen", r.path("modelo_origen").asString(null));
+        detalle.put("destino", r.path("modelo_destino").asString(null));
         auditoria.auditar(Accion.REINDEXACION_SOLICITADA, user, "expediente", expedienteId, detalle);
         return r;
     }

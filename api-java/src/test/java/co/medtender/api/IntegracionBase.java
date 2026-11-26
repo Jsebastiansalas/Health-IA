@@ -1,8 +1,8 @@
 package co.medtender.api;
 
 import co.medtender.api.limites.AlmacenLimites;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.micrometer.metrics.test.autoconfigure.AutoConfigureMetrics;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 /** Base de las pruebas con MockMvc: PostgreSQL+pgvector y Redis reales en contenedores. */
 @SpringBootTest
 @AutoConfigureMockMvc
-@AutoConfigureObservability
+@AutoConfigureMetrics
 public abstract class IntegracionBase {
 
     public static final String JWT_SECRET = Infra.JWT_SECRET;
@@ -82,7 +82,7 @@ public abstract class IntegracionBase {
     }
 
     protected String bearer(JsonNode tokens) {
-        return "Bearer " + tokens.get("access_token").asText();
+        return "Bearer " + tokens.get("access_token").asString();
     }
 
     /** Crea un usuario con el rol dado en el tenant del administrador y devuelve su id. */
@@ -94,12 +94,12 @@ public abstract class IntegracionBase {
         if (r.getResponse().getStatus() != 201) {
             throw new AssertionError("Alta fallida: " + r.getResponse().getStatus() + " " + r.getResponse().getContentAsString());
         }
-        return cuerpo(r).get("id").asText();
+        return cuerpo(r).get("id").asString();
     }
 
     /** Acepta el consentimiento como lo hace la interfaz: con la versión que la API acaba de mostrar. */
     protected org.springframework.test.web.servlet.ResultActions aceptarConsentimiento(JsonNode tokens) throws Exception {
-        String version = cuerpo(mvc.perform(getAuth("/api/v1/consentimiento", tokens)).andReturn()).get("version").asText();
+        String version = cuerpo(mvc.perform(getAuth("/api/v1/consentimiento", tokens)).andReturn()).get("version").asString();
         return mvc.perform(post("/api/v1/consentimiento").header("Authorization", bearer(tokens))
                 .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("version", version))));
     }
@@ -118,6 +118,6 @@ public abstract class IntegracionBase {
         if (r.getResponse().getStatus() != 201) {
             throw new AssertionError("Expediente fallido: " + r.getResponse().getStatus() + " " + r.getResponse().getContentAsString());
         }
-        return cuerpo(r).get("id").asText();
+        return cuerpo(r).get("id").asString();
     }
 }

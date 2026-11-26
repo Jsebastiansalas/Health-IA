@@ -8,7 +8,7 @@ import co.medtender.api.expediente.AutorizacionExpediente;
 import co.medtender.api.ingesta.AgenteClient;
 import co.medtender.api.limites.Limitador;
 import co.medtender.api.security.UsuarioActual;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -77,10 +77,10 @@ public class ConsultaController {
 
         // Se audita quien consulto que expediente y con que resultado; nunca el texto de la pregunta.
         Map<String, Object> detalle = new LinkedHashMap<>();
-        detalle.put("consulta", respuesta.path("consultaId").asText(null));
-        detalle.put("sin_evidencia", respuesta.path("sinEvidencia").asBoolean());
+        detalle.put("consulta", respuesta.path("consultaId").asString(null));
+        detalle.put("sin_evidencia", respuesta.path("sinEvidencia").asBoolean(false));
         detalle.put("citas", respuesta.path("citas").size());
-        detalle.put("latencia_ms", respuesta.path("latenciaMs").asLong());
+        detalle.put("latencia_ms", respuesta.path("latenciaMs").asLong(0));
         auditoria.auditar(Accion.CONSULTA_RAG, user, "expediente", expedienteId, detalle);
         return respuesta;
     }

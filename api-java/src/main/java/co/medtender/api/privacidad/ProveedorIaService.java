@@ -1,7 +1,7 @@
 package co.medtender.api.privacidad;
 
 import co.medtender.api.ingesta.AgenteClient;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
@@ -50,8 +50,8 @@ public class ProveedorIaService {
             log.warn("No se pudo preguntar al agente por el proveedor de IA: {}", e.getMessage());
             return Optional.ofNullable(g).map(Guardado::proveedor);
         }
-        String principal = r == null ? "" : r.path("proveedor").asText("");
-        String respaldo = r == null ? "" : r.path("respaldo").asText("");
+        String principal = r == null ? "" : r.path("proveedor").asString("");
+        String respaldo = r == null ? "" : r.path("respaldo").asString("");
         if (!PRINCIPALES.contains(principal) || !RESPALDOS.contains(respaldo)) {
             log.error("El agente informa un proveedor de IA sin texto de consentimiento: '{}' / '{}'", principal, respaldo);
             guardado = null;

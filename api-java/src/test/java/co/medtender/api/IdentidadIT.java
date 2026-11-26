@@ -1,6 +1,6 @@
 package co.medtender.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
@@ -29,7 +29,7 @@ class IdentidadIT extends IntegracionBase {
     void registroLoginYMe() throws Exception {
         registrarTenant("900001", "admin@a.co", PASS);
         JsonNode t = login("ADMIN@a.co", PASS); // el correo no distingue mayusculas
-        assertThat(t.get("token_type").asText()).isEqualTo("bearer");
+        assertThat(t.get("token_type").asString()).isEqualTo("bearer");
 
         mvc.perform(getAuth("/api/v1/auth/me", t))
                 .andExpect(status().isOk())
@@ -55,7 +55,7 @@ class IdentidadIT extends IntegracionBase {
         mvc.perform(post("/api/v1/auth/registro-tenant").contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(Map.of("tenant_nombre", "X Y", "nit", "900003",
                                 "admin_email", "a@c.co", "admin_password", "corta", "admin_nombre", "Ana"))))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableContent());
     }
 
     @Test
@@ -63,7 +63,7 @@ class IdentidadIT extends IntegracionBase {
         mvc.perform(post("/api/v1/auth/registro-tenant").contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(Map.of("tenant_nombre", "X Y", "nit", "900004",
                                 "admin_email", "a@d.co", "admin_password", "a".repeat(73), "admin_nombre", "Ana"))))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableContent());
     }
 
     // ---------- credenciales y bloqueo ----------
@@ -123,10 +123,10 @@ class IdentidadIT extends IntegracionBase {
     @Test
     void refreshNoSirveComoAccessYAccessNoSirveComoRefresh() throws Exception {
         JsonNode t = registrarTenant("900008", "admin@g.co", PASS);
-        mvc.perform(get("/api/v1/auth/me").header("Authorization", "Bearer " + t.get("refresh_token").asText()))
+        mvc.perform(get("/api/v1/auth/me").header("Authorization", "Bearer " + t.get("refresh_token").asString()))
                 .andExpect(status().isUnauthorized());
         mvc.perform(post("/api/v1/auth/refresh").contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(Map.of("refresh_token", t.get("access_token").asText()))))
+                        .content(json.writeValueAsString(Map.of("refresh_token", t.get("access_token").asString()))))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.detail").value("Refresh token inválido"));
     }
@@ -135,7 +135,7 @@ class IdentidadIT extends IntegracionBase {
     void refreshEmiteTokensNuevosConElRolActual() throws Exception {
         JsonNode t = registrarTenant("900009", "admin@h.co", PASS);
         mvc.perform(post("/api/v1/auth/refresh").contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(Map.of("refresh_token", t.get("refresh_token").asText()))))
+                        .content(json.writeValueAsString(Map.of("refresh_token", t.get("refresh_token").asString()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.access_token").exists());
     }
@@ -164,7 +164,7 @@ class IdentidadIT extends IntegracionBase {
     @Test
     void hashBcryptGeneradoPorPythonSigueFuncionando() throws Exception {
         JsonNode admin = registrarTenant("900011", "admin@j.co", PASS);
-        String tenantId = cuerpo(mvc.perform(getAuth("/api/v1/auth/me", admin)).andReturn()).get("tenant_id").asText();
+        String tenantId = cuerpo(mvc.perform(getAuth("/api/v1/auth/me", admin)).andReturn()).get("tenant_id").asString();
         // Hash $2b$ producido por bcrypt de Python para "Contrasena-Python-1".
         jdbc.update("insert into usuarios (tenant_id, email, password_hash, nombre_completo, rol_global) "
                         + "values (?::uuid, 'python@j.co', ?, 'Usuario Python', 'LECTOR')", tenantId,
@@ -179,7 +179,7 @@ class IdentidadIT extends IntegracionBase {
         // Token armado a mano como lo hacia pyjwt: HS256, iat/exp numericos, claims sub/tenant_id/rol/type/jti.
         long ahora = Instant.now().getEpochSecond();
         String cabecera = b64("{\"alg\":\"HS256\",\"typ\":\"JWT\"}");
-        String carga = b64("{\"sub\":\"" + me.get("id").asText() + "\",\"tenant_id\":\"" + me.get("tenant_id").asText()
+        String carga = b64("{\"sub\":\"" + me.get("id").asString() + "\",\"tenant_id\":\"" + me.get("tenant_id").asString()
                 + "\",\"rol\":\"ADMIN_TENANT\",\"type\":\"access\",\"iat\":" + ahora + ",\"exp\":" + (ahora + 600)
                 + ",\"jti\":\"abc123\"}");
         Mac mac = Mac.getInstance("HmacSHA256");
@@ -226,7 +226,7 @@ class IdentidadIT extends IntegracionBase {
 
         MvcResult lista = mvc.perform(getAuth("/api/v1/usuarios", adminA)).andExpect(status().isOk()).andReturn();
         assertThat(cuerpo(lista)).hasSize(1);
-        assertThat(cuerpo(lista).get(0).get("email").asText()).isEqualTo("admin@m.co");
+        assertThat(cuerpo(lista).get(0).get("email").asString()).isEqualTo("admin@m.co");
     }
 
     @Test
@@ -244,7 +244,7 @@ class IdentidadIT extends IntegracionBase {
     @Test
     void elAdminNoPuedeQuitarseSuPropioRol() throws Exception {
         JsonNode admin = registrarTenant("900018", "admin@q.co", PASS);
-        String id = cuerpo(mvc.perform(getAuth("/api/v1/auth/me", admin)).andReturn()).get("id").asText();
+        String id = cuerpo(mvc.perform(getAuth("/api/v1/auth/me", admin)).andReturn()).get("id").asString();
         mvc.perform(patch("/api/v1/usuarios/" + id).header("Authorization", bearer(admin))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"rol_global\":\"LECTOR\"}"))
                 .andExpect(status().isConflict());
@@ -280,8 +280,8 @@ class IdentidadIT extends IntegracionBase {
                 .andExpect(status().isOk()).andReturn();
         JsonNode eventos = cuerpo(r);
         assertThat(eventos).hasSize(1);
-        assertThat(eventos.get(0).get("accion").asText()).isEqualTo("USUARIO_CREADO");
-        assertThat(eventos.get(0).get("request_id").asText()).isNotBlank();
+        assertThat(eventos.get(0).get("accion").asString()).isEqualTo("USUARIO_CREADO");
+        assertThat(eventos.get(0).get("request_id").asString()).isNotBlank();
 
         // El trigger rechaza modificar o borrar la historia, incluso con acceso directo a la base.
         org.junit.jupiter.api.Assertions.assertThrows(org.springframework.dao.DataAccessException.class,
@@ -293,8 +293,8 @@ class IdentidadIT extends IntegracionBase {
     @Test
     void filtrosInvalidosDeAuditoriaDan422() throws Exception {
         JsonNode admin = registrarTenant("900022", "admin@u.co", PASS);
-        mvc.perform(getAuth("/api/v1/auditoria?resultado=XX", admin)).andExpect(status().isUnprocessableEntity());
-        mvc.perform(getAuth("/api/v1/auditoria?limit=9999", admin)).andExpect(status().isUnprocessableEntity());
+        mvc.perform(getAuth("/api/v1/auditoria?resultado=XX", admin)).andExpect(status().isUnprocessableContent());
+        mvc.perform(getAuth("/api/v1/auditoria?limit=9999", admin)).andExpect(status().isUnprocessableContent());
     }
 
     // ---------- operacion ----------

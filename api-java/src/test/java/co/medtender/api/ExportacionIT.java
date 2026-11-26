@@ -1,6 +1,6 @@
 package co.medtender.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
@@ -90,16 +90,16 @@ class ExportacionIT extends IntegracionBase {
         assertThat(archivos.keySet()).containsExactlyInAnyOrder("LEEME.txt", "datos.json", "resumen.html");
 
         JsonNode datos = json.readTree(archivos.get("datos.json"));
-        assertThat(datos.at("/cuenta/correo").asText()).isEqualTo("ana@correo.co");
-        assertThat(datos.at("/cuenta/nombre").asText()).isEqualTo("Ana Pérez");
-        assertThat(datos.at("/consentimientos/0/version").asText()).isEqualTo("2026-11-v3");
-        assertThat(datos.at("/expedientes/0/titulo").asText()).isNotBlank();
-        assertThat(datos.at("/expedientes/0/documentos/0/nombre").asText()).isEqualTo("examen.pdf");
-        assertThat(datos.at("/expedientes/0/documentos/0/fragmentos/0/texto").asText()).isEqualTo("Hemoglobina 13,2 g/dL");
+        assertThat(datos.at("/cuenta/correo").asString()).isEqualTo("ana@correo.co");
+        assertThat(datos.at("/cuenta/nombre").asString()).isEqualTo("Ana Pérez");
+        assertThat(datos.at("/consentimientos/0/version").asString()).isEqualTo("2026-11-v3");
+        assertThat(datos.at("/expedientes/0/titulo").asString()).isNotBlank();
+        assertThat(datos.at("/expedientes/0/documentos/0/nombre").asString()).isEqualTo("examen.pdf");
+        assertThat(datos.at("/expedientes/0/documentos/0/fragmentos/0/texto").asString()).isEqualTo("Hemoglobina 13,2 g/dL");
         assertThat(datos.at("/expedientes/0/documentos/0/fragmentos/0/pagina_inicio").asInt()).isEqualTo(2);
-        assertThat(datos.at("/expedientes/0/consultas/0/pregunta").asText()).isEqualTo("¿Qué dice mi examen?");
-        assertThat(datos.at("/expedientes/0/consultas/0/respuesta/respuestaAnalitica").asText()).contains("13,2");
-        assertThat(datos.at("/recordatorios/0/texto").asText()).isEqualTo("Control en tres meses");
+        assertThat(datos.at("/expedientes/0/consultas/0/pregunta").asString()).isEqualTo("¿Qué dice mi examen?");
+        assertThat(datos.at("/expedientes/0/consultas/0/respuesta/respuestaAnalitica").asString()).contains("13,2");
+        assertThat(datos.at("/recordatorios/0/texto").asString()).isEqualTo("Control en tres meses");
         assertThat(datos.at("/accesos").size()).isPositive();
 
         assertThat(archivos.get("resumen.html")).contains("Hemoglobina 13,2 g/dL", "páginas 2–3", "La hemoglobina es 13,2 g/dL.");

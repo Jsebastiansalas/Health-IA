@@ -36,8 +36,10 @@ spring:
     default-property-inclusion: always
     deserialization:
       fail-on-unknown-properties: false
-    serialization:
-      write-dates-as-timestamps: false
+  web:
+    error:
+      include-message: never
+      include-stacktrace: never
   threads:
     virtual:
       enabled: true
@@ -48,9 +50,6 @@ spring:
 server:
   port: ${PORT:8080}
   shutdown: graceful
-  error:
-    include-message: never
-    include-stacktrace: never
 
 management:
   endpoints:

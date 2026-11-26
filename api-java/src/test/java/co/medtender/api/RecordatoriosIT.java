@@ -2,7 +2,7 @@ package co.medtender.api;
 
 import co.medtender.api.privacidad.CorreoEnvio;
 import co.medtender.api.recordatorios.AvisosRecordatorios;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -95,10 +95,10 @@ class RecordatoriosIT extends IntegracionBase {
     @Test
     void confirmarExigeFechaYDescartarLoQuitaDeLaLista() throws Exception {
         JsonNode props = cuerpo(proponer(admin, expediente).andReturn());
-        String conFecha = props.get(0).get("id").asText();
-        String sinFecha = props.get(1).get("id").asText();
+        String conFecha = props.get(0).get("id").asString();
+        String sinFecha = props.get(1).get("id").asString();
 
-        cambiar(admin, sinFecha, Map.of("estado", "CONFIRMADO")).andExpect(status().isUnprocessableEntity())
+        cambiar(admin, sinFecha, Map.of("estado", "CONFIRMADO")).andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.codigo").value("fecha_requerida"));
         cambiar(admin, sinFecha, Map.of("estado", "CONFIRMADO", "fecha", "2026-01-20")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.fecha").value("2026-01-20"));
@@ -108,14 +108,14 @@ class RecordatoriosIT extends IntegracionBase {
         cambiar(admin, conFecha, Map.of("estado", "DESCARTADO")).andExpect(status().isOk());
         JsonNode vigentes = lista(admin);
         assertThat(vigentes).hasSize(1);
-        assertThat(vigentes.get(0).get("id").asText()).isEqualTo(sinFecha);
+        assertThat(vigentes.get(0).get("id").asString()).isEqualTo(sinFecha);
         assertThat(jdbc.queryForList("select detalle::text from auditoria where accion='RECORDATORIO_ACTUALIZADO'", String.class))
                 .allSatisfy(d -> assertThat(d).doesNotContain("2026").doesNotContain("cardiología"));
     }
 
     @Test
     void otroTenantNoVeNiCambiaLosRecordatorios() throws Exception {
-        String id = cuerpo(proponer(admin, expediente).andReturn()).get(0).get("id").asText();
+        String id = cuerpo(proponer(admin, expediente).andReturn()).get(0).get("id").asString();
         JsonNode otro = registrarTenant("970002", "admin@r2.co", PASS);
         cambiar(otro, id, Map.of("estado", "DESCARTADO")).andExpect(status().isNotFound());
         assertThat(lista(otro)).isEmpty();
@@ -126,7 +126,7 @@ class RecordatoriosIT extends IntegracionBase {
 
     @Test
     void elCalendarioEsNeutroYSoloDeConfirmados() throws Exception {
-        String id = cuerpo(proponer(admin, expediente).andReturn()).get(0).get("id").asText();
+        String id = cuerpo(proponer(admin, expediente).andReturn()).get(0).get("id").asString();
         mvc.perform(get("/api/v1/recordatorios/" + id + "/calendario.ics").header("Authorization", bearer(admin)))
                 .andExpect(status().isConflict());
         cambiar(admin, id, Map.of("estado", "CONFIRMADO"));
@@ -141,8 +141,8 @@ class RecordatoriosIT extends IntegracionBase {
     @Test
     void elAvisoLlegaUnaVezSinDatosDeSaludYVuelveSiCambiaLaFecha() throws Exception {
         JsonNode props = cuerpo(proponer(admin, expediente).andReturn());
-        String cercano = props.get(1).get("id").asText();
-        String lejano = props.get(0).get("id").asText();
+        String cercano = props.get(1).get("id").asString();
+        String lejano = props.get(0).get("id").asString();
         LocalDate hoy = LocalDate.of(2026, 1, 18);
         cambiar(admin, cercano, Map.of("estado", "CONFIRMADO", "fecha", "2026-01-20"));
         cambiar(admin, lejano, Map.of("estado", "CONFIRMADO", "fecha", "2026-03-01"));
@@ -159,7 +159,7 @@ class RecordatoriosIT extends IntegracionBase {
         cambiar(admin, cercano, Map.of("estado", "CONFIRMADO", "fecha", "2026-01-19"));
         assertThat(avisos.enviarAvisos(hoy)).isEqualTo(1); // cambió la fecha: se vuelve a avisar
         cambiar(admin, cercano, Map.of("estado", "HECHO"));
-        assertThat(lista(admin).findValuesAsText("estado")).contains("HECHO");
+        assertThat(lista(admin).findValuesAsString("estado")).contains("HECHO");
     }
 
     @Test

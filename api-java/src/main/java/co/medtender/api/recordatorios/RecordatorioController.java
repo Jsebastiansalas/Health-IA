@@ -13,7 +13,7 @@ import co.medtender.api.privacidad.ConsentimientoService;
 import co.medtender.api.recordatorios.RecordatorioService.RecordatorioOut;
 import co.medtender.api.security.UsuarioActual;
 import co.medtender.api.web.ApiException;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import jakarta.validation.constraints.NotNull;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;

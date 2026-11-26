@@ -9,7 +9,7 @@ import co.medtender.api.ingesta.AgenteClient;
 import co.medtender.api.limites.Limitador;
 import co.medtender.api.privacidad.ConsentimientoService;
 import co.medtender.api.security.UsuarioActual;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -62,13 +62,13 @@ public class PreparacionCitaController {
 
         // Solo ids y conteos: nunca medicamentos, valores, fechas ni el texto de las preguntas.
         Map<String, Object> detalle = new LinkedHashMap<>();
-        detalle.put("consulta", respuesta.path("consultaId").asText(null));
+        detalle.put("consulta", respuesta.path("consultaId").asString(null));
         detalle.put("eventos", respuesta.path("eventos").size());
         detalle.put("cambios", respuesta.path("cambios").size());
         detalle.put("medicamentos", respuesta.path("medicamentos").size());
         detalle.put("preguntas", respuesta.path("preguntas").size());
-        detalle.put("sin_evidencia", respuesta.path("sinEvidencia").asBoolean());
-        detalle.put("latencia_ms", respuesta.path("latenciaMs").asLong());
+        detalle.put("sin_evidencia", respuesta.path("sinEvidencia").asBoolean(false));
+        detalle.put("latencia_ms", respuesta.path("latenciaMs").asLong(0));
         auditoria.auditar(Accion.PREPARACION_CITA, user, "expediente", expedienteId, detalle);
         return respuesta;
     }

@@ -8,7 +8,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.unit.DataSize;
-import org.springframework.boot.web.servlet.MultipartConfigFactory;
+import org.springframework.boot.servlet.MultipartConfigFactory;
 
 /**
  * Los archivos subidos se guardan SIEMPRE dentro del directorio efimero aislado (no en el

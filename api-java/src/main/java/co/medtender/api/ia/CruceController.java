@@ -9,7 +9,7 @@ import co.medtender.api.ingesta.AgenteClient;
 import co.medtender.api.limites.Limitador;
 import co.medtender.api.privacidad.ConsentimientoService;
 import co.medtender.api.security.UsuarioActual;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -62,12 +62,12 @@ public class CruceController {
 
         // Solo ids y conteos: nunca el contenido de los documentos ni de los medicamentos.
         Map<String, Object> detalle = new LinkedHashMap<>();
-        detalle.put("consulta", respuesta.path("consultaId").asText(null));
+        detalle.put("consulta", respuesta.path("consultaId").asString(null));
         detalle.put("medicamentos", respuesta.path("medicamentos").size());
         detalle.put("advertencias", respuesta.path("advertencias").size());
-        detalle.put("sin_evidencia", respuesta.path("sinEvidencia").asBoolean());
+        detalle.put("sin_evidencia", respuesta.path("sinEvidencia").asBoolean(false));
         detalle.put("citas", respuesta.path("citas").size());
-        detalle.put("latencia_ms", respuesta.path("latenciaMs").asLong());
+        detalle.put("latencia_ms", respuesta.path("latenciaMs").asLong(0));
         auditoria.auditar(Accion.CRUCE_MEDICAMENTOS, user, "expediente", expedienteId, detalle);
         return respuesta;
     }

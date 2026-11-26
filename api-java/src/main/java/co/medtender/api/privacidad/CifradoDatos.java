@@ -1,8 +1,8 @@
 package co.medtender.api.privacidad;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.Base64;
@@ -67,12 +67,12 @@ public class CifradoDatos {
     /** La respuesta guardada: si viene envuelta en {"cifrado": ...}, la abre. */
     public JsonNode respuesta(JsonNode guardada) {
         JsonNode cifrado = guardada.get("cifrado");
-        if (cifrado == null || !cifrado.asText().startsWith(PREFIJO)) {
+        if (cifrado == null || !cifrado.asString("").startsWith(PREFIJO)) {
             return guardada;
         }
         try {
-            return json.readTree(texto(cifrado.asText()));
-        } catch (JsonProcessingException e) {
+            return json.readTree(texto(cifrado.asString("")));
+        } catch (JacksonException e) {
             throw new IllegalStateException("La respuesta descifrada no es válida", e);
         }
     }

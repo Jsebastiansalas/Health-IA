@@ -61,7 +61,7 @@ public class DosPasosService {
             throw new ApiException(HttpStatus.CONFLICT, "Primero inicia la activación para escanear el código QR");
         }
         if (!Totp.valido(cifrador.descifrar(u.getTotpPendiente()), codigo, Instant.now())) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "El código no coincide; revisa la hora del teléfono e intenta de nuevo",
+            throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "El código no coincide; revisa la hora del teléfono e intenta de nuevo",
                     Map.of("codigo", "codigo_invalido"));
         }
         u.activarTotp();
@@ -85,7 +85,7 @@ public class DosPasosService {
     public void desactivar(Usuario u, String codigo) {
         if (!u.isTotpActivo()) return;
         if (!verificar(u, codigo)) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "El código no coincide", Map.of("codigo", "codigo_invalido"));
+            throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "El código no coincide", Map.of("codigo", "codigo_invalido"));
         }
         u.desactivarTotp();
         usuarios.save(u);

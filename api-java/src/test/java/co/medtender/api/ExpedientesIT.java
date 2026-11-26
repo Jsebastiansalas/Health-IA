@@ -1,6 +1,6 @@
 package co.medtender.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -81,7 +81,7 @@ class ExpedientesIT extends IntegracionBase {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.mi_permiso").value("LECTOR"));
         JsonNode lista = cuerpo(mvc.perform(getAuth("/api/v1/expedientes", auditor)).andReturn());
         assertThat(lista).hasSize(1);
-        assertThat(lista.get(0).get("mi_permiso").asText()).isEqualTo("LECTOR");
+        assertThat(lista.get(0).get("mi_permiso").asString()).isEqualTo("LECTOR");
 
         // Un LECTOR no edita ni administra; un EDITOR edita pero no elimina.
         mvc.perform(patch("/api/v1/expedientes/" + exp).header("Authorization", bearer(auditor))
@@ -126,7 +126,7 @@ class ExpedientesIT extends IntegracionBase {
         JsonNode adminB = registrarTenant("910009", "admin@i.co", PASS);
         String idB = crearUsuario(adminB, "u@i.co", PASS, "LECTOR");
         String exp = crearExpediente(adminA, "LIC-4");
-        String idCreador = cuerpo(mvc.perform(getAuth("/api/v1/auth/me", adminA)).andReturn()).get("id").asText();
+        String idCreador = cuerpo(mvc.perform(getAuth("/api/v1/auth/me", adminA)).andReturn()).get("id").asString();
 
         mvc.perform(put("/api/v1/expedientes/" + exp + "/permisos/" + idB).header("Authorization", bearer(adminA))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"permiso\":\"LECTOR\"}"))
@@ -179,10 +179,10 @@ class ExpedientesIT extends IntegracionBase {
         }
         assertThat(cuerpo(mvc.perform(getAuth("/api/v1/expedientes?limit=2", admin)).andReturn())).hasSize(2);
         assertThat(cuerpo(mvc.perform(getAuth("/api/v1/expedientes?limit=2&offset=2", admin)).andReturn())).hasSize(1);
-        mvc.perform(getAuth("/api/v1/expedientes?limit=0", admin)).andExpect(status().isUnprocessableEntity());
+        mvc.perform(getAuth("/api/v1/expedientes?limit=0", admin)).andExpect(status().isUnprocessableContent());
         mvc.perform(post("/api/v1/expedientes").header("Authorization", bearer(admin))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"codigo_expediente\":\"\",\"titulo\":\"x\",\"tipo_expediente\":\"OTRO\"}"))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableContent());
     }
 }

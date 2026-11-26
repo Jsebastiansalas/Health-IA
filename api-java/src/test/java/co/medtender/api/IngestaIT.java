@@ -1,8 +1,8 @@
 package co.medtender.api;
 
 import co.medtender.api.limites.AlmacenLimites;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -67,9 +67,9 @@ class IngestaIT {
                 "nit", "NIT-" + UUID.randomUUID(), "admin_email", "admin-" + UUID.randomUUID() + "@x.co",
                 "admin_password", PASS, "admin_nombre", "Admin"));
         assertThat(r.estado()).isEqualTo(201);
-        token = r.cuerpo().get("access_token").asText();
+        token = r.cuerpo().get("access_token").asString();
         expediente = enviarJson("POST", "/api/v1/expedientes", token, Map.of("codigo_expediente", "LIC-1",
-                "titulo", "Licitación", "tipo_expediente", "LICITACION_MEDICAMENTOS")).cuerpo().get("id").asText();
+                "titulo", "Licitación", "tipo_expediente", "LICITACION_MEDICAMENTOS")).cuerpo().get("id").asString();
     }
 
     // ---------- utilidades HTTP ----------
@@ -122,7 +122,7 @@ class IngestaIT {
         var resultado = new JsonNode[1];
         await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(100)).until(() -> {
             resultado[0] = get("/api/v1/expedientes/" + expediente + "/documentos/" + docId, token).cuerpo();
-            String estado = resultado[0].get("estado_indexacion").asText();
+            String estado = resultado[0].get("estado_indexacion").asString();
             return !estado.equals("RECIBIDO") && !estado.equals("VALIDANDO");
         });
         return resultado[0];
@@ -132,7 +132,7 @@ class IngestaIT {
         var resultado = new JsonNode[1];
         await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(100)).until(() -> {
             resultado[0] = get("/api/v1/expedientes/" + expediente + "/documentos/" + docId, token).cuerpo();
-            return resultado[0].get("estado_indexacion").asText().equals(estadoEsperado);
+            return resultado[0].get("estado_indexacion").asString().equals(estadoEsperado);
         });
         return resultado[0];
     }
@@ -158,10 +158,10 @@ class IngestaIT {
     void unProspectoDeMedicamentoSeAceptaComoTipoDeDocumento() throws Exception {
         Respuesta r = subir(expediente, token, PdfsDePrueba.valido(1), "prospecto.pdf", Map.of("tipo_documento", "PROSPECTO"));
         assertThat(r.estado()).isEqualTo(202);
-        assertThat(r.cuerpo().get("tipo_documento").asText()).isEqualTo("PROSPECTO");
+        assertThat(r.cuerpo().get("tipo_documento").asString()).isEqualTo("PROSPECTO");
         assertThat(jdbc.queryForObject("select tipo_documento from documentos where id = ?::uuid", String.class,
-                r.cuerpo().get("id").asText())).isEqualTo("PROSPECTO");
-        esperarEstadoFinalDeValidacion(r.cuerpo().get("id").asText()); // la validacion asincrona termina antes del siguiente test
+                r.cuerpo().get("id").asString())).isEqualTo("PROSPECTO");
+        esperarEstadoFinalDeValidacion(r.cuerpo().get("id").asString()); // la validacion asincrona termina antes del siguiente test
     }
 
     @Test
@@ -170,14 +170,14 @@ class IngestaIT {
         Respuesta r = subirPliego(pdf);
 
         assertThat(r.estado()).isEqualTo(202);
-        assertThat(r.cuerpo().get("estado_indexacion").asText()).isEqualTo("VALIDANDO");
-        assertThat(r.cuerpo().get("sha256_original").asText()).isEqualTo(sha256(pdf));
+        assertThat(r.cuerpo().get("estado_indexacion").asString()).isEqualTo("VALIDANDO");
+        assertThat(r.cuerpo().get("sha256_original").asString()).isEqualTo(sha256(pdf));
         assertThat(r.cuerpo().get("tamano_bytes").asLong()).isEqualTo(pdf.length);
-        assertThat(r.cuerpo().get("nombre_archivo_original").asText()).isEqualTo("pliego.pdf");
-        String docId = r.cuerpo().get("id").asText();
+        assertThat(r.cuerpo().get("nombre_archivo_original").asString()).isEqualTo("pliego.pdf");
+        String docId = r.cuerpo().get("id").asString();
 
         JsonNode d = esperarEstadoFinalDeValidacion(docId);
-        assertThat(d.get("estado_indexacion").asText()).isEqualTo("EN_COLA");
+        assertThat(d.get("estado_indexacion").asString()).isEqualTo("EN_COLA");
         assertThat(d.get("total_paginas").asInt()).isEqualTo(3);
         assertThat(d.get("progreso").asInt()).isEqualTo(15);
         assertThat(d.get("actas_purga")).isEmpty();
@@ -197,8 +197,8 @@ class IngestaIT {
 
     @Test
     void pdfConSoloClaveDePropietarioSeAcepta() throws Exception {
-        String docId = subirPliego(PdfsDePrueba.soloClaveDePropietario()).cuerpo().get("id").asText();
-        assertThat(esperarEstadoFinalDeValidacion(docId).get("estado_indexacion").asText()).isEqualTo("EN_COLA");
+        String docId = subirPliego(PdfsDePrueba.soloClaveDePropietario()).cuerpo().get("id").asString();
+        assertThat(esperarEstadoFinalDeValidacion(docId).get("estado_indexacion").asString()).isEqualTo("EN_COLA");
     }
 
     @Test
@@ -206,9 +206,9 @@ class IngestaIT {
         Respuesta r = subir(expediente, token, PdfsDePrueba.valido(1), "adenda1.pdf",
                 Map.of("tipo_documento", "ADENDA", "numero_adenda", "2"));
         assertThat(r.estado()).isEqualTo(202);
-        assertThat(r.cuerpo().get("tipo_documento").asText()).isEqualTo("ADENDA");
+        assertThat(r.cuerpo().get("tipo_documento").asString()).isEqualTo("ADENDA");
         assertThat(r.cuerpo().get("numero_adenda").asInt()).isEqualTo(2);
-        esperarEstadoFinalDeValidacion(r.cuerpo().get("id").asText());
+        esperarEstadoFinalDeValidacion(r.cuerpo().get("id").asString());
 
         Respuesta lista = get("/api/v1/expedientes/" + expediente + "/documentos", token);
         assertThat(lista.cuerpo()).hasSize(1);
@@ -225,11 +225,11 @@ class IngestaIT {
         byte[] foto = PdfsDePrueba.png();
         Respuesta r = subirImagen(foto, "resultado-laboratorio.png"); // el cliente la declara como PDF: no cuenta
         assertThat(r.estado()).isEqualTo(202);
-        assertThat(r.cuerpo().get("formato").asText()).isEqualTo("PNG");
-        String docId = r.cuerpo().get("id").asText();
+        assertThat(r.cuerpo().get("formato").asString()).isEqualTo("PNG");
+        String docId = r.cuerpo().get("id").asString();
 
         JsonNode d = esperarEstadoFinalDeValidacion(docId);
-        assertThat(d.get("estado_indexacion").asText()).isEqualTo("EN_COLA");
+        assertThat(d.get("estado_indexacion").asString()).isEqualTo("EN_COLA");
         assertThat(d.get("total_paginas").asInt()).isEqualTo(1);
         assertThat(archivosEfimeros()).containsExactly(docId + ".png");
         assertThat(sha256(Files.readAllBytes(Infra.EFIMERO.resolve(docId + ".png")))).isEqualTo(sha256(foto));
@@ -240,9 +240,9 @@ class IngestaIT {
     void fotoJpgValidaSeAceptaYSeGuardaConSuExtension() throws Exception {
         Respuesta r = subirImagen(PdfsDePrueba.jpg(), "orden-medica.jpg");
         assertThat(r.estado()).isEqualTo(202);
-        assertThat(r.cuerpo().get("formato").asText()).isEqualTo("JPG");
-        String docId = r.cuerpo().get("id").asText();
-        assertThat(esperarEstadoFinalDeValidacion(docId).get("estado_indexacion").asText()).isEqualTo("EN_COLA");
+        assertThat(r.cuerpo().get("formato").asString()).isEqualTo("JPG");
+        String docId = r.cuerpo().get("id").asString();
+        assertThat(esperarEstadoFinalDeValidacion(docId).get("estado_indexacion").asString()).isEqualTo("EN_COLA");
         assertThat(archivosEfimeros()).containsExactly(docId + ".jpg");
     }
 
@@ -250,15 +250,15 @@ class IngestaIT {
     void elFormatoSeDecidePorElContenidoNoPorLaExtensionDelNombre() throws Exception {
         Respuesta r = subirImagen(PdfsDePrueba.png(), "parece-un-pdf.pdf");
         assertThat(r.estado()).isEqualTo(202);
-        assertThat(r.cuerpo().get("formato").asText()).isEqualTo("PNG");
+        assertThat(r.cuerpo().get("formato").asString()).isEqualTo("PNG");
     }
 
     @Test
     void unaImagenConFirmaValidaPeroCorruptaSeRechazaEnLaValidacionYSePurga() throws Exception {
-        String docId = subirImagen(PdfsDePrueba.pngCorrupto(), "rota.png").cuerpo().get("id").asText();
+        String docId = subirImagen(PdfsDePrueba.pngCorrupto(), "rota.png").cuerpo().get("id").asString();
         JsonNode d = esperarEstadoFinalDeValidacion(docId);
-        assertThat(d.get("estado_indexacion").asText()).isEqualTo("ERROR_PURGADO");
-        assertThat(d.get("motivo_error").asText()).contains("Imagen corrupta");
+        assertThat(d.get("estado_indexacion").asString()).isEqualTo("ERROR_PURGADO");
+        assertThat(d.get("motivo_error").asString()).contains("Imagen corrupta");
         assertThat(archivosEfimeros()).isEmpty();
         assertThat(Infra.AGENTE.llamadas()).isEmpty();
     }
@@ -267,7 +267,7 @@ class IngestaIT {
     void unFormatoDeImagenNoSoportadoSeRechazaDeInmediato() throws Exception {
         Respuesta r = subirImagen(PdfsDePrueba.gif(), "animacion.gif");
         assertThat(r.estado()).isEqualTo(422);
-        assertThat(r.cuerpo().get("detail").asText()).contains("no es un PDF ni una imagen compatible");
+        assertThat(r.cuerpo().get("detail").asString()).contains("no es un PDF ni una imagen compatible");
         assertThat(archivosEfimeros()).isEmpty();
     }
 
@@ -287,21 +287,21 @@ class IngestaIT {
     void archivoQueNoEsPdfSeRechazaDeInmediatoYSePurga() throws Exception {
         Respuesta r = subirPliego(PdfsDePrueba.noEsPdf());
         assertThat(r.estado()).isEqualTo(422);
-        assertThat(r.cuerpo().get("detail").asText()).contains("no es un PDF");
+        assertThat(r.cuerpo().get("detail").asString()).contains("no es un PDF");
         JsonNode doc = r.cuerpo().get("documento");
-        assertThat(doc.get("estado_indexacion").asText()).isEqualTo("ERROR_PURGADO");
+        assertThat(doc.get("estado_indexacion").asString()).isEqualTo("ERROR_PURGADO");
         assertThat(doc.get("temp_file_purged").asBoolean()).isTrue();
         assertThat(archivosEfimeros()).isEmpty();
-        assertThat(actas(doc.get("id").asText(), "ERROR_VALIDACION")).isEqualTo(1);
+        assertThat(actas(doc.get("id").asString(), "ERROR_VALIDACION")).isEqualTo(1);
         assertThat(Infra.AGENTE.llamadas()).isEmpty();
     }
 
     @Test
     void pdfConContrasenaDeUsuarioSeRechaza() throws Exception {
-        String docId = subirPliego(PdfsDePrueba.conClaveDeUsuario()).cuerpo().get("id").asText();
+        String docId = subirPliego(PdfsDePrueba.conClaveDeUsuario()).cuerpo().get("id").asString();
         JsonNode d = esperarEstadoFinalDeValidacion(docId);
-        assertThat(d.get("estado_indexacion").asText()).isEqualTo("ERROR_PURGADO");
-        assertThat(d.get("motivo_error").asText()).contains("protegido con contraseña");
+        assertThat(d.get("estado_indexacion").asString()).isEqualTo("ERROR_PURGADO");
+        assertThat(d.get("motivo_error").asString()).contains("protegido con contraseña");
         assertThat(d.get("actas_purga")).hasSize(1);
         assertThat(archivosEfimeros()).isEmpty();
         assertThat(Infra.AGENTE.llamadas()).isEmpty();
@@ -309,19 +309,19 @@ class IngestaIT {
 
     @Test
     void pdfCorruptoSeRechaza() throws Exception {
-        String docId = subirPliego(PdfsDePrueba.corrupto()).cuerpo().get("id").asText();
+        String docId = subirPliego(PdfsDePrueba.corrupto()).cuerpo().get("id").asString();
         JsonNode d = esperarEstadoFinalDeValidacion(docId);
-        assertThat(d.get("estado_indexacion").asText()).isEqualTo("ERROR_PURGADO");
-        assertThat(d.get("motivo_error").asText()).contains("corrupto");
+        assertThat(d.get("estado_indexacion").asString()).isEqualTo("ERROR_PURGADO");
+        assertThat(d.get("motivo_error").asString()).contains("corrupto");
         assertThat(archivosEfimeros()).isEmpty();
     }
 
     @Test
     void archivoConVirusSeRechazaYSePurga() throws Exception {
-        String docId = subirPliego(PdfsDePrueba.conEicar()).cuerpo().get("id").asText();
+        String docId = subirPliego(PdfsDePrueba.conEicar()).cuerpo().get("id").asString();
         JsonNode d = esperarEstadoFinalDeValidacion(docId);
-        assertThat(d.get("estado_indexacion").asText()).isEqualTo("ERROR_PURGADO");
-        assertThat(d.get("motivo_error").asText()).contains("antivirus").contains("Eicar-Test-Signature");
+        assertThat(d.get("estado_indexacion").asString()).isEqualTo("ERROR_PURGADO");
+        assertThat(d.get("motivo_error").asString()).contains("antivirus").contains("Eicar-Test-Signature");
         assertThat(archivosEfimeros()).isEmpty();
         assertThat(actas(docId, "ERROR_VALIDACION")).isEqualTo(1);
         assertThat(Infra.AGENTE.llamadas()).isEmpty();
@@ -330,20 +330,20 @@ class IngestaIT {
     @Test
     void sinAntivirusNoSeAceptaNingunArchivo() throws Exception {
         Infra.CLAMD.disponible(false);
-        String docId = subirPliego(PdfsDePrueba.valido(1)).cuerpo().get("id").asText();
+        String docId = subirPliego(PdfsDePrueba.valido(1)).cuerpo().get("id").asString();
         JsonNode d = esperarEstadoFinalDeValidacion(docId);
-        assertThat(d.get("estado_indexacion").asText()).isEqualTo("ERROR_PURGADO");
-        assertThat(d.get("motivo_error").asText()).contains("antivirus no está disponible");
+        assertThat(d.get("estado_indexacion").asString()).isEqualTo("ERROR_PURGADO");
+        assertThat(d.get("motivo_error").asString()).contains("antivirus no está disponible");
         assertThat(archivosEfimeros()).isEmpty();
     }
 
     @Test
     void siElAgenteCaeElDocumentoSePurgaTrasLosReintentos() throws Exception {
         Infra.AGENTE.responderCon(503);
-        String docId = subirPliego(PdfsDePrueba.valido(1)).cuerpo().get("id").asText();
+        String docId = subirPliego(PdfsDePrueba.valido(1)).cuerpo().get("id").asString();
         JsonNode d = esperarEstado(docId, "ERROR_PURGADO"); // pasa por EN_COLA mientras se reintenta
-        assertThat(d.get("estado_indexacion").asText()).isEqualTo("ERROR_PURGADO");
-        assertThat(d.get("motivo_error").asText()).contains("servicio de procesamiento no está disponible");
+        assertThat(d.get("estado_indexacion").asString()).isEqualTo("ERROR_PURGADO");
+        assertThat(d.get("motivo_error").asString()).contains("servicio de procesamiento no está disponible");
         assertThat(Infra.AGENTE.llamadas()).hasSize(3); // 3 reintentos
         assertThat(archivosEfimeros()).isEmpty();
         assertThat(actas(docId, "ERROR_PROCESAMIENTO")).isEqualTo(1);
@@ -352,9 +352,9 @@ class IngestaIT {
     @Test
     void unRechazoDelAgentePorTokenNoSeReintenta() throws Exception {
         Infra.AGENTE.responderCon(401);
-        String docId = subirPliego(PdfsDePrueba.valido(1)).cuerpo().get("id").asText();
+        String docId = subirPliego(PdfsDePrueba.valido(1)).cuerpo().get("id").asString();
         JsonNode d = esperarEstado(docId, "ERROR_PURGADO");
-        assertThat(d.get("estado_indexacion").asText()).isEqualTo("ERROR_PURGADO");
+        assertThat(d.get("estado_indexacion").asString()).isEqualTo("ERROR_PURGADO");
         assertThat(Infra.AGENTE.llamadas()).hasSize(1);
         assertThat(archivosEfimeros()).isEmpty();
     }
@@ -396,8 +396,8 @@ class IngestaIT {
         Respuesta r = subir(expediente, token, PdfsDePrueba.valido(1), "../../etc/passwd.pdf",
                 Map.of("tipo_documento", "PLIEGO"));
         assertThat(r.estado()).isEqualTo(202);
-        assertThat(r.cuerpo().get("nombre_archivo_original").asText()).isEqualTo("passwd.pdf");
-        String docId = r.cuerpo().get("id").asText();
+        assertThat(r.cuerpo().get("nombre_archivo_original").asString()).isEqualTo("passwd.pdf");
+        String docId = r.cuerpo().get("id").asString();
         esperarEstadoFinalDeValidacion(docId);
         assertThat(archivosEfimeros()).containsExactly(docId + ".pdf");
 
@@ -405,7 +405,7 @@ class IngestaIT {
         Respuesta w = subir(expediente, token, PdfsDePrueba.valido(1), "..\\..\\etc\\passwd2.pdf",
                 Map.of("tipo_documento", "PLIEGO"));
         assertThat(w.estado()).isEqualTo(202);
-        assertThat(w.cuerpo().get("nombre_archivo_original").asText()).doesNotContain("/").doesNotContain("\\");
+        assertThat(w.cuerpo().get("nombre_archivo_original").asString()).doesNotContain("/").doesNotContain("\\");
     }
 
     @Test
@@ -419,10 +419,10 @@ class IngestaIT {
     @Test
     void elMismoPdfDosVecesDa409ConElIdDelOriginal() throws Exception {
         byte[] pdf = PdfsDePrueba.valido(2);
-        String primero = subirPliego(pdf).cuerpo().get("id").asText();
+        String primero = subirPliego(pdf).cuerpo().get("id").asString();
         Respuesta segundo = subirPliego(pdf);
         assertThat(segundo.estado()).isEqualTo(409);
-        assertThat(segundo.cuerpo().get("detail").get("documento_id").asText()).isEqualTo(primero);
+        assertThat(segundo.cuerpo().get("detail").get("documento_id").asString()).isEqualTo(primero);
         esperarEstadoFinalDeValidacion(primero);
         // El segundo intento no dejo archivos propios.
         assertThat(archivosEfimeros()).containsExactly(primero + ".pdf");
@@ -432,10 +432,10 @@ class IngestaIT {
     void unPdfRechazadoSePuedeVolverACargarCorregido() throws Exception {
         // Mismo contenido infectado: tras el rechazo (ERROR_PURGADO) no cuenta como duplicado.
         byte[] infectado = PdfsDePrueba.conEicar();
-        esperarEstadoFinalDeValidacion(subirPliego(infectado).cuerpo().get("id").asText());
+        esperarEstadoFinalDeValidacion(subirPliego(infectado).cuerpo().get("id").asString());
         Respuesta otra = subirPliego(infectado);
         assertThat(otra.estado()).isEqualTo(202);
-        esperarEstadoFinalDeValidacion(otra.cuerpo().get("id").asText());
+        esperarEstadoFinalDeValidacion(otra.cuerpo().get("id").asString());
     }
 
     // ---------- permisos ----------
@@ -445,12 +445,12 @@ class IngestaIT {
         String correo = "lector-" + UUID.randomUUID() + "@x.co";
         enviarJson("POST", "/api/v1/usuarios", token, Map.of("email", correo, "password", PASS,
                 "nombre_completo", "Lector", "rol_global", "LECTOR"));
-        String idLector = get("/api/v1/usuarios", token).cuerpo().get(1).get("id").asText();
+        String idLector = get("/api/v1/usuarios", token).cuerpo().get(1).get("id").asString();
         enviarJson("PUT", "/api/v1/expedientes/" + expediente + "/permisos/" + idLector, token, Map.of("permiso", "LECTOR"));
         String tokenLector = enviarJson("POST", "/api/v1/auth/login", null, Map.of("email", correo, "password", PASS))
-                .cuerpo().get("access_token").asText();
+                .cuerpo().get("access_token").asString();
 
-        String docId = subirPliego(PdfsDePrueba.valido(1)).cuerpo().get("id").asText();
+        String docId = subirPliego(PdfsDePrueba.valido(1)).cuerpo().get("id").asString();
         esperarEstadoFinalDeValidacion(docId);
 
         Respuesta prohibido = subir(expediente, tokenLector, PdfsDePrueba.valido(1), "x.pdf", Map.of("tipo_documento", "PLIEGO"));
@@ -463,11 +463,11 @@ class IngestaIT {
 
     @Test
     void otroTenantNoPuedeSubirNiVerDocumentos() throws Exception {
-        String docId = subirPliego(PdfsDePrueba.valido(1)).cuerpo().get("id").asText();
+        String docId = subirPliego(PdfsDePrueba.valido(1)).cuerpo().get("id").asString();
         esperarEstadoFinalDeValidacion(docId);
         String tokenB = enviarJson("POST", "/api/v1/auth/registro-tenant", null, Map.of("tenant_nombre", "Otro Hospital",
                 "nit", "NIT-" + UUID.randomUUID(), "admin_email", "b-" + UUID.randomUUID() + "@x.co",
-                "admin_password", PASS, "admin_nombre", "Admin B")).cuerpo().get("access_token").asText();
+                "admin_password", PASS, "admin_nombre", "Admin B")).cuerpo().get("access_token").asString();
 
         assertThat(subir(expediente, tokenB, PdfsDePrueba.valido(1), "x.pdf", Map.of("tipo_documento", "PLIEGO")).estado())
                 .isEqualTo(404);
@@ -480,7 +480,7 @@ class IngestaIT {
         enviarJson("PATCH", "/api/v1/expedientes/" + expediente, token, Map.of("estado", "CERRADO"));
         Respuesta r = subirPliego(PdfsDePrueba.valido(1));
         assertThat(r.estado()).isEqualTo(409);
-        assertThat(r.cuerpo().get("detail").asText()).isEqualTo("El expediente no está abierto");
+        assertThat(r.cuerpo().get("detail").asString()).isEqualTo("El expediente no está abierto");
         assertThat(archivosEfimeros()).isEmpty();
     }
 
@@ -497,7 +497,7 @@ class IngestaIT {
 
     @Test
     void eliminarUnDocumentoBorraElArchivoYConservaElActa() throws Exception {
-        String docId = subirPliego(PdfsDePrueba.valido(1)).cuerpo().get("id").asText();
+        String docId = subirPliego(PdfsDePrueba.valido(1)).cuerpo().get("id").asString();
         esperarEstadoFinalDeValidacion(docId);
         assertThat(archivosEfimeros()).containsExactly(docId + ".pdf");
 
@@ -513,7 +513,7 @@ class IngestaIT {
 
     @Test
     void eliminarElExpedienteBorraLosPdfTemporalesPendientes() throws Exception {
-        String docId = subirPliego(PdfsDePrueba.valido(1)).cuerpo().get("id").asText();
+        String docId = subirPliego(PdfsDePrueba.valido(1)).cuerpo().get("id").asString();
         esperarEstadoFinalDeValidacion(docId);
         assertThat(archivosEfimeros()).containsExactly(docId + ".pdf");
         assertThat(enviarJson("DELETE", "/api/v1/expedientes/" + expediente, token, null).estado()).isEqualTo(204);
@@ -535,7 +535,7 @@ class IngestaIT {
         }
         for (var r : resultados.values()) {
             assertThat(r.estado()).isEqualTo(202);
-            esperarEstadoFinalDeValidacion(r.cuerpo().get("id").asText());
+            esperarEstadoFinalDeValidacion(r.cuerpo().get("id").asString());
         }
         assertThat(archivosEfimeros()).hasSize(n).allMatch(nombre -> nombre.endsWith(".pdf"));
         assertThat(Infra.AGENTE.llamadas()).hasSize(n);

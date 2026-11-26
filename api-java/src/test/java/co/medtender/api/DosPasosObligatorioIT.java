@@ -1,7 +1,7 @@
 package co.medtender.api;
 
 import co.medtender.api.auth.Totp;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ class DosPasosObligatorioIT extends IntegracionBase {
 
         JsonNode inicio = cuerpo(mvc.perform(post("/api/v1/auth/2fa/iniciar").header("Authorization", bearer(admin))).andReturn());
         mvc.perform(post("/api/v1/auth/2fa/activar").header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(Map.of("codigo", Totp.codigoActual(inicio.get("secreto").asText(), Instant.now())))))
+                        .content(json.writeValueAsString(Map.of("codigo", Totp.codigoActual(inicio.get("secreto").asString(), Instant.now())))))
                 .andExpect(status().isOk());
         mvc.perform(get("/api/v1/expedientes").header("Authorization", bearer(admin))).andExpect(status().isOk());
     }
@@ -39,7 +39,7 @@ class DosPasosObligatorioIT extends IntegracionBase {
         // Se activa para poder crear un usuario y luego se prueba ese usuario sin verificación en dos pasos.
         JsonNode inicio = cuerpo(mvc.perform(post("/api/v1/auth/2fa/iniciar").header("Authorization", bearer(admin))).andReturn());
         mvc.perform(post("/api/v1/auth/2fa/activar").header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(Map.of("codigo", Totp.codigoActual(inicio.get("secreto").asText(), Instant.now())))));
+                .content(json.writeValueAsString(Map.of("codigo", Totp.codigoActual(inicio.get("secreto").asString(), Instant.now())))));
         crearUsuario(admin, "lector@o2.co", PASS, "LECTOR");
         JsonNode lector = login("lector@o2.co", PASS);
         mvc.perform(get("/api/v1/expedientes").header("Authorization", bearer(lector))).andExpect(status().isOk());

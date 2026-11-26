@@ -1,7 +1,7 @@
 package co.medtender.api;
 
 import co.medtender.api.privacidad.RetencionService;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -104,8 +104,8 @@ class RetencionIT extends IntegracionBase {
     @Test
     void soloValenLosPlazosOfrecidosYSoloEnCuentasPersonales() throws Exception {
         JsonNode ana = registrarPersonal("ana@correo.co");
-        elegir(ana, "{\"meses\":1}").andExpect(status().isUnprocessableEntity());
-        elegir(ana, "{\"meses\":0}").andExpect(status().isUnprocessableEntity());
+        elegir(ana, "{\"meses\":1}").andExpect(status().isUnprocessableContent());
+        elegir(ana, "{\"meses\":0}").andExpect(status().isUnprocessableContent());
         JsonNode admin = registrarTenant("930003", "admin@hospital.co", PASS);
         elegir(admin, "{\"meses\":6}").andExpect(status().isForbidden());
         mvc.perform(getAuth("/api/v1/cuenta/retencion", admin)).andExpect(status().isForbidden());
