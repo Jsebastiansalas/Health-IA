@@ -2,6 +2,7 @@ package co.medtender.api.auditoria;
 
 import co.medtender.api.domain.RegistroAuditoria;
 import co.medtender.api.domain.RegistroAuditoriaRepository;
+import co.medtender.api.security.ContextoTenant;
 import co.medtender.api.security.UsuarioActual;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
@@ -57,7 +58,10 @@ public class AuditoriaService {
             var registro = new RegistroAuditoria(tenantId, usuarioId, correo, accion.name(), resultado,
                     recursoTipo, recursoId, MDC.get("ip"), MDC.get("request_id"),
                     detalle == null ? Map.of() : detalle);
-            tx.executeWithoutResult(s -> repo.save(registro));
+            // Se escribe como proceso del sistema: a que cuenta pertenece el evento lo decide este codigo, no el
+            // contexto de la peticion. Sin esto se perdian en silencio los eventos de endpoints sin sesion
+            // (cerrar sesion, confirmar el correo).
+            ContextoTenant.comoSistema(() -> tx.executeWithoutResult(s -> repo.save(registro)));
         } catch (RuntimeException e) {
             metricas.counter("medtender_auditoria_fallos_total").increment();
             log.error("No se pudo registrar el evento de auditoria {}", accion, e);
