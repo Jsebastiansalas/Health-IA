@@ -144,15 +144,24 @@ _DERIVAR = (
 _LIMITES: list[tuple[str, str, re.Pattern[str]]] = [
     (
         "dosis",
-        "No puedo indicar dosis ni decirte cuánto o cada cuánto tomar un medicamento: depende de cada "
-        "persona y solo la define tu médico o tu farmacéutico." + _DERIVAR,
+        "No puedo indicar dosis ni decirte cuánto o cada cuánto tomar un medicamento, ni si debes "
+        "cambiarlo o suspenderlo: depende de cada persona y solo lo define tu médico o tu farmacéutico."
+        + _DERIVAR,
         re.compile(
             r"\b(que|cual|cuales) (es la |seria la )?dosis (?!(indica|aparece|dice|figura|trae|menciona|"
             r"prescribe|receto|ordeno|tiene la)\b)|"
             r"\b(cuanto|cuanta|cuantos|cuantas) (?:\w+ ){0,3}?(me |le )?(tomo|tomar|debo tomar|puedo tomar|"
             r"inyecto|aplico|debo darle|le doy|le debo dar|debo dar|puedo darle|le toca)\b|"
             r"\b(cada cuanto|cuantas veces al dia) (me |debo |puedo )?(tomo|tomar|tomarlo|inyecto)\b|"
-            r"\bdosis (para|de) (un )?(nino|bebe|nina|adulto mayor)\b"
+            r"\bdosis (para|de) (un )?(nino|bebe|nina|adulto mayor)\b|"
+            # Cambiar o suspender un tratamiento tampoco lo decide el asistente.
+            r"\b(puedo|debo|deberia|podria|tengo que|me conviene) "
+            r"(subir|bajar|aumentar|disminuir|reducir|duplicar|doblar|cambiar|ajustar)(me|le|la)? "
+            r"(la |mi |su )?dosis\b|"
+            r"\b(puedo|debo|deberia|podria) dejar de (tomar|usar|aplicarme|inyectarme) "
+            r"(?!(el |la )?(cafe|alcohol|agua|leche|liquidos|bebidas|comida|alimentos)\b)|"
+            r"\b(puedo|debo|deberia|podria) (suspender|interrumpir)(me|le)? "
+            r"(?!(el |la )?(ayuno|ejercicio|dieta|cafe|alcohol|consumo|cita|examen|consulta|incapacidad)\b)"
         ),
     ),
     (
@@ -174,7 +183,14 @@ _LIMITES: list[tuple[str, str, re.Pattern[str]]] = [
         "puede hacerlo." + _DERIVAR,
         re.compile(
             r"\b(diagnosticame|diagnostico para mi|que enfermedad tengo|que tengo yo|de que estoy enfermo|"
-            r"de que estoy enferma|que me pasa)\b"
+            r"de que estoy enferma|que me pasa)\b|"
+            # «¿Tengo diabetes?» pide un diagnóstico. «¿Dónde dice que tengo diabetes?» pregunta por
+            # el documento: por eso solo vale al empezar la pregunta o tras «¿será que…?».
+            r"(?:^|[,;:.] |\b(?:sera que|crees que|significa que|quiere decir que) )(?:yo )?"
+            r"(?:tengo|padezco(?: de)?|sufro de) (?:de )?(?:un |una |la |el )?"
+            r"(?:diabetes|prediabetes|hipertension|hipotension|anemia|cancer|tumor|infeccion|gastritis|"
+            r"hipotiroidismo|hipertiroidismo|colitis|asma|depresion|ansiedad|artritis|osteoporosis|"
+            r"neumonia|dengue|covid|apendicitis|migrana|insuficiencia|enfermedad)\b"
         ),
     ),
 ]

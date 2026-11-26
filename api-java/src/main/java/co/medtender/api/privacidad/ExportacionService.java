@@ -139,8 +139,27 @@ public class ExportacionService {
                             new String[] {"pagina_inicio", "pagina_inicio", "pagina_fin", "pagina_fin", "seccion", "seccion",
                                     "texto", "contenido_texto"},
                             tenantId, rs.getObject("id", UUID.class)));
+                    leidoParaLaLinea(tenantId, rs.getObject("id", UUID.class), d);
                     salida.add(d);
                 }, tenantId, expedienteId);
+    }
+
+    /** Lo que la IA propuso al leer el documento para la línea de tiempo: también es un dato de la persona. */
+    private void leidoParaLaLinea(UUID tenantId, UUID documentoId, ObjectNode documento) {
+        jdbc.query("""
+                select created_at, datos::text as datos from extracciones_linea
+                where tenant_id = ? and documento_id = ?""",
+                rs -> {
+                    ObjectNode leido = objeto(rs, "fecha", "created_at");
+                    leido.put("aviso", "Propuestas de la IA sin comprobar; la línea de tiempo solo muestra lo que "
+                            + "coincide con el texto del documento.");
+                    try {
+                        leido.set("datos", cifrado.respuesta(json.readTree(rs.getString("datos"))));
+                    } catch (JacksonException e) {
+                        throw new IllegalStateException("Extracción guardada ilegible", e);
+                    }
+                    documento.set("leido_para_la_linea_de_tiempo", leido);
+                }, tenantId, documentoId);
     }
 
     private ArrayNode consultas(UUID tenantId, UUID expedienteId) {

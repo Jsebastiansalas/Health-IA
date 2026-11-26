@@ -26,7 +26,7 @@ from app.core.config import get_settings
 from app.core.db import fijar_sistema, get_engine, get_sessionmaker
 from app.core.enums import PoliticaBorrado, RolGlobal
 from app.core.security import hash_password
-from app.models import Consulta, Tenant, Usuario
+from app.models import Consulta, ExtraccionLinea, Tenant, Usuario
 from app.privacidad.cifrado_columnas import PREFIJO
 
 
@@ -130,26 +130,39 @@ async def _cargar_fichas(principios: list[str], por_principio: int) -> int:
 
 
 async def _cifrar_historial(lote: int = 200) -> int:
-    """Cifra las preguntas y respuestas guardadas antes de tener DATOS_CLAVE. Se puede repetir.
-    Devuelve cuántas cifró."""
+    """Cifra lo guardado antes de tener DATOS_CLAVE: preguntas, respuestas y lo extraído para la
+    línea de tiempo. Se puede repetir. Devuelve cuántos registros cifró."""
     if not get_settings().datos_clave:
         raise SystemExit("Define DATOS_CLAVE antes de cifrar el historial")
-    pendientes = or_(
-        ~type_coerce(Consulta.pregunta, Text).startswith(PREFIJO, autoescape=True),
-        ~type_coerce(Consulta.respuesta, JSONB).has_key("cifrado"),
-    )
+
+    def sin_cifrar(columna):
+        return ~type_coerce(columna, JSONB).has_key("cifrado")
+
+    tablas = [
+        (
+            Consulta,
+            or_(
+                ~type_coerce(Consulta.pregunta, Text).startswith(PREFIJO, autoescape=True),
+                sin_cifrar(Consulta.respuesta),
+            ),
+            ("pregunta", "respuesta"),
+        ),
+        (ExtraccionLinea, sin_cifrar(ExtraccionLinea.datos), ("datos",)),
+    ]
     total = 0
-    while True:
-        async with get_sessionmaker()() as session:
-            fijar_sistema(session)
-            filas = (await session.scalars(select(Consulta).where(pendientes).limit(lote))).all()
-            if not filas:
-                return total
-            for fila in filas:  # al reescribirlas, el tipo de columna las cifra
-                flag_modified(fila, "pregunta")
-                flag_modified(fila, "respuesta")
-            await session.commit()
-            total += len(filas)
+    for modelo, pendientes, columnas in tablas:
+        while True:
+            async with get_sessionmaker()() as session:
+                fijar_sistema(session)
+                filas = (await session.scalars(select(modelo).where(pendientes).limit(lote))).all()
+                if not filas:
+                    break
+                for fila in filas:  # al reescribirlas, el tipo de columna las cifra
+                    for columna in columnas:
+                        flag_modified(fila, columna)
+                await session.commit()
+                total += len(filas)
+    return total
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -191,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.comando == "verificar-config":
         return verificar_config()
     if args.comando == "cifrar-historial":
-        print(f"Respuestas guardadas cifradas: {asyncio.run(_cifrar_historial())}")
+        print(f"Registros guardados cifrados: {asyncio.run(_cifrar_historial())}")
         return 0
     if args.comando == "cargar-medicamentos":
         todas = ["VIGENTE", "RENOVACION", "OTROS", "VENCIDO", "PRECIO"]

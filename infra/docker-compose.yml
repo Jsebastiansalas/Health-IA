@@ -118,6 +118,8 @@ services:
       OLLAMA_URL: http://ollama:11434
       # El barrido de purga lo ejecuta el worker (cron), no este proceso.
       BARRIDO_HABILITADO: "false"
+      # Al terminar de indexar, el worker le pide al agente que lea el documento para la línea de tiempo.
+      AGENTE_URL: http://agente:8000
     ports:
       - "127.0.0.1:${MT_AGENTE_PORT:-8012}:8000"   # solo para depurar desde esta máquina
     volumes:

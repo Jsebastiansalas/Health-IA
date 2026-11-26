@@ -50,6 +50,9 @@ x-agente: &agente
     COLA_BACKEND: arq
     EPHEMERAL_DIR: /var/medtender-ephemeral
     BARRIDO_HABILITADO: "false"  # el barrido de purga lo ejecuta el worker
+    # Al terminar de indexar, el worker le pide al agente que lea el documento para la línea de tiempo.
+    AGENTE_URL: http://agente:8000
+    CRONOLOGIA_AL_INDEXAR: ${CRONOLOGIA_AL_INDEXAR:-true}
   networks: [interna, externa]
 
 services:

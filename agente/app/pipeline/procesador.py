@@ -31,7 +31,7 @@ from app.pipeline.modelos import (
     FragmentoGenerado,
 )
 from app.pipeline.vectorizacion import Vectorizador
-from app.privacidad.anonimizar import enmascarar_texto
+from app.privacidad.anonimizar import enmascarar_textos
 from app.services import almacen_efimero
 from app.services.estados import transicionar
 from app.services.purga import fallar_y_purgar
@@ -80,11 +80,12 @@ def _filas(
     # del archivo suele traer el nombre de la persona: en la cabecera se reemplaza por uno neutro.
     nombre = "documento" if anonimizar else documento.nombre_archivo_original
 
-    def vectorizable(f: FragmentoGenerado) -> str:
-        cabecera = cabecera_contextual(
-            expediente.codigo_expediente, nombre, documento.tipo_documento, f
-        )
-        return enmascarar_texto(cabecera) if anonimizar else cabecera
+    vectorizables = [
+        cabecera_contextual(expediente.codigo_expediente, nombre, documento.tipo_documento, f)
+        for f in fragmentos
+    ]
+    if anonimizar:
+        vectorizables = enmascarar_textos(vectorizables)
 
     return [
         {
@@ -96,7 +97,7 @@ def _filas(
             "pagina_fin": f.pagina_fin,
             "seccion": f.seccion,
             "contenido_texto": f.texto,
-            "contenido_vectorizado": vectorizable(f),
+            "contenido_vectorizado": vectorizado,
             "token_count": f.token_count,
             "embedding_model": documento.embedding_model,
             "embedding": None,
@@ -106,7 +107,7 @@ def _filas(
                 "numero_adenda": documento.numero_adenda or 0,
             },
         }
-        for f in fragmentos
+        for f, vectorizado in zip(fragmentos, vectorizables, strict=True)
     ]
 
 

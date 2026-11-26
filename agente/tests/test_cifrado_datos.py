@@ -134,3 +134,27 @@ async def test_sin_la_clave_no_se_muestra_el_texto_cifrado(client, org_a, monkey
         async with get_sessionmaker()() as s:
             fijar_sistema(s)
             await s.scalar(select(Consulta))
+
+
+async def test_cifrar_historial_tambien_cifra_lo_extraido_para_la_linea(
+    client, org_a, monkeypatch
+):
+    expediente = await org_a.crear_expediente()
+    with psycopg.connect(os.environ["TEST_DATABASE_ADMIN_URL"]) as conn:
+        [doc] = conn.execute(
+            "insert into documentos (tenant_id, expediente_id, nombre_archivo_original, tipo_documento, "
+            "sha256_original, tamano_bytes, estado_indexacion, embedding_model) values "
+            "(%s, %s, 'a.pdf', 'PLIEGO', %s, 1, 'INDEXADO_Y_PURGADO', 'gemini-embedding-001') returning id",
+            (org_a.tenant_id, expediente["id"], "0" * 64),
+        ).fetchone()
+        conn.execute(
+            "insert into extracciones_linea (documento_id, tenant_id, expediente_id, version, "
+            "huella_fragmentos, datos) values (%s, %s, %s, 'v', 'h', %s)",
+            (doc, org_a.tenant_id, expediente["id"], json.dumps({"valores": [{"analito": "Glucosa"}]})),
+        )
+
+    assert await cli._cifrar_historial() == 1
+    with psycopg.connect(os.environ["TEST_DATABASE_ADMIN_URL"]) as conn:
+        [(crudo,)] = conn.execute("select datos::text from extracciones_linea").fetchall()
+    assert "mtd1:" in crudo and "Glucosa" not in crudo
+    assert await cli._cifrar_historial() == 0

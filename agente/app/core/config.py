@@ -86,6 +86,8 @@ class Settings(BaseSettings):
     # Enmascara nombres, cédulas, teléfonos, correos y direcciones ANTES de enviar texto a un
     # proveedor de IA externo (embeddings y LLM). Lo guardado y lo que se muestra es el original.
     anonimizar_antes_de_nube: bool = True
+    # Segunda capa: nombres sin etiqueta, con reglas y listas (app/privacidad/nombres.py).
+    anonimizar_nombres_sueltos: bool = True
 
     # ---------- Motor RAG (Sprint 5) ----------
     # gemini-2.5-flash: estable y ~2 s por respuesta en las pruebas. gemini-3.8-flash respondió
@@ -146,8 +148,16 @@ class Settings(BaseSettings):
     ia_precios: dict[str, tuple[float, float]] = {}
     # «Explícame este documento»: tope de fragmentos que se envían al modelo (≈ 700 tokens c/u).
     explicar_max_fragmentos: int = 30
-    # Línea de tiempo: tope de fragmentos del expediente que van al modelo en una sola llamada.
+    # Línea de tiempo: el modelo lee cada documento una vez. Fragmentos por llamada (también el
+    # tope de «Preparar mi cita»), tope por documento y llamadas simultáneas al abrir la línea.
     cronologia_max_fragmentos: int = 60
+    cronologia_max_fragmentos_documento: int = 600
+    cronologia_llamadas_paralelas: int = 3
+    # Leer cada documento al indexarlo (cuentas personales). Con la dirección vacía, o si falla,
+    # se lee la primera vez que se abre la línea. La usa solo el worker.
+    cronologia_al_indexar: bool = True
+    agente_url: str = ""
+    agente_timeout_s: float = 300.0
     # Fichas técnicas de CIMA (AEMPS): apagadas por defecto hasta confirmar sus condiciones de
     # reutilización.
     # Sin ellas, la información de medicamentos sale de los prospectos que sube la persona.

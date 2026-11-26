@@ -25,7 +25,7 @@ from app.ia.embeddings import EmbeddingRouter, ErrorEmbeddings, ModeloNoSoportad
 from app.ia.llm import ErrorLLM, ProveedorLLM, get_llm
 from app.medicamentos import busqueda as med_busqueda
 from app.medicamentos import consulta as med_consulta
-from app.models import Consulta, Documento, Expediente, Reindexacion
+from app.models import Consulta, Documento, Expediente, Reindexacion, Tenant
 from app.rag import (
     cronologia,
     cruce,
@@ -352,7 +352,7 @@ async def _cronologia_de(
                 "guardada": True,
                 "generadaAt": guardada.created_at.isoformat(),
             }
-    r = await cronologia.armar(session, expediente, llm, get_settings(), huella)
+    r = await cronologia.armar(session, expediente, llm, get_settings(), huella, rehacer)
     CONSULTAS.labels("sin_evidencia" if r.sin_evidencia else "con_evidencia").inc()
     consulta_id = uuid.uuid4()
     cuerpo = cronologia.a_json(r, consulta_id, expediente.embedding_model_activo)
@@ -419,6 +419,35 @@ async def armar_cronologia(
         return await _cronologia_de(session, expediente, data.usuario_id, data.rehacer, llm)
     except ErrorLLM as exc:
         raise _sin_ia(exc, "Línea de tiempo", data.expediente_id) from exc
+
+
+class LineaDocumentoIn(BaseModel):
+    tenant_id: uuid.UUID
+    expediente_id: uuid.UUID
+
+
+@router.post("/documentos/{documento_id}/linea")
+async def leer_documento_para_la_linea(
+    documento_id: uuid.UUID,
+    data: LineaDocumentoIn,
+    session: SessionDep,
+    llm: Annotated[ProveedorLLM, Depends(get_llm)],
+) -> dict:
+    """La pide el worker al terminar de indexar: así abrir la línea de tiempo no tiene que llamar al
+    modelo. Solo cuentas personales, y nunca los prospectos."""
+    expediente = await _expediente(session, data.tenant_id, data.expediente_id)
+    documento = await session.get(Documento, documento_id)
+    if documento is None or documento.expediente_id != expediente.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Documento no encontrado")
+    s = get_settings()
+    tenant = await session.get(Tenant, expediente.tenant_id)
+    if not s.cronologia_al_indexar or tenant is None or tenant.tipo != "PERSONAL":
+        return {"estado": "omitida"}
+    try:
+        estado = await cronologia.extraer_de_documento(session, expediente, documento_id, llm, s)
+        return {"estado": estado}
+    except ErrorLLM as exc:
+        raise _sin_ia(exc, "Lectura para la línea de tiempo", expediente.id) from exc
 
 
 class ExpedienteIn(BaseModel):
