@@ -101,7 +101,10 @@ public class ComparticionService {
 
     // ---------- la dueña (con su propio contexto; el expediente ya se comprobó) ----------
 
-    /** Crea (o reemplaza) la invitación y envía el enlace. Si el correo no sale, no queda nada. */
+    /**
+     * Crea (o reemplaza) la invitación y manda el enlace. El envío va en segundo plano: si falla después, la
+     * dueña ve la invitación sin aceptar y puede volver a invitar, que reemplaza el enlace.
+     */
     public Comparticion invitar(UsuarioActual duena, UUID expedienteId, String correoInvitado, Permiso permiso) {
         String para = normalizarCorreo(correoInvitado);
         if (para.equals(normalizarCorreo(duena.email()))) {
@@ -109,6 +112,12 @@ public class ComparticionService {
         }
         if (permiso != Permiso.LECTOR && permiso != Permiso.EDITOR) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "El permiso debe ser de lectura o de edición");
+        }
+        if (!correo.disponible()) {
+            // El enlace solo llega por correo: sin servidor, "invitación enviada" sería mentira.
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Este servidor no tiene correo configurado, así que no puede enviar invitaciones.",
+                    Map.of("codigo", "sin_correo"));
         }
         String nombre = nombreDe(duena.id());
         byte[] bytes = new byte[32];

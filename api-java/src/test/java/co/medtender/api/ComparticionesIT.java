@@ -46,13 +46,24 @@ class ComparticionesIT extends IntegracionBase {
     private static final String ANA = "ana@correo.co";
     private static final String LUIS = "luis@correo.co";
     static final List<String[]> ENVIADOS = new CopyOnWriteArrayList<>();
+    static volatile boolean sinServidorDeCorreo;
 
     @TestConfiguration
     static class Buzon {
         @Bean
         @Primary
         CorreoEnvio correoDePrueba() {
-            return (para, asunto, cuerpo) -> ENVIADOS.add(new String[] {para, asunto, cuerpo});
+            return new CorreoEnvio() {
+                @Override
+                public void enviar(String para, String asunto, String cuerpo) {
+                    ENVIADOS.add(new String[] {para, asunto, cuerpo});
+                }
+
+                @Override
+                public boolean disponible() {
+                    return !sinServidorDeCorreo;
+                }
+            };
         }
     }
 
@@ -70,6 +81,7 @@ class ComparticionesIT extends IntegracionBase {
         expediente = crearExpediente(ana, "MAMA");
         otro = crearExpediente(ana, "PRIVADO");
         ENVIADOS.clear();
+        sinServidorDeCorreo = false;
     }
 
     // ---------- utilidades ----------
@@ -198,6 +210,14 @@ class ComparticionesIT extends IntegracionBase {
         // una cuenta de organización no puede aceptar
         invitar(ana, otro, "admin@hospital.co", "LECTOR").andExpect(status().isCreated());
         aceptar(admin, tokenDelCorreo("admin@hospital.co")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void sinServidorDeCorreoNoSeFingeQueLaInvitacionSalio() throws Exception {
+        sinServidorDeCorreo = true;
+        invitar(ana, expediente, LUIS, "LECTOR").andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.codigo").value("sin_correo"));
+        assertThat(jdbc.queryForObject("select count(*) from comparticiones", Integer.class)).isZero();
     }
 
     // ---------- qué puede y qué no puede el cuidador ----------

@@ -27,10 +27,13 @@ public class CorreoEnvioPorDefecto implements CorreoEnvio, DisposableBean {
 
     private final ObjectProvider<JavaMailSender> smtp;
     private final String remitente;
+    private final String servidor;
     private final ThreadPoolTaskExecutor hilos = new ThreadPoolTaskExecutor();
 
     public CorreoEnvioPorDefecto(ObjectProvider<JavaMailSender> smtp,
-                                 @Value("${medtender.correo.remitente:no-responder@medtender.local}") String remitente) {
+                                 @Value("${medtender.correo.remitente:no-responder@medtender.local}") String remitente,
+                                 @Value("${spring.mail.host:}") String servidor) {
+        this.servidor = servidor;
         this.smtp = smtp;
         this.remitente = remitente;
         hilos.setCorePoolSize(1);
@@ -40,6 +43,12 @@ public class CorreoEnvioPorDefecto implements CorreoEnvio, DisposableBean {
         hilos.setWaitForTasksToCompleteOnShutdown(true);
         hilos.setAwaitTerminationSeconds(20);
         hilos.initialize();
+    }
+
+    @Override
+    public boolean disponible() {
+        // Con SPRING_MAIL_HOST vacío el cliente de correo existe igual: hay que mirar el nombre del servidor.
+        return !servidor.isBlank() && smtp.getIfAvailable() != null;
     }
 
     @Override
