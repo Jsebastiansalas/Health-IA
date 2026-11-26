@@ -22,7 +22,7 @@
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <pdfbox.version>3.0.8</pdfbox.version>
-    <tika.version>3.2.3</tika.version>
+    <tika.version>4.2.0</tika.version>
   </properties>
 
   <dependencies>
