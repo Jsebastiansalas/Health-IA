@@ -2,6 +2,8 @@
 #
 #   docker compose -f infra/docker-compose.prod.yml -f infra/docker-compose.monitoreo.yml --env-file infra/.env.prod up -d
 #
+# Prometheus y Alertmanager corren sin privilegios y leen infra/monitoreo: si el servidor clonó el repositorio
+# con permisos restringidos (umask 077), antes:  chmod -R a+rX infra/monitoreo
 # Necesita METRICS_TOKEN, ALERTAS_CORREO, GRAFANA_ADMIN_PASSWORD y el SMTP en infra/.env.prod.
 # Grafana solo se publica en el propio servidor. Para verlo desde tu equipo:  ssh -L 3000:127.0.0.1:3000 usuario@servidor
 
