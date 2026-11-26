@@ -46,6 +46,7 @@ class Tenant(Base):
     nombre: Mapped[str] = mapped_column(String(150))
     nit: Mapped[str] = mapped_column(String(50), unique=True)
     politica_borrado: Mapped[str] = mapped_column(String(30), server_default="INMEDIATO")
+    tipo: Mapped[str] = mapped_column(String(20), server_default="ORGANIZACION")  # migración V9
     created_at: Mapped[datetime] = _created_at()
 
 
@@ -189,6 +190,25 @@ class Consulta(Base):
     modelo_llm: Mapped[str | None] = mapped_column(String(80))
     fragmentos_recuperados: Mapped[int] = mapped_column(Integer, server_default="0")
     latencia_ms: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = _created_at()
+
+
+class ExtraccionLinea(Base):
+    """Lo que el modelo propuso al leer un documento para la línea de tiempo (migración V16)."""
+
+    __tablename__ = "extracciones_linea"
+
+    documento_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("documentos.id", ondelete="CASCADE"), primary_key=True
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"))
+    expediente_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("expedientes.id", ondelete="CASCADE")
+    )
+    version: Mapped[str] = mapped_column(String(32))
+    huella_fragmentos: Mapped[str] = mapped_column(String(64))
+    datos: Mapped[dict] = mapped_column(JsonCifrado)  # contenido de salud
+    modelo_llm: Mapped[str | None] = mapped_column(String(80))
     created_at: Mapped[datetime] = _created_at()
 
 

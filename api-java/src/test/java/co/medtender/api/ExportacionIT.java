@@ -121,6 +121,21 @@ class ExportacionIT extends IntegracionBase {
     }
 
     @Test
+    void traeLoLeidoDeCadaDocumentoParaLaLineaDeTiempo() throws Exception {
+        JsonNode ana = registrarPersonal("ana@correo.co");
+        sembrar(crearExpediente(ana, "X-1"), "ana@correo.co", "Glucosa 91 mg/dL", "pregunta");
+        jdbc.update("""
+                insert into extracciones_linea (documento_id, tenant_id, expediente_id, version, huella_fragmentos, datos)
+                select id, tenant_id, expediente_id, 'v', 'h', ?::jsonb from documentos""",
+                "{\"eventos\":[],\"valores\":[{\"analito\":\"Glucosa\",\"valor\":\"91\",\"fragmento\":\"id-interno\"}]}");
+
+        var archivos = abrir(exportar(ana, PASS).andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray());
+        JsonNode documento = json.readTree(archivos.get("datos.json")).at("/expedientes/0/documentos/0");
+        assertThat(documento.at("/leido_para_la_linea_de_tiempo/datos/valores/0/analito").asString()).isEqualTo("Glucosa");
+        assertThat(documento.at("/leido_para_la_linea_de_tiempo/aviso").asString()).contains("sin comprobar");
+    }
+
+    @Test
     void noMezclaDatosDeOtraCuenta() throws Exception {
         JsonNode ana = registrarPersonal("ana@correo.co");
         sembrar(crearExpediente(ana, "DE-ANA"), "ana@correo.co", "Texto de Ana", "pregunta de Ana");

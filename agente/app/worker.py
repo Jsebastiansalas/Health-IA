@@ -19,7 +19,7 @@ from app.core.logs import configurar_logging
 from app.ia.embeddings import get_router
 from app.pipeline.procesador import procesar_documento as _procesar
 from app.pipeline.vectorizacion import get_vectorizador
-from app.services import reindexacion
+from app.services import aviso_linea, reindexacion
 from app.services.cola import TRABAJO_PROCESAR, TRABAJO_REINDEXAR
 from app.services.purga import barrer
 
@@ -35,6 +35,8 @@ async def procesar_documento(ctx: dict, documento_id: str) -> None:
         ctx["vectorizador"],
         intento=ctx.get("job_try", 1),
     )
+    # Después y aparte: el documento ya quedó indexado y esto nunca lo cambia.
+    await aviso_linea.pedir_extraccion(get_sessionmaker(), documento_id)
 
 
 async def reindexar_expediente(ctx: dict, reindexacion_id: str) -> None:

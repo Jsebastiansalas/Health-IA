@@ -49,6 +49,8 @@ export function PaginaPrivacidad() {
         <ul>
           <li>Tu cuenta: nombre, correo y una huella de tu contraseña (nunca la contraseña).</li>
           <li>El texto de los documentos que subes, dividido en fragmentos, para poder responder y citar el texto exacto.</li>
+          <li>Las fechas, consultas y resultados de laboratorio que la inteligencia artificial encuentra en cada documento, para armar tu
+            línea de tiempo. Se guardan cifrados y se borran con el documento.</li>
           <li>Tus preguntas y las respuestas.</li>
           <li>Un registro de accesos con tu correo, la fecha y tu dirección IP, nunca el contenido de tus documentos ni de tus preguntas.</li>
         </ul>
