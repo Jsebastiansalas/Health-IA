@@ -216,14 +216,16 @@ async def leer(
     Si el modelo falla con algunos documentos se devuelve lo demás y cuántos quedaron pendientes; si no hay
     nada que devolver, se lanza el ErrorLLM. Lo que sí se leyó queda guardado: reintentar solo cuesta lo
     que falta."""
-    guardadas = {} if rehacer else await _guardadas(tenant_id, list(grupos))
+    utiles = {
+        doc: fila
+        for doc, fila in (await _guardadas(tenant_id, list(grupos))).items()
+        if fila.huella_fragmentos == huella_fragmentos(grupos[doc])
+    }
     por_doc: dict[uuid.UUID, dict] = {}
     lectura = Lectura({})
-    for doc, fragmentos in grupos.items():
-        fila = guardadas.get(doc)
-        if fila is not None and fila.huella_fragmentos == huella_fragmentos(fragmentos):
-            por_doc[doc] = fila.datos
-            lectura.modelo = fila.modelo_llm
+    if not rehacer:
+        por_doc = {doc: fila.datos for doc, fila in utiles.items()}
+        lectura.modelo = next((f.modelo_llm for f in utiles.values()), None)
 
     faltan = [f for doc, f in grupos.items() if doc not in por_doc]
     llamadas = tandas(faltan, max(1, s.cronologia_max_fragmentos))
@@ -260,7 +262,10 @@ async def leer(
             tenant_id, expediente_id, doc, huella_fragmentos(grupos[doc]), datos, modelo_nuevo
         )
 
-    lectura.pendientes = len(fallidos)
+    if lectura.nuevos:
+        # Al rehacer, si un documento falla y otros no, del que falló se conserva lo leído antes.
+        por_doc |= {d: utiles[d].datos for d in fallidos if d in utiles}
+    lectura.pendientes = len(fallidos - set(por_doc))
     if error is not None and not por_doc:
         raise error
     lectura.modelo = modelo_nuevo or lectura.modelo

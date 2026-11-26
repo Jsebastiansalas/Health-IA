@@ -209,6 +209,25 @@ async def test_un_fallo_parcial_se_avisa_y_se_reintenta_solo_lo_que_falta(
     assert _valores(j2) == [91.0, 102.0] and len(llm.prompts) == antes + 1
 
 
+async def test_si_rehacer_falla_con_un_documento_se_conserva_lo_leido_antes(
+    client, org_a, cola, router, app, monkeypatch
+):
+    monkeypatch.setattr(get_settings(), "cronologia_max_fragmentos", 1)
+    llm = _usar(app, LLMPorFragmento())
+    expediente = await org_a.crear_expediente()
+    await _indexar(expediente, router, _lab(1, 91), "a.pdf")
+    await _indexar(expediente, router, _lab(2, 102), "b.pdf")
+    await _pedir(client, org_a, expediente)
+
+    llm.fallar_si = "Glucosa 102"
+    j = (await _pedir(client, org_a, expediente, rehacer=True)).json()
+    assert _valores(j) == [91.0, 102.0]
+    assert not any("incompleta" in a for a in j["alertas"])
+
+    llm.fallar_si = "Glucosa"  # no se pudo rehacer nada: se dice, no se finge
+    assert (await _pedir(client, org_a, expediente, rehacer=True)).status_code == 503
+
+
 async def test_un_documento_muy_largo_se_limita_y_se_avisa(
     client, org_a, cola, router, app, monkeypatch
 ):
