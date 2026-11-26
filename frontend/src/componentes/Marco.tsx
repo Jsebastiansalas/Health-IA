@@ -1,8 +1,8 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Toaster } from "sonner";
-import { Bell, ChevronsUpDown, DownloadSimple, FolderOpen, LogOut, Moon, Pill, ShieldCheck, Sun, Trash2 } from "../iconos";
+import { Bell, ChevronsUpDown, DownloadSimple, FolderOpen, LogOut, Moon, Pill, ShieldCheck, Sun, TextAa, Trash2 } from "../iconos";
 import { EVENTO_DOS_PASOS_REQUERIDO } from "../api/cliente";
 import { toast as avisar } from "sonner";
 import { cn } from "../lib/cn";
@@ -87,6 +87,10 @@ function MenuUsuario() {
               {tema === "claro" ? <Moon className="size-4" aria-hidden /> : <Sun className="size-4" aria-hidden />}
               {tema === "claro" ? "Tema oscuro" : "Tema claro"}
             </Menu.Item>
+            <Menu.Item onSelect={() => navegar("/cuenta/accesibilidad")} className={itemMenu}>
+              <TextAa className="size-4" aria-hidden />
+              Accesibilidad
+            </Menu.Item>
             <Menu.Item onSelect={() => navegar("/cuenta/seguridad")} className={itemMenu}>
               <ShieldCheck className="size-4" aria-hidden />
               Seguridad de la cuenta
@@ -142,6 +146,14 @@ function AvisoCompartido() {
 
 export function Marco({ children }: { children: ReactNode }) {
   const { tema } = useTema();
+  const contenido = useRef<HTMLElement>(null);
+  const { pathname } = useLocation();
+  const anterior = useRef(pathname);
+  useEffect(() => {
+    if (anterior.current === pathname) return;
+    anterior.current = pathname;
+    contenido.current?.focus({ preventScroll: true });
+  }, [pathname]);
   return (
     <div className="min-h-screen">
       <a
@@ -177,7 +189,7 @@ export function Marco({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main id="contenido" className="mx-auto max-w-[1400px] px-4 py-8 sm:px-8 lg:py-10">
+      <main id="contenido" ref={contenido} tabIndex={-1} className="outline-none mx-auto max-w-[1400px] px-4 py-8 sm:px-8 lg:py-10">
         <AvisoCompartido />
         {children}
       </main>

@@ -5,6 +5,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { activarRastreo } from "./lib/errores";
 import { ErrorApi } from "./api/cliente";
 import "./index.css";
+import { aplicarPreferencias } from "./lib/accesibilidad";
 import { AvisosApp } from "./componentes/AvisosApp";
 import { Marco } from "./componentes/Marco";
 import { aplicarVersionNueva, registrarApp } from "./pwa";
@@ -25,6 +26,7 @@ const PaginaMedicamentos = lazy(() => import("./paginas/Medicamentos").then((m) 
 const PaginaRecordatorios = lazy(() => import("./paginas/Recordatorios").then((m) => ({ default: m.PaginaRecordatorios })));
 const PaginaOlvideContrasena = lazy(() => import("./paginas/Contrasena").then((m) => ({ default: m.PaginaOlvideContrasena })));
 const PaginaRestablecer = lazy(() => import("./paginas/Contrasena").then((m) => ({ default: m.PaginaRestablecer })));
+const PaginaAccesibilidad = lazy(() => import("./paginas/Accesibilidad").then((m) => ({ default: m.PaginaAccesibilidad })));
 const PaginaSeguridad = lazy(() => import("./paginas/Seguridad").then((m) => ({ default: m.PaginaSeguridad })));
 const PaginaMisDatos = lazy(() => import("./paginas/MisDatos").then((m) => ({ default: m.PaginaMisDatos })));
 const PaginaCompartir = lazy(() => import("./paginas/Compartir").then((m) => ({ default: m.PaginaCompartir })));
@@ -75,6 +77,7 @@ function Rutas() {
         <Route path="/recordatorios" element={<PaginaRecordatorios />} />
         <Route path="/cuenta/seguridad" element={<PaginaSeguridad />} />
         <Route path="/cuenta/datos" element={<PaginaMisDatos />} />
+        <Route path="/cuenta/accesibilidad" element={<PaginaAccesibilidad />} />
         <Route path="/restablecer" element={<PaginaRestablecer />} />
         <Route path="/privacidad" element={<PaginaPrivacidad />} />
         <Route path="/terminos" element={<PaginaTerminos />} />
@@ -83,6 +86,8 @@ function Rutas() {
     </Marco>
   );
 }
+
+aplicarPreferencias(); // antes de pintar, para que no salte el tamaño
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
